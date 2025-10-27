@@ -1,0 +1,103 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="dark">
+    <ion-buttons slot="start">
+      <ion-button (click)="voltar()">
+        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>
+      Inspeção de Pneus
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" color="dark">
+  <ion-header collapse="condense">
+    <ion-toolbar color="dark">
+      <ion-title size="large">Inspeção de Pneus</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="form-container">
+
+    <!-- Card de cada pneu -->
+    <ion-card *ngFor="let pneu of pneus; let i = index" class="pneu-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="ellipse" color="primary"></ion-icon>
+          {{ pneu.nome }}
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <!-- Seleção Bom/Ruim -->
+        <div class="item-label">Condição do Pneu</div>
+        <ion-segment
+          [(ngModel)]="pneu.valor"
+          class="segment-pneu"
+          (ionChange)="salvarLocalmente()"
+        >
+          <ion-segment-button value="bom">
+            <ion-label>Bom</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="ruim">
+            <ion-label>Ruim</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+
+        <!-- Seção de Foto -->
+        <div class="photo-section">
+          <div class="photo-label">
+            <ion-icon name="camera" color="primary"></ion-icon>
+            <span>Foto do Pneu (Obrigatória)</span>
+          </div>
+
+          <!-- Botão de tirar foto -->
+          <ion-button
+            expand="block"
+            color="primary"
+            (click)="tirarFoto(i)"
+            [fill]="pneu.foto ? 'outline' : 'solid'"
+          >
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ pneu.foto ? 'Alterar Foto' : 'Tirar Foto' }}
+          </ion-button>
+
+          <!-- Preview da foto -->
+          <div *ngIf="pneu.foto" class="photo-preview">
+            <img [src]="pneu.foto" />
+            <ion-button
+              size="small"
+              color="danger"
+              fill="clear"
+              (click)="removerFoto(i)"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-button>
+          </div>
+
+          <!-- Placeholder quando não há foto -->
+          <div *ngIf="!pneu.foto" class="photo-placeholder">
+            <ion-icon name="camera-outline"></ion-icon>
+            <p>Nenhuma foto</p>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Botão Finalizar Checklist -->
+    <div class="save-section">
+      <ion-button
+        expand="block"
+        size="large"
+        color="primary"
+        (click)="finalizarChecklist()"
+        [disabled]="!validarFormulario() || salvando"
+      >
+        <ion-spinner *ngIf="salvando" name="crescent" slot="start"></ion-spinner>
+        <ion-icon *ngIf="!salvando" slot="start" name="checkmark-circle"></ion-icon>
+        {{ salvando ? 'Salvando...' : 'Finalizar e Salvar Checklist' }}
+      </ion-button>
+    </div>
+  </div>
+</ion-content>

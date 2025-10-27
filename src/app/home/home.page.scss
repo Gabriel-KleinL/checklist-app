@@ -1,0 +1,129 @@
+.form-container {
+  padding: 16px;
+  padding-bottom: 100px;
+}
+
+ion-card {
+  --background: #1a1a1a;
+  --color: #ffffff;
+  border: 1px solid #404040;
+  margin-bottom: 20px;
+  border-radius: 12px;
+
+  ion-card-header {
+    padding-bottom: 8px;
+
+    ion-card-title {
+      color: var(--ion-color-primary);
+      font-size: 18px;
+      font-weight: 600;
+    }
+  }
+
+  ion-card-content {
+    padding-top: 0;
+  }
+}
+
+ion-item {
+  --background: transparent;
+  --color: #ffffff;
+  --border-color: #404040;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  margin-bottom: 16px;
+
+  ion-input,
+  ion-select {
+    --color: #ffffff;
+    --placeholder-color: #808080;
+  }
+
+  ion-label {
+    color: #c0c0c0 !important;
+  }
+}
+
+.photo-section {
+  margin-top: 16px;
+
+  ion-button {
+    --border-radius: 8px;
+    margin-bottom: 12px;
+    font-weight: 600;
+
+    &[fill="outline"] {
+      --border-color: var(--ion-color-primary);
+      --color: var(--ion-color-primary);
+    }
+  }
+}
+
+.photo-preview {
+  position: relative;
+  margin-top: 12px;
+  background: var(--ion-color-dark);
+  border-radius: 12px;
+  border: 2px solid var(--ion-color-primary);
+  padding: 8px;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+  }
+
+  ion-button {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    --background: rgba(255, 0, 0, 0.9);
+    --border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+
+    ion-icon {
+      font-size: 20px;
+    }
+  }
+}
+
+.save-section {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: linear-gradient(to bottom, transparent, #000000 20%);
+  z-index: 10;
+
+  ion-button {
+    --border-radius: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    height: 56px;
+    box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+
+    &[disabled] {
+      opacity: 0.4;
+    }
+  }
+}
+
+// Customização dos selects
+ion-action-sheet {
+  --background: #1a1a1a;
+  --color: #ffffff;
+
+  .action-sheet-button {
+    color: #ffffff;
+
+    &.action-sheet-selected {
+      color: var(--ion-color-primary);
+      font-weight: 600;
+    }
+  }
+}

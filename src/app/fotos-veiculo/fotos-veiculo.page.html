@@ -1,0 +1,182 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="dark">
+    <ion-buttons slot="start">
+      <ion-button (click)="voltar()">
+        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>
+      Fotos do Veículo
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" color="dark">
+  <ion-header collapse="condense">
+    <ion-toolbar color="dark">
+      <ion-title size="large">Fotos do Veículo</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="form-container">
+
+    <div class="info-card">
+      <ion-icon name="information-circle" color="primary"></ion-icon>
+      <p>Tire fotos do veículo em todos os ângulos</p>
+    </div>
+
+    <!-- Grid de Fotos -->
+    <div class="fotos-grid">
+      <ion-card *ngFor="let foto of fotos; let i = index" class="foto-card">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon [name]="foto.icone" color="primary"></ion-icon>
+            {{ foto.tipo }}
+          </ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>
+          <!-- Botão de tirar foto -->
+          <ion-button
+            expand="block"
+            color="primary"
+            (click)="tirarFoto(i)"
+            [fill]="foto.foto ? 'outline' : 'solid'"
+          >
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ foto.foto ? 'Alterar Foto' : 'Tirar Foto' }}
+          </ion-button>
+
+          <!-- Botão para marcar foto -->
+          <ion-button
+            *ngIf="foto.foto"
+            expand="block"
+            color="secondary"
+            fill="outline"
+            (click)="abrirMarcacao(i)"
+          >
+            <ion-icon slot="start" name="create-outline"></ion-icon>
+            Marcar Foto
+          </ion-button>
+
+          <!-- Preview da foto -->
+          <div *ngIf="foto.foto" class="photo-preview">
+            <img [src]="foto.foto" />
+            <ion-button
+              size="small"
+              color="danger"
+              fill="clear"
+              (click)="removerFoto(i)"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-button>
+          </div>
+
+          <!-- Placeholder quando não há foto -->
+          <div *ngIf="!foto.foto" class="photo-placeholder">
+            <ion-icon name="camera-outline"></ion-icon>
+            <p>Nenhuma foto</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- Botão Salvar -->
+    <div class="save-section">
+      <ion-button
+        expand="block"
+        size="large"
+        color="primary"
+        (click)="salvarFotos()"
+        [disabled]="!validarFormulario()"
+      >
+        <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+        Salvar Fotos
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Modal de Marcação de Foto -->
+  <div *ngIf="mostrarMarcacao" class="marcacao-modal">
+    <div class="marcacao-header">
+      <h3>Marcar Foto - {{ fotos[fotoAtualIndex]?.tipo }}</h3>
+      <ion-button fill="clear" (click)="fecharMarcacao()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </div>
+
+    <div class="marcacao-toolbar">
+      <div class="cor-selector">
+        <label>Cor:</label>
+        <div class="cores">
+          <button
+            class="cor-btn"
+            [class.active]="corMarcacao === '#ff0000'"
+            style="background: #ff0000"
+            (click)="corMarcacao = '#ff0000'"
+          ></button>
+          <button
+            class="cor-btn"
+            [class.active]="corMarcacao === '#ffff00'"
+            style="background: #ffff00"
+            (click)="corMarcacao = '#ffff00'"
+          ></button>
+          <button
+            class="cor-btn"
+            [class.active]="corMarcacao === '#00ff00'"
+            style="background: #00ff00"
+            (click)="corMarcacao = '#00ff00'"
+          ></button>
+          <button
+            class="cor-btn"
+            [class.active]="corMarcacao === '#0000ff'"
+            style="background: #0000ff"
+            (click)="corMarcacao = '#0000ff'"
+          ></button>
+          <button
+            class="cor-btn"
+            [class.active]="corMarcacao === '#ffffff'"
+            style="background: #ffffff"
+            (click)="corMarcacao = '#ffffff'"
+          ></button>
+        </div>
+      </div>
+
+      <div class="espessura-selector">
+        <label>Espessura:</label>
+        <ion-range
+          [(ngModel)]="espessuraLinha"
+          min="3"
+          max="20"
+          step="1"
+          color="primary"
+        ></ion-range>
+      </div>
+
+      <ion-button size="small" color="warning" (click)="limparMarcacoes()">
+        <ion-icon slot="start" name="refresh"></ion-icon>
+        Limpar
+      </ion-button>
+    </div>
+
+    <div class="canvas-container">
+      <canvas
+        #canvas
+        (mousedown)="iniciarDesenho($event)"
+        (mousemove)="desenhar($event)"
+        (mouseup)="pararDesenho()"
+        (mouseleave)="pararDesenho()"
+        (touchstart)="iniciarDesenho($event)"
+        (touchmove)="desenhar($event)"
+        (touchend)="pararDesenho()"
+      ></canvas>
+    </div>
+
+    <div class="marcacao-footer">
+      <ion-button expand="block" color="primary" (click)="salvarMarcacao()">
+        <ion-icon slot="start" name="checkmark"></ion-icon>
+        Salvar Marcação
+      </ion-button>
+    </div>
+  </div>
+</ion-content>

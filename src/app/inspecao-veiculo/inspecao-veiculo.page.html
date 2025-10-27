@@ -1,0 +1,145 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="dark">
+    <ion-buttons slot="start">
+      <ion-button (click)="voltar()">
+        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>
+      Inspeção do Veículo
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" color="dark">
+  <ion-header collapse="condense">
+    <ion-toolbar color="dark">
+      <ion-title size="large">Inspeção do Veículo</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="form-container">
+
+    <!-- SEÇÃO: INSPEÇÃO DO MOTOR -->
+    <div class="section-header">
+      <ion-icon name="construct" color="primary"></ion-icon>
+      <h2>Inspeção do Motor</h2>
+    </div>
+
+    <ion-card>
+      <ion-card-content>
+        <div *ngFor="let item of inspecao.motor; let i = index" class="item-inspecao">
+          <div class="item-label">
+            <ion-text color="light">{{ item.nome }}</ion-text>
+          </div>
+
+          <ion-segment [(ngModel)]="item.valor" (ionChange)="onValorMotorChange(item)" class="segment-motor">
+            <ion-segment-button value="bom">
+              <ion-label>Bom</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="ruim">
+              <ion-label>Ruim</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <!-- Campo de foto condicional -->
+          <div *ngIf="precisaFotoMotor(item)" class="photo-section">
+            <ion-button
+              expand="block"
+              color="primary"
+              size="small"
+              (click)="tirarFotoMotor(i)"
+              [fill]="item.foto ? 'outline' : 'solid'"
+            >
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ item.foto ? 'Alterar Foto' : 'Tirar Foto' }}
+            </ion-button>
+
+            <div *ngIf="item.foto" class="photo-preview">
+              <img [src]="item.foto" />
+              <ion-button
+                size="small"
+                color="danger"
+                fill="clear"
+                (click)="removerFotoMotor(i)"
+              >
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- SEÇÃO: LIMPEZA -->
+    <div class="section-header">
+      <ion-icon name="sparkles" color="primary"></ion-icon>
+      <h2>Limpeza</h2>
+    </div>
+
+    <ion-card>
+      <ion-card-content>
+        <div *ngFor="let item of inspecao.limpeza; let i = index" class="item-inspecao">
+          <div class="item-label">
+            <ion-text color="light">{{ item.nome }}</ion-text>
+          </div>
+
+          <ion-segment [(ngModel)]="item.valor" (ionChange)="onValorLimpezaChange(item)" class="segment-limpeza" scrollable="true">
+            <ion-segment-button value="pessima">
+              <ion-label>Péssima</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="ruim">
+              <ion-label>Ruim</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="satisfatoria">
+              <ion-label>Satisfatória</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="otimo">
+              <ion-label>Ótimo</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <!-- Campo de foto condicional -->
+          <div *ngIf="precisaFotoLimpeza(item)" class="photo-section">
+            <ion-button
+              expand="block"
+              color="primary"
+              size="small"
+              (click)="tirarFotoLimpeza(i)"
+              [fill]="item.foto ? 'outline' : 'solid'"
+            >
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ item.foto ? 'Alterar Foto' : 'Tirar Foto' }}
+            </ion-button>
+
+            <div *ngIf="item.foto" class="photo-preview">
+              <img [src]="item.foto" />
+              <ion-button
+                size="small"
+                color="danger"
+                fill="clear"
+                (click)="removerFotoLimpeza(i)"
+              >
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Botão Salvar -->
+    <div class="save-section">
+      <ion-button
+        expand="block"
+        size="large"
+        color="primary"
+        (click)="salvarInspecao()"
+        [disabled]="!validarFormulario()"
+      >
+        <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+        Salvar Inspeção
+      </ion-button>
+    </div>
+  </div>
+</ion-content>

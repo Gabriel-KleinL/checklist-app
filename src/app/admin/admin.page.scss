@@ -1,0 +1,310 @@
+.content-container {
+  padding: 16px;
+  width: 100%;
+  margin: 0;
+}
+
+// Estat�sticas
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+
+  .stat-card {
+    margin: 0;
+    text-align: center;
+
+    ion-card-content {
+      padding: 16px 8px;
+
+      ion-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+      }
+
+      h2 {
+        margin: 8px 0 4px 0;
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--ion-color-dark);
+      }
+
+      p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--ion-color-medium);
+        text-transform: uppercase;
+      }
+    }
+  }
+}
+
+// Filtros
+ion-card {
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  ion-card-header {
+    ion-card-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+  }
+
+  ion-searchbar {
+    padding: 0 0 8px 0;
+  }
+
+  ion-item {
+    --background: transparent;
+    margin-bottom: 8px;
+  }
+
+  .clear-filters-btn {
+    margin-top: 12px;
+  }
+}
+
+// Loading
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+
+  ion-spinner {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 16px;
+  }
+
+  p {
+    color: var(--ion-color-medium);
+    font-size: 14px;
+  }
+}
+
+// Estado vazio
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+
+  ion-icon {
+    font-size: 80px;
+    color: var(--ion-color-medium);
+    margin-bottom: 20px;
+  }
+
+  h3 {
+    color: var(--ion-color-dark);
+    margin: 0 0 10px 0;
+    font-size: 20px;
+  }
+
+  p {
+    color: var(--ion-color-medium);
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+// Lista
+ion-list {
+  background: transparent;
+  padding: 0;
+
+  ion-item-sliding {
+    margin-bottom: 8px;
+
+    ion-item {
+      --background: white;
+      --border-radius: 8px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+      ion-label {
+        h2 {
+          color: var(--ion-color-dark);
+          font-size: 18px;
+          margin-bottom: 4px;
+        }
+
+        p {
+          color: var(--ion-color-medium);
+          font-size: 13px;
+          margin: 2px 0;
+
+          &.data-texto {
+            font-size: 12px;
+            font-style: italic;
+            color: var(--ion-color-medium-shade);
+          }
+        }
+      }
+
+      ion-badge {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+    }
+  }
+}
+
+// Card de erro
+ion-card[color="danger"] {
+  ion-card-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    ion-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+  }
+}
+
+// Modal de detalhes
+.detalhes-container {
+  padding: 16px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+
+  ion-card {
+    margin-bottom: 16px;
+  }
+
+  .foto-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .foto-item {
+    text-align: center;
+    margin-bottom: 16px;
+
+    h4 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ion-color-primary);
+    }
+
+    img {
+      width: 100%;
+      height: auto;
+      max-height: 300px;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: 2px solid var(--ion-color-light-shade);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+      &:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+
+  ion-list {
+    background: transparent;
+
+    ion-item {
+      --background: transparent;
+      margin-bottom: 8px;
+
+      ion-badge {
+        font-size: 12px;
+        padding: 4px 8px;
+        text-transform: uppercase;
+      }
+    }
+  }
+}
+
+// Estilos específicos para o modal
+ion-modal {
+  --width: 95%;
+  --height: 90%;
+  --border-radius: 16px;
+}
+
+// Responsividade para tablets e desktops
+@media (min-width: 768px) {
+  ion-modal {
+    --width: 90%;
+    --height: 85%;
+  }
+
+  .stats-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  ion-card {
+    .stat-card {
+      ion-card-content {
+        padding: 20px;
+
+        ion-icon {
+          font-size: 40px;
+        }
+
+        h2 {
+          font-size: 28px;
+        }
+      }
+    }
+  }
+
+  .detalhes-container {
+    .foto-grid {
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+  }
+}
+
+@media (min-width: 1024px) {
+  ion-modal {
+    --width: 85%;
+    --height: 80%;
+  }
+}
+
+// Estilos para o modal de expansão de foto
+.foto-expandida-content {
+  --background: #000;
+  
+  .foto-expandida-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 20px;
+    
+    .foto-expandida {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+  }
+}
+
+// Modal de expansão de foto em tela cheia
+ion-modal:has(.foto-expandida-content) {
+  --width: 100%;
+  --height: 100%;
+  --border-radius: 0;
+}
