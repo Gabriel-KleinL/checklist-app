@@ -1,0 +1,963 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button (click)="voltar()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Checklist Completo</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" color="light">
+  <div class="content-container">
+    <!-- Header com progresso -->
+    <div class="progress-header">
+      <div class="progress-info">
+        <h2>Etapa {{ parteAtual + 1 }} de {{ totalPartes }}</h2>
+        <p>{{ getProgresso() | number:'1.0-0' }}% concluído</p>
+      </div>
+      <div class="progress-circle">
+        <svg viewBox="0 0 36 36" class="circular-chart">
+          <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+          <path class="circle" [style.stroke-dasharray]="getProgresso() + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+          <text x="18" y="20.35" class="percentage">{{ getProgresso() | number:'1.0-0' }}</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Stepper moderno -->
+    <div class="modern-stepper">
+      <div class="step-item" *ngFor="let step of steps; let i = index"
+           [class.active]="parteAtual === i"
+           [class.completed]="parteAtual > i"
+           (click)="irParaParte(i)">
+        <div class="step-icon">
+          <ion-icon *ngIf="parteAtual > i" name="checkmark"></ion-icon>
+          <span *ngIf="parteAtual <= i">{{ i + 1 }}</span>
+        </div>
+        <div class="step-content">
+          <div class="step-title">{{ step.title }}</div>
+          <div class="step-subtitle">{{ step.subtitle }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE 0 - Dados Básicos -->
+    <div *ngIf="parteAtual === 0" class="form-section">
+      <div class="section-header">
+        <ion-icon name="car"></ion-icon>
+        <div>
+          <h3>Dados Iniciais do Veículo</h3>
+          <p>Informações básicas e foto do painel</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="reader-outline"></ion-icon>
+            Placa do Veículo
+          </label>
+          <ion-input
+            class="modern-input"
+            [(ngModel)]="placa"
+            placeholder="ABC1234 ou ABC1D23"
+            (ionBlur)="formatarPlaca()"
+            maxlength="8">
+          </ion-input>
+          <div *ngIf="placa && !validarPlaca(placa)" class="error-message">
+            <ion-icon name="alert-circle"></ion-icon>
+            Formato inválido! Use AAA1A11 (Mercosul) ou AAA1111 (antigo)
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="speedometer-outline"></ion-icon>
+            Quilometragem Inicial
+          </label>
+          <ion-input
+            class="modern-input"
+            type="number"
+            [(ngModel)]="kmInicial"
+            placeholder="Digite a quilometragem"
+            min="0">
+          </ion-input>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="water-outline"></ion-icon>
+            Nível de Combustível
+          </label>
+          <ion-select
+            class="modern-select"
+            [(ngModel)]="nivelCombustivel"
+            interface="action-sheet"
+            placeholder="Selecione o nível">
+            <ion-select-option *ngFor="let nivel of niveisDisponiveis" [value]="nivel">
+              {{ nivel }}
+            </ion-select-option>
+          </ion-select>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="camera-outline"></ion-icon>
+            Foto do Painel
+          </label>
+          <ion-button
+            expand="block"
+            class="photo-button"
+            (click)="tirarFotoPainel()"
+            [fill]="fotoPainel ? 'outline' : 'solid'">
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ fotoPainel ? 'Alterar Foto' : 'Tirar Foto' }}
+          </ion-button>
+
+          <div *ngIf="fotoPainel" class="photo-preview-modern">
+            <img [src]="fotoPainel" alt="Foto do Painel" />
+            <ion-button class="delete-photo-btn" fill="clear" (click)="removerFotoPainel()">
+              <ion-icon name="trash"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="document-text-outline"></ion-icon>
+            Observações do Painel
+          </label>
+          <ion-textarea
+            class="modern-textarea"
+            [(ngModel)]="observacaoPainel"
+            placeholder="Ex: Luz de check engine acesa, avisos no painel..."
+            rows="4"
+            autoGrow="true">
+          </ion-textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE 1 - INTERNA -->
+    <div *ngIf="parteAtual === 1" class="form-section">
+      <div class="section-header">
+        <ion-icon name="car-sport"></ion-icon>
+        <div>
+          <h3>Parte Interna do Veículo</h3>
+          <p *ngIf="carregandoItens">Carregando itens...</p>
+          <p *ngIf="!carregandoItens">{{ getItensDaCategoria('PARTE1_INTERNA').length }} itens configurados</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <!-- Renderiza dinamicamente os itens do banco de dados -->
+        <div class="checklist-items">
+          <div *ngFor="let item of getItensDaCategoria('PARTE1_INTERNA')" class="check-item">
+            <!-- Item tipo checkbox simples -->
+            <div class="checkbox-wrapper" *ngIf="!item.nome_item.toLowerCase().includes('estado de conservação')">
+              <ion-checkbox [(ngModel)]="parte1[item.nome_item]"></ion-checkbox>
+              <label>{{ item.nome_item }}</label>
+            </div>
+
+            <!-- Item tipo textarea para observações -->
+            <div class="textarea-wrapper" *ngIf="item.nome_item.toLowerCase().includes('estado de conservação')">
+              <label class="input-label">
+                <ion-icon name="document-text-outline"></ion-icon>
+                {{ item.nome_item }}
+              </label>
+              <ion-textarea
+                class="modern-textarea"
+                [(ngModel)]="parte1[item.nome_item]"
+                rows="3"
+                placeholder="Descreva o estado...">
+              </ion-textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensagem se não houver itens -->
+        <div *ngIf="!carregandoItens && getItensDaCategoria('PARTE1_INTERNA').length === 0" class="empty-state">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+          <h4>Nenhum item configurado</h4>
+          <p>Configure os itens no menu Configurar Itens</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE 2 - PEÇAS / EQUIPAMENTOS OBRIGATÓRIOS -->
+    <div *ngIf="parteAtual === 2" class="form-section">
+      <div class="section-header">
+        <ion-icon name="construct"></ion-icon>
+        <div>
+          <h3>Equipamentos Obrigatórios</h3>
+          <p>Itens de segurança e ferramentas</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="checklist-items">
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte2.espelhoRetrovisorExtDireito"></ion-checkbox>
+              <label>Espelho Retrovisor Externo Direito</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte2.espelhoRetrovisorExtEsquerdo"></ion-checkbox>
+              <label>Espelho Retrovisor Externo Esquerdo</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte2.chaveRoda"></ion-checkbox>
+              <label>Chave de Roda</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte2.macaco"></ion-checkbox>
+              <label>Macaco</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte2.triangulo"></ion-checkbox>
+              <label>Triângulo</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte2.pneuSobressalente"></ion-checkbox>
+              <label>Pneu Sobressalente (Estepe)</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group" style="margin-top: 24px;">
+          <label class="input-label">
+            <ion-icon name="flame-outline"></ion-icon>
+            Extintor de Incêndio
+          </label>
+          <ion-select
+            class="modern-select"
+            [(ngModel)]="parte2.extintor"
+            interface="action-sheet"
+            placeholder="Selecione o estado">
+            <ion-select-option value="sem">Sem Extintor</ion-select-option>
+            <ion-select-option value="com_cheio">Com Extintor - Cheio</ion-select-option>
+            <ion-select-option value="com_vazio">Com Extintor - Vazio</ion-select-option>
+          </ion-select>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE 3 - EXTERNA DIANTEIRA -->
+    <div *ngIf="parteAtual === 3" class="form-section">
+      <div class="section-header">
+        <ion-icon name="flashlight"></ion-icon>
+        <div>
+          <h3>Parte Externa Dianteira</h3>
+          <p>Faróis, lanternas e componentes frontais</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="checklist-items">
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte3.faroleteDianteiroDireito"></ion-checkbox>
+              <label>Farolete Dianteiro Direito</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte3.faroleteDianteiroEsquerdo"></ion-checkbox>
+              <label>Farolete Dianteiro Esquerdo</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte3.farolAltoDireito"></ion-checkbox>
+              <label>Farol Alto Direito</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte3.farolBaixoDireito"></ion-checkbox>
+              <label>Farol Baixo Direito</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte3.farolAltoEsquerdo"></ion-checkbox>
+              <label>Farol Alto Esquerdo</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte3.farolBaixoEsquerdo"></ion-checkbox>
+              <label>Farol Baixo Esquerdo</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte3.setaDianteiraDireita"></ion-checkbox>
+              <label>Seta Dianteira Direita</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte3.setaDianteiraEsquerda"></ion-checkbox>
+              <label>Seta Dianteira Esquerda</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group" style="margin-top: 24px;">
+          <label class="input-label">
+            <ion-icon name="ellipse-outline"></ion-icon>
+            Pneu Dianteiro Direito
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte3.pneuDianteiroDireito">
+            <ion-segment-button value="bom">
+              <ion-label>Bom</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="ruim">
+              <ion-label>Ruim</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <div *ngIf="parte3.pneuDianteiroDireito === 'ruim'" style="margin-top: 16px;">
+            <ion-button
+              expand="block"
+              class="photo-button"
+              color="warning"
+              (click)="tirarFotoItem('pneuDianteiroDireito')"
+              [fill]="parte3.fotoPneuDianteiroDireito ? 'outline' : 'solid'">
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ parte3.fotoPneuDianteiroDireito ? 'Alterar Foto' : 'Tirar Foto do Pneu' }}
+            </ion-button>
+
+            <div *ngIf="parte3.fotoPneuDianteiroDireito" class="photo-preview-modern">
+              <img [src]="parte3.fotoPneuDianteiroDireito" alt="Pneu Dianteiro Direito" />
+              <ion-button class="delete-photo-btn" fill="clear" (click)="removerFotoItem('parte3', 'fotoPneuDianteiroDireito')">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="build-outline"></ion-icon>
+            Quantidade de Parafusos - Pneu Dianteiro Direito
+          </label>
+          <ion-input
+            class="modern-input"
+            type="number"
+            [(ngModel)]="parte3.parafusosPneuDianteiroDireito"
+            placeholder="Quantidade">
+          </ion-input>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="ellipse-outline"></ion-icon>
+            Pneu Dianteiro Esquerdo
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte3.pneuDianteiroEsquerdo">
+            <ion-segment-button value="bom">
+              <ion-label>Bom</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="ruim">
+              <ion-label>Ruim</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <div *ngIf="parte3.pneuDianteiroEsquerdo === 'ruim'" style="margin-top: 16px;">
+            <ion-button
+              expand="block"
+              class="photo-button"
+              color="warning"
+              (click)="tirarFotoItem('pneuDianteiroEsquerdo')"
+              [fill]="parte3.fotoPneuDianteiroEsquerdo ? 'outline' : 'solid'">
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ parte3.fotoPneuDianteiroEsquerdo ? 'Alterar Foto' : 'Tirar Foto do Pneu' }}
+            </ion-button>
+
+            <div *ngIf="parte3.fotoPneuDianteiroEsquerdo" class="photo-preview-modern">
+              <img [src]="parte3.fotoPneuDianteiroEsquerdo" alt="Pneu Dianteiro Esquerdo" />
+              <ion-button class="delete-photo-btn" fill="clear" (click)="removerFotoItem('parte3', 'fotoPneuDianteiroEsquerdo')">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="build-outline"></ion-icon>
+            Quantidade de Parafusos - Pneu Dianteiro Esquerdo
+          </label>
+          <ion-input
+            class="modern-input"
+            type="number"
+            [(ngModel)]="parte3.parafusosPneuDianteiroEsquerdo"
+            placeholder="Quantidade">
+          </ion-input>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="car-outline"></ion-icon>
+            Para-Choque Dianteiro
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte3.paraChoqueDianteiro">
+            <ion-segment-button value="bom">
+              <ion-label>Bom</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="ruim">
+              <ion-label>Ruim</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <div *ngIf="parte3.paraChoqueDianteiro === 'ruim'" style="margin-top: 16px;">
+            <ion-button
+              expand="block"
+              class="photo-button"
+              color="warning"
+              (click)="tirarFotoItem('paraChoqueDianteiro')"
+              [fill]="parte3.fotoParaChoqueDianteiro ? 'outline' : 'solid'">
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ parte3.fotoParaChoqueDianteiro ? 'Alterar Foto' : 'Tirar Foto do Para-Choque' }}
+            </ion-button>
+
+            <div *ngIf="parte3.fotoParaChoqueDianteiro" class="photo-preview-modern">
+              <img [src]="parte3.fotoParaChoqueDianteiro" alt="Para-Choque Dianteiro" />
+              <ion-button class="delete-photo-btn" fill="clear" (click)="removerFotoItem('parte3', 'fotoParaChoqueDianteiro')">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE 4 - EXTERNA TRASEIRA -->
+    <div *ngIf="parteAtual === 4" class="form-section">
+      <div class="section-header">
+        <ion-icon name="flashlight-outline"></ion-icon>
+        <div>
+          <h3>Parte Externa Traseira</h3>
+          <p>Lanternas, pneus e componentes traseiros</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="checklist-items">
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.lanternaTraseiraDireita"></ion-checkbox>
+              <label>Lanterna Traseira Direita</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.lanternaTraseiraEsquerda"></ion-checkbox>
+              <label>Lanterna Traseira Esquerda</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.lanternaMarchaReDireita"></ion-checkbox>
+              <label>Lanterna Marcha Ré Direita</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.lanternaMarchaReEsquerda"></ion-checkbox>
+              <label>Lanterna Marcha Ré Esquerda</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.iluminacaoPlacaTraseira"></ion-checkbox>
+              <label>Iluminação Placa Traseira</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.setaTraseiraDireita"></ion-checkbox>
+              <label>Seta Traseira Direita</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.setaTraseiraEsquerda"></ion-checkbox>
+              <label>Seta Traseira Esquerda</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.luzIndicadoraParada"></ion-checkbox>
+              <label>Luz Indicadora de Parada</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.alerta"></ion-checkbox>
+              <label>Alerta</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.protetoresRodasTraseiras"></ion-checkbox>
+              <label>Protetores de Rodas Traseiras</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.silencioso"></ion-checkbox>
+              <label>Silencioso (Cano Descarga)</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.freiosEstacionamento"></ion-checkbox>
+              <label>Freios de Estacionamento</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.logomarca"></ion-checkbox>
+              <label>Logomarca</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte4.vazamentos"></ion-checkbox>
+              <label>Vazamentos (óleo/combustível)</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group" style="margin-top: 24px;">
+          <label class="input-label">
+            <ion-icon name="car-outline"></ion-icon>
+            Para-Choque Traseiro
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte4.paraChoqueTraseiro">
+            <ion-segment-button value="bom">
+              <ion-label>Bom</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="ruim">
+              <ion-label>Ruim</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <div *ngIf="parte4.paraChoqueTraseiro === 'ruim'" style="margin-top: 16px;">
+            <ion-button
+              expand="block"
+              class="photo-button"
+              color="warning"
+              (click)="tirarFotoItem('paraChoqueTraseiro')"
+              [fill]="parte4.fotoParaChoqueTraseiro ? 'outline' : 'solid'">
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ parte4.fotoParaChoqueTraseiro ? 'Alterar Foto' : 'Tirar Foto do Para-Choque' }}
+            </ion-button>
+
+            <div *ngIf="parte4.fotoParaChoqueTraseiro" class="photo-preview-modern">
+              <img [src]="parte4.fotoParaChoqueTraseiro" alt="Para-Choque Traseiro" />
+              <ion-button class="delete-photo-btn" fill="clear" (click)="removerFotoItem('parte4', 'fotoParaChoqueTraseiro')">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="shield-outline"></ion-icon>
+            Lacre da Placa
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte4.lacrePlaca">
+            <ion-segment-button value="com">
+              <ion-label>Com</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="sem">
+              <ion-label>Sem</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="violado">
+              <ion-label>Violado</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="ellipse-outline"></ion-icon>
+            Pneu Traseiro Direito
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte4.pneuTraseiroDireito">
+            <ion-segment-button value="bom">
+              <ion-label>Bom</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="ruim">
+              <ion-label>Ruim</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <div *ngIf="parte4.pneuTraseiroDireito === 'ruim'" style="margin-top: 16px;">
+            <ion-button
+              expand="block"
+              class="photo-button"
+              color="warning"
+              (click)="tirarFotoItem('pneuTraseiroDireito')"
+              [fill]="parte4.fotoPneuTraseiroDireito ? 'outline' : 'solid'">
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ parte4.fotoPneuTraseiroDireito ? 'Alterar Foto' : 'Tirar Foto do Pneu' }}
+            </ion-button>
+
+            <div *ngIf="parte4.fotoPneuTraseiroDireito" class="photo-preview-modern">
+              <img [src]="parte4.fotoPneuTraseiroDireito" alt="Pneu Traseiro Direito" />
+              <ion-button class="delete-photo-btn" fill="clear" (click)="removerFotoItem('parte4', 'fotoPneuTraseiroDireito')">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="build-outline"></ion-icon>
+            Quantidade de Parafusos - Pneu Traseiro Direito
+          </label>
+          <ion-input
+            class="modern-input"
+            type="number"
+            [(ngModel)]="parte4.parafusosPneuTraseiroDireito"
+            placeholder="Quantidade">
+          </ion-input>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="ellipse-outline"></ion-icon>
+            Pneu Traseiro Esquerdo
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte4.pneuTraseiroEsquerdo">
+            <ion-segment-button value="bom">
+              <ion-label>Bom</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="ruim">
+              <ion-label>Ruim</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <div *ngIf="parte4.pneuTraseiroEsquerdo === 'ruim'" style="margin-top: 16px;">
+            <ion-button
+              expand="block"
+              class="photo-button"
+              color="warning"
+              (click)="tirarFotoItem('pneuTraseiroEsquerdo')"
+              [fill]="parte4.fotoPneuTraseiroEsquerdo ? 'outline' : 'solid'">
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ parte4.fotoPneuTraseiroEsquerdo ? 'Alterar Foto' : 'Tirar Foto do Pneu' }}
+            </ion-button>
+
+            <div *ngIf="parte4.fotoPneuTraseiroEsquerdo" class="photo-preview-modern">
+              <img [src]="parte4.fotoPneuTraseiroEsquerdo" alt="Pneu Traseiro Esquerdo" />
+              <ion-button class="delete-photo-btn" fill="clear" (click)="removerFotoItem('parte4', 'fotoPneuTraseiroEsquerdo')">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="build-outline"></ion-icon>
+            Quantidade de Parafusos - Pneu Traseiro Esquerdo
+          </label>
+          <ion-input
+            class="modern-input"
+            type="number"
+            [(ngModel)]="parte4.parafusosPneuTraseiroEsquerdo"
+            placeholder="Quantidade">
+          </ion-input>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="document-text-outline"></ion-icon>
+            Estado da Carroceria
+          </label>
+          <ion-textarea
+            class="modern-textarea"
+            [(ngModel)]="parte4.estadoCarroceria"
+            rows="3"
+            placeholder="Descreva o estado...">
+          </ion-textarea>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="warning-outline"></ion-icon>
+            Corrosão da Lataria
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte4.corrosaoLataria">
+            <ion-segment-button value="p10">
+              <ion-label>10%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p20">
+              <ion-label>20%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p30">
+              <ion-label>30%</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="warning-outline"></ion-icon>
+            Corrosão do Fundo do Veículo
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte4.corrosaoFundo">
+            <ion-segment-button value="p10">
+              <ion-label>10%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p20">
+              <ion-label>20%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p30">
+              <ion-label>30%</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTE 5 - ÔNIBUS / CAMINHÕES / CARRO TANQUE -->
+    <div *ngIf="parteAtual === 5" class="form-section">
+      <div class="section-header">
+        <ion-icon name="bus"></ion-icon>
+        <div>
+          <h3>Veículos Pesados</h3>
+          <p>Aplicável para ônibus, caminhões e carro tanque</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="checklist-items">
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte5.certificadoCeturb"></ion-checkbox>
+              <label>Certificado Ceturb (Ônibus)</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte5.alcaEixoCardan"></ion-checkbox>
+              <label>Alça do Eixo Cardan</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte5.protetoresRodasTraseiras"></ion-checkbox>
+              <label>Protetores de Rodas Traseiras</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte5.freioMarcha"></ion-checkbox>
+              <label>Freio de Marcha (Freio Motor)</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte5.alarmeSonoroRe"></ion-checkbox>
+              <label>Alarme Sonoro de Ré</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte5.enlonamento"></ion-checkbox>
+              <label>Enlonamento (Caminhões)</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte5.bombaRecalque"></ion-checkbox>
+              <label>Bomba Recalque (Carro Tanque)</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte5.adesivosRefletores"></ion-checkbox>
+              <label>Adesivos Refletores</label>
+            </div>
+          </div>
+
+          <div class="check-item">
+            <div class="checkbox-wrapper">
+              <ion-checkbox [(ngModel)]="parte5.alturaParaChoque"></ion-checkbox>
+              <label>Altura Para-choque (50cm)</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group" style="margin-top: 24px;">
+          <label class="input-label">
+            <ion-icon name="cloud-outline"></ion-icon>
+            Fumaça Preta - Densidade
+          </label>
+          <ion-select
+            class="modern-select"
+            [(ngModel)]="parte5.fumacaPreta"
+            interface="action-sheet"
+            placeholder="Selecione o nível">
+            <ion-select-option value="d20">20%</ion-select-option>
+            <ion-select-option value="d40">40%</ion-select-option>
+            <ion-select-option value="d60">60%</ion-select-option>
+            <ion-select-option value="d80">80%</ion-select-option>
+            <ion-select-option value="d100">100%</ion-select-option>
+          </ion-select>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="warning-outline"></ion-icon>
+            Corrosão do Cavalo
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte5.corrosaoCavalo">
+            <ion-segment-button value="p10">
+              <ion-label>10%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p20">
+              <ion-label>20%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p30">
+              <ion-label>30%</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="warning-outline"></ion-icon>
+            Corrosão da Carroceria
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte5.corrosaoCarroceria">
+            <ion-segment-button value="p10">
+              <ion-label>10%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p20">
+              <ion-label>20%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p30">
+              <ion-label>30%</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="warning-outline"></ion-icon>
+            Corrosão da Carreta
+          </label>
+          <ion-segment class="modern-segment" [(ngModel)]="parte5.corrosaoCarreta">
+            <ion-segment-button value="p10">
+              <ion-label>10%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p20">
+              <ion-label>20%</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="p30">
+              <ion-label>30%</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">
+            <ion-icon name="document-text-outline"></ion-icon>
+            Estado das Mangueiras (Carro Tanque)
+          </label>
+          <ion-textarea
+            class="modern-textarea"
+            [(ngModel)]="parte5.estadoMangueiras"
+            rows="3"
+            placeholder="Descreva o estado das mangueiras...">
+          </ion-textarea>
+        </div>
+      </div>
+    </div>
+    <!-- Botões de Navegação -->
+    <div class="navigation-buttons">
+      <ion-button
+        expand="block"
+        color="medium"
+        fill="outline"
+        (click)="parteAnterior()"
+        [disabled]="parteAtual === 0">
+        <ion-icon slot="start" name="arrow-back"></ion-icon>
+        Anterior
+      </ion-button>
+
+      <ion-button
+        *ngIf="parteAtual < totalPartes - 1"
+        expand="block"
+        color="primary"
+        (click)="proximaParte()"
+        [disabled]="!podeAvancar()">
+        Próxima
+        <ion-icon slot="end" name="arrow-forward"></ion-icon>
+      </ion-button>
+
+      <ion-button
+        *ngIf="parteAtual === totalPartes - 1"
+        expand="block"
+        color="success"
+        (click)="salvarChecklist()">
+        <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+        Finalizar e Salvar
+      </ion-button>
+    </div>
+  </div>
+</ion-content>

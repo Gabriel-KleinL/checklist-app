@@ -1,0 +1,101 @@
+<ion-content [fullscreen]="true" color="dark">
+  <div class="login-container">
+    <div class="login-header">
+      <img src="assets/img/logo.png" alt="i9 Checklist" class="logo-img">
+      <h1>i9 Checklist</h1>
+      <p>Inspeção Veicular</p>
+    </div>
+
+    <ion-card class="login-card">
+      <ion-card-content>
+        <form>
+          <!-- Nome de Usuário -->
+          <ion-item lines="full">
+            <ion-input
+              label="Nome de Usuário"
+              labelPlacement="floating"
+              type="text"
+              placeholder="Digite seu nome de usuário"
+              [(ngModel)]="nome"
+              name="nome"
+              autocomplete="username"
+            ></ion-input>
+          </ion-item>
+
+          <!-- Senha -->
+          <ion-item lines="full">
+            <ion-input
+              label="Senha"
+              labelPlacement="floating"
+              [type]="mostrarSenha ? 'text' : 'password'"
+              placeholder="Digite sua senha"
+              [(ngModel)]="senha"
+              name="senha"
+              autocomplete="current-password"
+            ></ion-input>
+            <ion-button fill="clear" slot="end" (click)="toggleMostrarSenha()">
+              <ion-icon
+                slot="icon-only"
+                [name]="mostrarSenha ? 'eye-off-outline' : 'eye-outline'"
+              ></ion-icon>
+            </ion-button>
+          </ion-item>
+
+          <!-- Checkbox Lembrar Senha -->
+          <ion-item lines="none" class="checkbox-item">
+            <ion-checkbox
+              slot="start"
+              [(ngModel)]="lembrarSenha"
+              name="lembrarSenha"
+            ></ion-checkbox>
+            <ion-label>Lembrar senha</ion-label>
+          </ion-item>
+
+          <!-- Botão de Login -->
+          <ion-button
+            expand="block"
+            size="large"
+            color="primary"
+            (click)="login()"
+            [disabled]="!validarFormulario()"
+            class="login-button"
+          >
+            <ion-icon slot="start" name="log-in-outline"></ion-icon>
+            Entrar
+          </ion-button>
+        </form>
+
+        <!-- Divisor -->
+        <div class="divider-container">
+          <div class="divider-line"></div>
+          <span class="divider-text">ou</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <!-- Botão Microsoft -->
+        <ion-button
+          expand="block"
+          size="large"
+          fill="outline"
+          color="light"
+          (click)="loginComMicrosoft()"
+          class="microsoft-button"
+        >
+          <ion-icon slot="start" name="logo-microsoft"></ion-icon>
+          Entrar com Microsoft
+        </ion-button>
+
+        <div class="login-info">
+          <p>
+            <ion-icon name="information-circle-outline"></ion-icon>
+            Entre com suas credenciais para acessar o sistema
+          </p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <div class="login-footer">
+      <p>Checklist App v1.0</p>
+    </div>
+  </div>
+</ion-content>

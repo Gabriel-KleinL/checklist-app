@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { ChecklistDataService } from '../services/checklist-data.service';
@@ -6,12 +6,18 @@ import { ApiService } from '../services/api.service';
 import { AlertController, ToastController } from '@ionic/angular';
 import { LocalStorageService } from '../services/local-storage';
 import { environment } from '../../environments/environment';
+import { AuthService } from '../services/auth.service';
+import { TempoTelasService } from '../services/tempo-telas.service';
+import { ConfigItensService } from '../services/config-itens.service';
+import { driver } from 'driver.js';
 
 interface Pneu {
   nome: string;
   posicao: string;
   valor: 'bom' | 'ruim' | null;
   foto?: string;
+  pressao?: number;
+  fotoCaneta?: string;
 }
 
 @Component({
@@ -20,7 +26,7 @@ interface Pneu {
   styleUrls: ['./pneus.page.scss'],
   standalone: false,
 })
-export class PneusPage implements OnInit {
+export class PneusPage implements OnInit, OnDestroy {
 
   pneus: Pneu[] = [
     { nome: 'Dianteira Direita', posicao: 'dianteira-direita', valor: null },
@@ -33,17 +39,82 @@ export class PneusPage implements OnInit {
   opcoesPneu = ['bom', 'ruim'];
   salvando = false;
 
+  exibirAjuda = false;
+
   constructor(
     private router: Router,
     private checklistData: ChecklistDataService,
     private apiService: ApiService,
     private alertController: AlertController,
     private toastController: ToastController,
-    private localStorage: LocalStorageService
+    private localStorage: LocalStorageService,
+    private authService: AuthService,
+    private tempoTelasService: TempoTelasService,
+    private configItensService: ConfigItensService
   ) { }
 
   async ngOnInit() {
+    // Inicia rastreamento de tempo
+    this.tempoTelasService.iniciarTela('pneus');
+
+    // Carrega itens de pneus habilitados do banco de dados
+    await this.carregarItensHabilitados();
+
     await this.recuperarDadosSalvos();
+    await this.verificarPrimeiroAcesso();
+  }
+
+  ngOnDestroy() {
+    // Finaliza rastreamento de tempo ao sair da tela
+    const usuarioId = this.authService.currentUserValue?.id;
+    const observable = this.tempoTelasService.finalizarTela(undefined, usuarioId);
+    if (observable) {
+      observable.subscribe({
+        next: (response) => console.log('[Tempo] Salvo com sucesso:', response),
+        error: (error) => console.error('[Tempo] Erro ao salvar:', error)
+      });
+    }
+  }
+
+  async carregarItensHabilitados() {
+    try {
+      console.log('[Config Itens Pneus] Carregando itens de pneus habilitados do banco...');
+
+      // Carrega apenas itens habilitados da categoria PNEU
+      const itensHabilitados = await this.configItensService.buscarHabilitados('PNEU').toPromise();
+
+      if (itensHabilitados && itensHabilitados.length > 0) {
+        console.log('[Config Itens Pneus] Itens carregados:', itensHabilitados);
+
+        // Mapeia itens do banco para a estrutura de pneus
+        this.pneus = itensHabilitados
+          .map((item, index) => ({
+            nome: item.nome_item,
+            posicao: this.gerarPosicao(item.nome_item, index),
+            valor: null
+          }));
+
+        console.log('[Config Itens Pneus] Pneus configurados com itens do banco:', this.pneus);
+      } else {
+        console.log('[Config Itens Pneus] Nenhum item de pneu habilitado encontrado, usando itens padrão');
+      }
+    } catch (error) {
+      console.error('[Config Itens Pneus] Erro ao carregar itens:', error);
+      console.log('[Config Itens Pneus] Mantendo itens padrão hardcoded devido ao erro');
+    }
+  }
+
+  gerarPosicao(nomeItem: string, index: number): string {
+    // Tenta identificar a posição pelo nome, senão usa um padrão baseado no índice
+    const nomeLower = nomeItem.toLowerCase();
+    if (nomeLower.includes('dianteira') && nomeLower.includes('direita')) return 'dianteira-direita';
+    if (nomeLower.includes('dianteira') && nomeLower.includes('esquerda')) return 'dianteira-esquerda';
+    if (nomeLower.includes('traseira') && nomeLower.includes('direita')) return 'traseira-direita';
+    if (nomeLower.includes('traseira') && nomeLower.includes('esquerda')) return 'traseira-esquerda';
+    if (nomeLower.includes('estepe')) return 'estepe';
+
+    // Fallback para posições genéricas
+    return `pneu-${index}`;
   }
 
   async recuperarDadosSalvos() {
@@ -60,12 +131,12 @@ export class PneusPage implements OnInit {
   async tirarFoto(index: number) {
     try {
       const image = await Camera.getPhoto({
-        quality: 30,
+        quality: 50,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
-        width: 400,
-        height: 400
+        width: 800,
+        height: 800
       });
 
       this.pneus[index].foto = image.dataUrl;
@@ -75,44 +146,108 @@ export class PneusPage implements OnInit {
     }
   }
 
+  async tirarFotoCaneta(index: number) {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 50,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        width: 800,
+        height: 800
+      });
+
+      this.pneus[index].fotoCaneta = image.dataUrl;
+      await this.salvarLocalmente();
+    } catch (error) {
+      console.log('Foto da caneta cancelada ou erro:', error);
+    }
+  }
+
   async removerFoto(index: number) {
     this.pneus[index].foto = undefined;
     await this.salvarLocalmente();
   }
 
+  async removerFotoCaneta(index: number) {
+    this.pneus[index].fotoCaneta = undefined;
+    await this.salvarLocalmente();
+  }
+
+  async atualizarPressao(index: number, event: any) {
+    const valor = event.target.value;
+    this.pneus[index].pressao = valor ? parseFloat(valor) : undefined;
+    await this.salvarLocalmente();
+  }
+
   validarFormulario(): boolean {
     return this.pneus.every(pneu => {
-      // Todos devem ter valor selecionado (fotos não são mais obrigatórias)
-      return pneu.valor !== null;
+      // Todos devem ter valor selecionado
+      const valorPreenchido = pneu.valor !== null;
+      // Se o pneu está ruim, a foto é obrigatória
+      const fotoObrigatoria = pneu.valor === 'ruim' && !pneu.foto;
+      // Pressão e foto da caneta são obrigatórias
+      const pressaoPreenchida = pneu.pressao !== undefined && pneu.pressao !== null;
+      const fotoCanetaPreenchida = !!pneu.fotoCaneta;
+
+      return valorPreenchido && !fotoObrigatoria && pressaoPreenchida && fotoCanetaPreenchida;
     });
   }
 
   async finalizarChecklist() {
     if (!this.validarFormulario()) {
-      alert('Por favor, avalie todos os pneus.');
+      alert('Por favor, preencha todos os campos: condição, pressão e foto da caneta para cada pneu. Tire também a foto do pneu se estiver marcado como "ruim".');
       return;
     }
 
     try {
       this.salvando = true;
 
+      const usuarioId = this.authService.currentUserValue?.id;
+      const inspecaoId = this.checklistData.getInspecaoId();
+
+      if (!inspecaoId) {
+        alert('Erro: ID da inspeção não encontrado. Por favor, reinicie o processo.');
+        this.salvando = false;
+        return;
+      }
+
       // Salva os dados dos pneus no serviço compartilhado
       this.checklistData.setPneus(this.pneus);
       console.log('Dados dos pneus salvos');
 
-      // Obtém todos os dados do checklist
-      const checklistCompleto = this.checklistData.getChecklistCompleto();
-      console.log('=== CHECKLIST COMPLETO ===');
-      console.log('Dados brutos:', JSON.stringify(checklistCompleto, null, 2));
+      // Monta array de pneus para enviar à API
+      const itensPneus: any[] = [];
+      this.pneus.forEach(pneu => {
+        if (pneu.valor) {
+          itensPneus.push({
+            item: pneu.nome,
+            status: pneu.valor,
+            foto: pneu.foto || null,
+            pressao: pneu.pressao || null,
+            foto_caneta: pneu.fotoCaneta || null
+          });
+        }
+      });
 
-      // Validação adicional antes de enviar
-      if (!checklistCompleto.inspecaoInicial?.placa) {
-        throw new Error('Placa não informada no checklist');
+      // Atualiza a inspeção na API com os pneus
+      console.log('[Inspeção] Atualizando inspeção com pneus...');
+      await this.apiService.atualizarInspecao(inspecaoId, {
+        itens_pneus: itensPneus
+      }).toPromise();
+
+      console.log('[Inspeção] Pneus atualizados com sucesso');
+
+      // Finaliza e salva o tempo de tela com o inspecao_id
+      const observable = this.tempoTelasService.finalizarTela(inspecaoId, usuarioId);
+      if (observable) {
+        try {
+          await observable.toPromise();
+          console.log('[Tempo] Tempo da tela pneus salvo com sucesso com inspecao_id:', inspecaoId);
+        } catch (error) {
+          console.error('[Tempo] Erro ao salvar tempo:', error);
+        }
       }
-
-      // Salva os dados na API
-      console.log('Enviando para API:', environment.apiUrl);
-      await this.salvarNaApi(checklistCompleto);
 
       // Limpa os dados salvos localmente após sucesso
       await this.localStorage.limparTodosDados();
@@ -144,19 +279,19 @@ export class PneusPage implements OnInit {
     }
   }
 
-  private async salvarNaApi(checklistCompleto: any): Promise<void> {
+  private async salvarNaApi(checklistCompleto: any): Promise<any> {
     return new Promise(async (resolve, reject) => {
       try {
         console.log('=== INICIANDO SALVAMENTO NA API ===');
         console.log('URL da API:', environment.apiUrl);
         console.log('Timestamp:', new Date().toISOString());
 
-        const observable = await this.apiService.salvarChecklistCompleto(checklistCompleto);
+        const observable = await this.apiService.salvarChecklistSimples(checklistCompleto);
         observable.subscribe({
           next: (response) => {
             console.log('=== SUCESSO AO SALVAR NA API ===');
             console.log('Resposta:', response);
-            resolve();
+            resolve(response);
           },
           error: (error) => {
             console.error('=== ERRO AO SALVAR NA API ===');
@@ -183,6 +318,14 @@ export class PneusPage implements OnInit {
 
   voltar() {
     this.router.navigate(['/fotos-veiculo']);
+  }
+
+  mostrarAjuda() {
+    this.exibirAjuda = true;
+  }
+
+  fecharAjuda() {
+    this.exibirAjuda = false;
   }
 
   async mostrarErro(error: any) {
@@ -304,5 +447,91 @@ export class PneusPage implements OnInit {
       default:
         return 'medium';
     }
+  }
+
+  async verificarPrimeiroAcesso() {
+    // Não mostra tutorial nesta tela, apenas na primeira
+    return;
+  }
+
+  iniciarTour() {
+    const driverObj = driver({
+      showProgress: true,
+      showButtons: ['next'],
+      allowClose: false,
+      steps: [
+        {
+          element: '#tour-pneu-0',
+          popover: {
+            title: '1. Pneu Dianteiro Direito',
+            description: 'Avalie a condição do pneu dianteiro direito. Verifique o estado da borracha, profundidade dos sulcos e pressão. Tire uma foto obrigatória.',
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
+          element: '#tour-pneu-1',
+          popover: {
+            title: '2. Pneu Dianteiro Esquerdo',
+            description: 'Avalie a condição do pneu dianteiro esquerdo. Verifique o estado da borracha, profundidade dos sulcos e pressão. Tire uma foto obrigatória.',
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
+          element: '#tour-pneu-2',
+          popover: {
+            title: '3. Pneu Traseiro Direito',
+            description: 'Avalie a condição do pneu traseiro direito. Verifique o estado da borracha, profundidade dos sulcos e pressão. Tire uma foto obrigatória.',
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
+          element: '#tour-pneu-3',
+          popover: {
+            title: '4. Pneu Traseiro Esquerdo',
+            description: 'Avalie a condição do pneu traseiro esquerdo. Verifique o estado da borracha, profundidade dos sulcos e pressão. Tire uma foto obrigatória.',
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
+          element: '#tour-pneu-4',
+          popover: {
+            title: '5. Pneu Estepe',
+            description: 'Avalie a condição do pneu estepe. Verifique se está em bom estado e com pressão adequada. Tire uma foto obrigatória.',
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
+          element: '#tour-finalizar',
+          popover: {
+            title: '6. Finalizar Checklist',
+            description: 'Após avaliar todos os 5 pneus e tirar as fotos, clique em "Finalizar e Salvar Checklist" para enviar todas as informações ao servidor.',
+            side: 'top',
+            align: 'center'
+          }
+        },
+        {
+          popover: {
+            title: 'Tutorial Concluído!',
+            description: 'Agora inspecione todos os pneus e finalize o checklist completo do veículo!',
+          }
+        }
+      ],
+      onDestroyStarted: async () => {
+        await this.marcarTutorialComoConcluido();
+        driverObj.destroy();
+      },
+    });
+
+    driverObj.drive();
+  }
+
+  async marcarTutorialComoConcluido() {
+    // Não precisa marcar aqui, pois o tutorial só aparece na primeira tela
+    return;
   }
 }

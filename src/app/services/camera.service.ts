@@ -31,7 +31,7 @@ export class CameraService {
 
       // Configurações otimizadas para evitar travamentos
       const image = await Camera.getPhoto({
-        quality: 60, // Reduzido de 90 para 60 para melhor performance
+        quality: 50, // Reduzido de 90 para 60 para melhor performance
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
@@ -81,7 +81,7 @@ export class CameraService {
   async escolherFoto(): Promise<string | null> {
     try {
       const image = await Camera.getPhoto({
-        quality: 60,
+        quality: 50,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Prompt, // Permite escolher entre câmera e galeria

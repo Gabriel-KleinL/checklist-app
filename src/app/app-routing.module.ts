@@ -3,12 +3,16 @@ import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 
 const routes: Routes = [
   {
+    path: 'login',
+    loadChildren: () => import('./login/login.module').then( m => m.LoginPageModule)
+  },
+  {
     path: 'home',
     loadChildren: () => import('./home/home.module').then( m => m.HomePageModule)
   },
   {
     path: '',
-    redirectTo: 'home',
+    redirectTo: 'login',
     pathMatch: 'full'
   },
   {
@@ -24,17 +28,17 @@ const routes: Routes = [
     loadChildren: () => import('./pneus/pneus.module').then( m => m.PneusPageModule)
   },
   {
-    path: 'historico',
-    loadChildren: () => import('./historico/historico.module').then( m => m.HistoricoPageModule)
-  },
-  {
     path: 'admin',
     loadChildren: () => import('./admin/admin.module').then( m => m.AdminPageModule)
   },
   {
-    path: 'teste',
-    loadChildren: () => import('./teste/teste.module').then( m => m.TestePageModule)
+    path: 'checklist-completo',
+    loadChildren: () => import('./checklist-completo/checklist-completo.module').then( m => m.ChecklistCompletoPageModule)
   },
+  {
+    path: 'inspecao-inicial',
+    loadChildren: () => import('./inspecao-inicial/inspecao-inicial.module').then( m => m.InspecaoInicialPageModule)
+  }
 ];
 
 @NgModule({

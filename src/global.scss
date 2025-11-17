@@ -12,6 +12,9 @@
 /* Core CSS required for Ionic components to work properly */
 @import "@ionic/angular/css/core.css";
 
+/* Driver.js for guided tours */
+@import "driver.js/dist/driver.css";
+
 /* Basic CSS for apps built with Ionic */
 @import "@ionic/angular/css/normalize.css";
 @import "@ionic/angular/css/structure.css";
@@ -87,4 +90,110 @@ ion-select {
   --background: #1a1a1a;
   --color: #ffffff;
   --placeholder-color: #808080;
+}
+
+// Customização do Driver.js para tema dark
+.driver-popover {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 2px solid #eb445a !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8) !important;
+}
+
+.driver-popover-title {
+  color: #eb445a !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  margin-bottom: 10px !important;
+}
+
+.driver-popover-description {
+  color: #e0e0e0 !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+.driver-popover-footer {
+  border-top: 1px solid #404040 !important;
+  padding-top: 10px !important;
+  margin-top: 15px !important;
+}
+
+.driver-popover-footer button {
+  background-color: #eb445a !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s !important;
+}
+
+.driver-popover-footer button:hover {
+  background-color: #d33d50 !important;
+}
+
+.driver-popover-footer .driver-popover-prev-btn,
+.driver-popover-footer .driver-popover-close-btn {
+  background-color: #404040 !important;
+  color: #ffffff !important;
+}
+
+.driver-popover-footer .driver-popover-prev-btn:hover,
+.driver-popover-footer .driver-popover-close-btn:hover {
+  background-color: #505050 !important;
+}
+
+.driver-popover-progress-text {
+  color: #808080 !important;
+  font-size: 12px !important;
+}
+
+// Overlay mais escuro
+.driver-overlay {
+  background-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+// Elemento destacado - mais claro e visível
+.driver-active-element {
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 4px #eb445a, 0 0 30px 10px rgba(235, 68, 90, 0.5) !important;
+  border-radius: 8px !important;
+  position: relative !important;
+  z-index: 10000000 !important;
+}
+
+// Stage (área destacada)
+.driver-stage {
+  background-color: transparent !important;
+  box-shadow: 0 0 0 5000px rgba(0, 0, 0, 0.85), 0 0 0 4px #eb445a, 0 0 40px 15px rgba(235, 68, 90, 0.6) !important;
+  border-radius: 8px !important;
+}
+
+// Elemento posicionado
+.driver-positioned-element {
+  filter: brightness(1.3) !important;
+}
+
+// Aumenta a visibilidade dos placeholders durante o tutorial
+.driver-active-element input::placeholder,
+.driver-active-element ion-input input::placeholder,
+.driver-active-element ion-textarea textarea::placeholder,
+.driver-positioned-element input::placeholder,
+.driver-positioned-element ion-input input::placeholder,
+.driver-positioned-element ion-textarea textarea::placeholder {
+  opacity: 1 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+// Garante que os inputs dentro dos elementos destacados sejam bem visíveis
+.driver-active-element ion-input,
+.driver-active-element ion-textarea,
+.driver-positioned-element ion-input,
+.driver-positioned-element ion-textarea {
+  --placeholder-opacity: 1 !important;
+  --placeholder-color: #ffffff !important;
+  --placeholder-font-weight: 600 !important;
 }

@@ -1,0 +1,300 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="dark">
+    <ion-title>
+      Inspeção Inicial
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="mostrarAjuda()">
+        <ion-icon slot="icon-only" name="help-circle"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" color="dark">
+  <ion-header collapse="condense">
+    <ion-toolbar color="dark">
+      <ion-title size="large">Inspeção Inicial</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="form-container">
+
+    <!-- SEÇÃO: DADOS INICIAIS -->
+    <div class="section-header">
+      <ion-icon name="clipboard" color="primary"></ion-icon>
+      <h2>Dados Iniciais do Veículo</h2>
+    </div>
+
+    <ion-card>
+      <ion-card-content>
+
+        <!-- PLACA -->
+        <ion-item color="dark" lines="none" id="tour-placa">
+          <ion-label position="stacked" color="light">
+            Placa *
+          </ion-label>
+          <ion-input
+            [(ngModel)]="inspecaoInicial.placa"
+            (ionChange)="onCampoChange()"
+            placeholder="Digite a placa do veículo"
+            color="light"
+            type="text"
+            maxlength="8"
+          ></ion-input>
+        </ion-item>
+
+        <div class="spacer"></div>
+
+        <!-- KM INICIAL -->
+        <ion-item color="dark" lines="none" id="tour-km">
+          <ion-label position="stacked" color="light">
+            KM Inicial *
+          </ion-label>
+          <ion-input
+            [(ngModel)]="inspecaoInicial.kmInicial"
+            (ionChange)="onCampoChange()"
+            placeholder="Digite a quilometragem"
+            color="light"
+            type="number"
+            min="0"
+          ></ion-input>
+        </ion-item>
+
+        <div class="spacer"></div>
+
+        <!-- NÍVEL DE COMBUSTÍVEL -->
+        <div class="combustivel-section" id="tour-combustivel">
+          <ion-label color="light" class="field-label">
+            Nível de Combustível *
+          </ion-label>
+
+          <ion-segment
+            [(ngModel)]="inspecaoInicial.nivelCombustivel"
+            (ionChange)="onCampoChange()"
+            class="segment-combustivel"
+            scrollable="true"
+          >
+            <ion-segment-button *ngFor="let opcao of opcoesCombustivel" [value]="opcao.valor">
+              <ion-label>{{ opcao.label }}</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+
+      </ion-card-content>
+    </ion-card>
+
+    <!-- SEÇÃO: FOTO DO PAINEL -->
+    <div class="section-header">
+      <ion-icon name="speedometer" color="primary"></ion-icon>
+      <h2>Painel do Veículo</h2>
+    </div>
+
+    <ion-card>
+      <ion-card-content>
+
+        <!-- FOTO DO PAINEL -->
+        <div class="photo-section" id="tour-foto-painel">
+          <ion-label color="light" class="field-label">
+            Foto do Painel *
+          </ion-label>
+
+          <ion-button
+            expand="block"
+            color="primary"
+            size="default"
+            (click)="tirarFotoPainel()"
+            [fill]="inspecaoInicial.fotoPainel ? 'outline' : 'solid'"
+          >
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ inspecaoInicial.fotoPainel ? 'Alterar Foto do Painel' : 'Tirar Foto do Painel' }}
+          </ion-button>
+
+          <div *ngIf="inspecaoInicial.fotoPainel" class="photo-preview">
+            <img [src]="inspecaoInicial.fotoPainel" />
+            <ion-button
+              size="small"
+              color="danger"
+              fill="clear"
+              (click)="removerFotoPainel()"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <!-- OBSERVAÇÕES DO PAINEL -->
+        <ion-item color="dark" lines="none" id="tour-observacoes">
+          <ion-label position="stacked" color="light">
+            Observações do Painel (opcional)
+          </ion-label>
+          <ion-textarea
+            [(ngModel)]="inspecaoInicial.observacaoPainel"
+            (ionChange)="onCampoChange()"
+            placeholder="Ex: Luz de check engine acesa, avisos no painel..."
+            color="light"
+            rows="4"
+            autoGrow="true"
+          ></ion-textarea>
+        </ion-item>
+
+      </ion-card-content>
+    </ion-card>
+
+    <!-- INFORMAÇÕES -->
+    <ion-card color="medium">
+      <ion-card-content>
+        <ion-text color="light">
+          <p class="info-text">
+            <ion-icon name="information-circle" color="primary"></ion-icon>
+            Os campos marcados com * são obrigatórios.
+          </p>
+        </ion-text>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Botão Continuar -->
+    <div class="save-section" id="tour-continuar">
+      <ion-button
+        expand="block"
+        size="large"
+        color="primary"
+        (click)="salvarInspecao()"
+        [disabled]="!validarFormulario()"
+      >
+        <ion-icon slot="start" name="arrow-forward-circle"></ion-icon>
+        Continuar para Inspeção
+      </ion-button>
+    </div>
+  </div>
+</ion-content>
+
+<!-- Modal de Ajuda -->
+<ion-modal [isOpen]="exibirAjuda" (didDismiss)="fecharAjuda()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-title>Tutorial - Inspeção Inicial</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="fecharAjuda()">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title color="primary">
+            <ion-icon name="information-circle"></ion-icon>
+            Como preencher esta etapa
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>Esta é a primeira etapa do checklist. Preencha as informações básicas do veículo antes de iniciar a inspeção.</p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="car"></ion-icon>
+            Placa
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Digite a placa do veículo</strong></p>
+          <p>Formato aceito: ABC-1234 ou ABC1D34</p>
+          <p>Exemplo: <code>FLO-9876</code> ou <code>FLO1A23</code></p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="speedometer"></ion-icon>
+            KM Inicial
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Informe a quilometragem atual do veículo</strong></p>
+          <p>Verifique o hodômetro no painel do veículo e digite o valor exato.</p>
+          <p>Exemplo: <code>45328</code></p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="water"></ion-icon>
+            Nível de Combustível
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Selecione o nível aproximado de combustível</strong></p>
+          <p>Verifique o marcador de combustível no painel e selecione a opção que mais se aproxima:</p>
+          <ul>
+            <li><strong>Vazio:</strong> Tanque vazio ou próximo de vazio</li>
+            <li><strong>1/4:</strong> Um quarto do tanque</li>
+            <li><strong>1/2:</strong> Meio tanque</li>
+            <li><strong>3/4:</strong> Três quartos do tanque</li>
+            <li><strong>Cheio:</strong> Tanque cheio</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="camera"></ion-icon>
+            Foto do Painel
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Tire uma foto clara do painel do veículo ligado</strong></p>
+          <p><strong>Instruções importantes:</strong></p>
+          <ul>
+            <li>Ligue o veículo antes de tirar a foto</li>
+            <li>A foto deve mostrar claramente o hodômetro e o marcador de combustível</li>
+            <li>Certifique-se de que não há reflexos ou brilhos que atrapalhem a visualização</li>
+            <li>A imagem deve estar nítida e legível</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="document-text"></ion-icon>
+            Observações do Painel (Opcional)
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Registre qualquer anomalia visível no painel</strong></p>
+          <p>Exemplos do que informar:</p>
+          <ul>
+            <li>Luz de check engine acesa</li>
+            <li>Avisos de manutenção</li>
+            <li>Indicadores de falhas</li>
+            <li>Qualquer luz de alerta acesa</li>
+          </ul>
+          <p>Se não houver nada de anormal, pode deixar em branco.</p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card color="warning">
+        <ion-card-content>
+          <ion-text color="dark">
+            <p>
+              <ion-icon name="alert-circle"></ion-icon>
+              <strong> Importante:</strong> Todos os campos marcados com * são obrigatórios para prosseguir para a próxima etapa.
+            </p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+    </ion-content>
+  </ng-template>
+</ion-modal>

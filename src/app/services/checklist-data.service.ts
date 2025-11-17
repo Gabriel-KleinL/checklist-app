@@ -3,10 +3,9 @@ import { Injectable } from '@angular/core';
 export interface InspecaoInicialData {
   placa: string;
   kmInicial: number | null;
-  fotoKmInicial: string | undefined;
   nivelCombustivel: string;
-  fotoCombustivel: string | undefined;
   fotoPainel: string | undefined;
+  observacaoPainel: string;
 }
 
 export interface ItemMotor {
@@ -21,9 +20,23 @@ export interface ItemLimpeza {
   foto?: string;
 }
 
+export interface ItemEletrico {
+  nome: string;
+  valor: 'bom' | 'ruim' | null;
+  foto?: string;
+}
+
+export interface ItemFerramenta {
+  nome: string;
+  valor: 'contem' | 'nao_contem' | null;
+  foto?: string;
+}
+
 export interface InspecaoVeiculoData {
   motor: ItemMotor[];
   limpeza: ItemLimpeza[];
+  eletricos: ItemEletrico[];
+  ferramentas: ItemFerramenta[];
 }
 
 export interface FotoVeiculoData {
@@ -38,6 +51,8 @@ export interface PneuData {
   posicao: string;
   valor: 'bom' | 'ruim' | null;
   foto?: string;
+  pressao?: number | null;
+  fotoCaneta?: string;
 }
 
 export interface ChecklistCompleto {
@@ -46,6 +61,8 @@ export interface ChecklistCompleto {
   fotosVeiculo?: FotoVeiculoData[];
   pneus?: PneuData[];
   dataRealizacao?: Date;
+  usuario_id?: number;
+  inspecao_id?: number;
 }
 
 @Injectable({
@@ -79,5 +96,13 @@ export class ChecklistDataService {
 
   limparChecklist() {
     this.checklistData = {};
+  }
+
+  setInspecaoId(id: number) {
+    this.checklistData.inspecao_id = id;
+  }
+
+  getInspecaoId(): number | undefined {
+    return this.checklistData.inspecao_id;
   }
 }

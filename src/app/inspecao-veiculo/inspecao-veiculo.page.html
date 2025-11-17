@@ -1,13 +1,13 @@
 <ion-header [translucent]="true">
   <ion-toolbar color="dark">
-    <ion-buttons slot="start">
-      <ion-button (click)="voltar()">
-        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
-      </ion-button>
-    </ion-buttons>
     <ion-title>
       Inspeção do Veículo
     </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="mostrarAjuda()">
+        <ion-icon slot="icon-only" name="help-circle"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -21,12 +21,12 @@
   <div class="form-container">
 
     <!-- SEÇÃO: INSPEÇÃO DO MOTOR -->
-    <div class="section-header">
+    <div class="section-header" id="tour-motor">
       <ion-icon name="construct" color="primary"></ion-icon>
       <h2>Inspeção do Motor</h2>
     </div>
 
-    <ion-card>
+    <ion-card id="tour-motor-card">
       <ion-card-content>
         <div *ngFor="let item of inspecao.motor; let i = index" class="item-inspecao">
           <div class="item-label">
@@ -71,13 +71,64 @@
       </ion-card-content>
     </ion-card>
 
+    <!-- SEÇÃO: ELÉTRICOS -->
+    <div class="section-header" id="tour-eletrico">
+      <ion-icon name="bulb" color="primary"></ion-icon>
+      <h2>Sistema Elétrico</h2>
+    </div>
+
+    <ion-card id="tour-eletrico-card">
+      <ion-card-content>
+        <div *ngFor="let item of inspecao.eletricos; let i = index" class="item-inspecao">
+          <div class="item-label">
+            <ion-text color="light">{{ item.nome }}</ion-text>
+          </div>
+
+          <ion-segment [(ngModel)]="item.valor" (ionChange)="onValorEletricoChange(item)" class="segment-motor">
+            <ion-segment-button value="bom">
+              <ion-label>Bom</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="ruim">
+              <ion-label>Ruim</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <!-- Campo de foto condicional -->
+          <div *ngIf="precisaFotoEletrico(item)" class="photo-section">
+            <ion-button
+              expand="block"
+              color="primary"
+              size="small"
+              (click)="tirarFotoEletrico(i)"
+              [fill]="item.foto ? 'outline' : 'solid'"
+            >
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ item.foto ? 'Alterar Foto' : 'Tirar Foto' }}
+            </ion-button>
+
+            <div *ngIf="item.foto" class="photo-preview">
+              <img [src]="item.foto" />
+              <ion-button
+                size="small"
+                color="danger"
+                fill="clear"
+                (click)="removerFotoEletrico(i)"
+              >
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
     <!-- SEÇÃO: LIMPEZA -->
-    <div class="section-header">
+    <div class="section-header" id="tour-limpeza">
       <ion-icon name="sparkles" color="primary"></ion-icon>
       <h2>Limpeza</h2>
     </div>
 
-    <ion-card>
+    <ion-card id="tour-limpeza-card">
       <ion-card-content>
         <div *ngFor="let item of inspecao.limpeza; let i = index" class="item-inspecao">
           <div class="item-label">
@@ -128,8 +179,59 @@
       </ion-card-content>
     </ion-card>
 
+    <!-- SEÇÃO: FERRAMENTAS E EQUIPAMENTOS -->
+    <div class="section-header" id="tour-ferramentas">
+      <ion-icon name="build" color="primary"></ion-icon>
+      <h2>Ferramentas e Equipamentos</h2>
+    </div>
+
+    <ion-card id="tour-ferramentas-card">
+      <ion-card-content>
+        <div *ngFor="let item of inspecao.ferramentas; let i = index" class="item-inspecao">
+          <div class="item-label">
+            <ion-text color="light">{{ item.nome }}</ion-text>
+          </div>
+
+          <ion-segment [(ngModel)]="item.valor" (ionChange)="onValorFerramentaChange(item)" class="segment-ferramenta">
+            <ion-segment-button value="contem">
+              <ion-label>Contém</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="nao_contem">
+              <ion-label>Não Contém</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <!-- Campo de foto condicional -->
+          <div *ngIf="precisaFotoFerramenta(item)" class="photo-section">
+            <ion-button
+              expand="block"
+              color="primary"
+              size="small"
+              (click)="tirarFotoFerramenta(i)"
+              [fill]="item.foto ? 'outline' : 'solid'"
+            >
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ item.foto ? 'Alterar Foto' : 'Tirar Foto' }}
+            </ion-button>
+
+            <div *ngIf="item.foto" class="photo-preview">
+              <img [src]="item.foto" />
+              <ion-button
+                size="small"
+                color="danger"
+                fill="clear"
+                (click)="removerFotoFerramenta(i)"
+              >
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
     <!-- Botão Salvar -->
-    <div class="save-section">
+    <div class="save-section" id="tour-salvar">
       <ion-button
         expand="block"
         size="large"
@@ -143,3 +245,140 @@
     </div>
   </div>
 </ion-content>
+
+<!-- Modal de Ajuda -->
+<ion-modal [isOpen]="exibirAjuda" (didDismiss)="fecharAjuda()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-title>Tutorial - Inspeção do Veículo</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="fecharAjuda()">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title color="primary">
+            <ion-icon name="information-circle"></ion-icon>
+            Como realizar a inspeção
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>Nesta etapa, você vai inspecionar componentes essenciais do veículo. Avalie cada item cuidadosamente e marque o status correto.</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- MOTOR -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="construct"></ion-icon>
+            Inspeção do Motor
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Como verificar:</strong></p>
+          <ul>
+            <li><strong>Água do Radiador:</strong> Verifique o nível no reservatório. Deve estar entre MIN e MAX.</li>
+            <li><strong>Água Limpador Parabrisa:</strong> Confira o reservatório. Deve ter líquido suficiente.</li>
+            <li><strong>Fluido de Freio:</strong> Verifique o nível no reservatório. Não pode estar abaixo do mínimo.</li>
+            <li><strong>Nível de Óleo:</strong> Use a vareta medidora. O óleo deve estar entre MIN e MAX.</li>
+            <li><strong>Tampa do Radiador:</strong> Verifique se está bem fechada e sem danos.</li>
+          </ul>
+          <p><strong>Importante:</strong> Se marcar "Ruim", você precisará tirar uma foto do problema!</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- ELÉTRICOS -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="flash"></ion-icon>
+            Sistema Elétrico
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Como verificar:</strong></p>
+          <ul>
+            <li><strong>Seta Esquerda:</strong> Ligue e verifique se pisca corretamente.</li>
+            <li><strong>Seta Direita:</strong> Ligue e verifique se pisca corretamente.</li>
+            <li><strong>Pisca Alerta:</strong> Ative e veja se as 4 setas piscam.</li>
+            <li><strong>Farol:</strong> Ligue os faróis baixo e alto. Ambos devem acender.</li>
+          </ul>
+          <p><strong>Importante:</strong> Se marcar "Ruim", tire uma foto mostrando o problema!</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- LIMPEZA -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="water"></ion-icon>
+            Limpeza do Veículo
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Avalie o estado de limpeza:</strong></p>
+          <ul>
+            <li><strong>Péssima:</strong> Muito sujo, com sujeira acumulada ou mal cheiro</li>
+            <li><strong>Ruim:</strong> Sujo, precisa de limpeza</li>
+            <li><strong>Satisfatória:</strong> Razoavelmente limpo, pode melhorar</li>
+            <li><strong>Ótimo:</strong> Muito limpo e organizado</li>
+          </ul>
+          <p><strong>Limpeza Interna:</strong> Bancos, tapetes, painel, console</p>
+          <p><strong>Limpeza Externa:</strong> Lataria, vidros, rodas</p>
+          <p><strong>Importante:</strong> Se marcar "Ruim" ou "Péssima", tire uma foto!</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- FERRAMENTAS -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="build"></ion-icon>
+            Ferramentas e Equipamentos
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Verifique se o veículo possui:</strong></p>
+          <ul>
+            <li><strong>Macaco:</strong> Ferramenta para levantar o veículo</li>
+            <li><strong>Chave de Roda:</strong> Chave em formato de cruz ou L</li>
+            <li><strong>Chave do Estepe:</strong> Chave para soltar o pneu estepe</li>
+            <li><strong>Triângulo:</strong> Sinalizador de emergência</li>
+          </ul>
+          <p><strong>Marque:</strong></p>
+          <p>✅ <strong>Contém</strong> - Se o item está presente no veículo</p>
+          <p>❌ <strong>Não Contém</strong> - Se o item está faltando (tire uma foto!)</p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card color="warning">
+        <ion-card-content>
+          <ion-text color="dark">
+            <p>
+              <ion-icon name="camera"></ion-icon>
+              <strong> Fotos Obrigatórias:</strong> Você deve tirar foto de todos os itens marcados como problemáticos (Ruim, Péssima ou Não Contém).
+            </p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card color="success">
+        <ion-card-content>
+          <ion-text color="dark">
+            <p>
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <strong> Dica:</strong> Seja criterioso na avaliação. Registre todos os problemas encontrados para manter um histórico confiável.
+            </p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+    </ion-content>
+  </ng-template>
+</ion-modal>

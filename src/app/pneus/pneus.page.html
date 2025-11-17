@@ -1,13 +1,13 @@
 <ion-header [translucent]="true">
   <ion-toolbar color="dark">
-    <ion-buttons slot="start">
-      <ion-button (click)="voltar()">
-        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
-      </ion-button>
-    </ion-buttons>
     <ion-title>
       Inspeção de Pneus
     </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="mostrarAjuda()">
+        <ion-icon slot="icon-only" name="help-circle"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -21,7 +21,7 @@
   <div class="form-container">
 
     <!-- Card de cada pneu -->
-    <ion-card *ngFor="let pneu of pneus; let i = index" class="pneu-card">
+    <ion-card *ngFor="let pneu of pneus; let i = index" class="pneu-card" [id]="'tour-pneu-' + i">
       <ion-card-header>
         <ion-card-title>
           <ion-icon name="ellipse" color="primary"></ion-icon>
@@ -45,11 +45,67 @@
           </ion-segment-button>
         </ion-segment>
 
+        <!-- Campo de Pressão -->
+        <div class="pressure-section" style="margin: 20px 0;">
+          <ion-item>
+            <ion-label position="stacked">
+              <ion-icon name="speedometer" color="primary"></ion-icon>
+              Pressão (PSI)
+            </ion-label>
+            <ion-input
+              type="number"
+              [value]="pneu.pressao"
+              (ionChange)="atualizarPressao(i, $event)"
+              placeholder="Ex: 32"
+              min="0"
+              step="0.1"
+            ></ion-input>
+          </ion-item>
+        </div>
+
+        <!-- Seção de Foto da Caneta -->
+        <div class="photo-section">
+          <div class="photo-label">
+            <ion-icon name="create" color="primary"></ion-icon>
+            <span>Foto da Caneta (Obrigatória)</span>
+          </div>
+
+          <!-- Botão de tirar foto da caneta -->
+          <ion-button
+            expand="block"
+            color="secondary"
+            (click)="tirarFotoCaneta(i)"
+            [fill]="pneu.fotoCaneta ? 'outline' : 'solid'"
+          >
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ pneu.fotoCaneta ? 'Alterar Foto da Caneta' : 'Tirar Foto da Caneta' }}
+          </ion-button>
+
+          <!-- Preview da foto da caneta -->
+          <div *ngIf="pneu.fotoCaneta" class="photo-preview">
+            <img [src]="pneu.fotoCaneta" />
+            <ion-button
+              size="small"
+              color="danger"
+              fill="clear"
+              (click)="removerFotoCaneta(i)"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-button>
+          </div>
+
+          <!-- Placeholder quando não há foto da caneta -->
+          <div *ngIf="!pneu.fotoCaneta" class="photo-placeholder">
+            <ion-icon name="create-outline"></ion-icon>
+            <p>Nenhuma foto da caneta</p>
+          </div>
+        </div>
+
         <!-- Seção de Foto -->
         <div class="photo-section">
           <div class="photo-label">
             <ion-icon name="camera" color="primary"></ion-icon>
-            <span>Foto do Pneu (Obrigatória)</span>
+            <span>Foto do Pneu {{ pneu.valor === 'ruim' ? '(Obrigatória)' : '(Opcional)' }}</span>
           </div>
 
           <!-- Botão de tirar foto -->
@@ -86,7 +142,7 @@
     </ion-card>
 
     <!-- Botão Finalizar Checklist -->
-    <div class="save-section">
+    <div class="save-section" id="tour-finalizar">
       <ion-button
         expand="block"
         size="large"
@@ -101,3 +157,152 @@
     </div>
   </div>
 </ion-content>
+
+<!-- Modal de Ajuda -->
+<ion-modal [isOpen]="exibirAjuda" (didDismiss)="fecharAjuda()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-title>Tutorial - Inspeção de Pneus</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="fecharAjuda()">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title color="primary">
+            <ion-icon name="information-circle"></ion-icon>
+            Como inspecionar os pneus
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>Esta é a última etapa do checklist. Inspecione todos os 5 pneus do veículo (incluindo o estepe).</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- O QUE VERIFICAR -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="search"></ion-icon>
+            O que verificar em cada pneu
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Avalie cada pneu quanto a:</strong></p>
+          <ul>
+            <li><strong>Profundidade dos sulcos:</strong> Os sulcos devem estar visíveis (mínimo 1.6mm)</li>
+            <li><strong>Desgaste irregular:</strong> Careca de um lado ou no centro</li>
+            <li><strong>Cortes e rasgos:</strong> Rachaduras, cortes profundos ou bolhas</li>
+            <li><strong>Objetos cravados:</strong> Pregos, parafusos, pedras grandes</li>
+            <li><strong>Deformações:</strong> Bolhas, ondulações na lateral</li>
+            <li><strong>Idade do pneu:</strong> Verifique rachaduras por ressecamento</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- CRITÉRIOS BOM/RUIM -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="checkmark-done"></ion-icon>
+            Critérios de Avaliação
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div style="margin-bottom: 15px;">
+            <p><strong style="color: var(--ion-color-success);">✓ Marque "BOM" quando:</strong></p>
+            <ul>
+              <li>Sulcos com profundidade adequada</li>
+              <li>Sem desgaste irregular</li>
+              <li>Sem cortes ou deformações</li>
+              <li>Calibragem aparentemente normal</li>
+              <li>Sem objetos cravados</li>
+            </ul>
+          </div>
+
+          <div>
+            <p><strong style="color: var(--ion-color-danger);">✗ Marque "RUIM" quando:</strong></p>
+            <ul>
+              <li>Sulcos muito rasos ou inexistentes (careca)</li>
+              <li>Desgaste irregular evidente</li>
+              <li>Cortes, rasgos ou bolhas</li>
+              <li>Objetos cravados (pregos, parafusos)</li>
+              <li>Pneu murcho ou muito cheio</li>
+              <li>Rachaduras na lateral por ressecamento</li>
+            </ul>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- LOCALIZAÇÃO DOS PNEUS -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="navigate"></ion-icon>
+            Localização dos Pneus
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Identifique cada pneu corretamente:</strong></p>
+          <ul>
+            <li><strong>Dianteira Direita:</strong> Lado do motorista, frente</li>
+            <li><strong>Dianteira Esquerda:</strong> Lado do passageiro, frente</li>
+            <li><strong>Traseira Direita:</strong> Lado do motorista, atrás</li>
+            <li><strong>Traseira Esquerda:</strong> Lado do passageiro, atrás</li>
+            <li><strong>Estepe:</strong> Pneu reserva (geralmente no porta-malas)</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- COMO FOTOGRAFAR -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="camera"></ion-icon>
+            Como fotografar os pneus
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Dicas para fotos de qualidade:</strong></p>
+          <ul>
+            <li>Tire foto de cada pneu individualmente</li>
+            <li>A foto deve mostrar a banda de rodagem (parte que toca o chão)</li>
+            <li>Se houver algum problema, fotografe de perto para evidenciar</li>
+            <li>Para pneus ruins, mostre claramente o defeito</li>
+            <li>Boa iluminação é essencial</li>
+          </ul>
+          <p><strong>Ângulo ideal:</strong> Agache-se ao lado do pneu e fotografe de cima para baixo, mostrando a superfície e a lateral.</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- ESTEPE -->
+      <ion-card color="warning">
+        <ion-card-content>
+          <ion-text color="dark">
+            <p>
+              <ion-icon name="alert-circle"></ion-icon>
+              <strong> Atenção ao Estepe:</strong> Mesmo que não seja usado, o estepe deve estar em bom estado. Verifique se está calibrado e sem danos.
+            </p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card color="success">
+        <ion-card-content>
+          <ion-text color="dark">
+            <p>
+              <ion-icon name="save"></ion-icon>
+              <strong> Finalização:</strong> Todos os 5 pneus devem ser avaliados e fotografados. Ao clicar em "Finalizar", o checklist completo será enviado ao servidor.
+            </p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+    </ion-content>
+  </ng-template>
+</ion-modal>

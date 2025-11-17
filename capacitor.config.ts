@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
-  appName: 'checklist-app-new',
+  appId: 'com.i9.frotachecklist',
+  appName: 'Frota I9',
   webDir: 'www',
   server: {
     cleartext: true,

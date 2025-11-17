@@ -37,6 +37,10 @@ ion-card {
 
 .item-inspecao {
   margin-bottom: 24px;
+  background: #0c0c0c; /* bloco mais visível no tema escuro */
+  border: 1px solid #353535; /* borda fina para destacar */
+  border-radius: 10px;
+  padding: 12px;
 
   &:last-child {
     margin-bottom: 0;
@@ -45,7 +49,8 @@ ion-card {
   .item-label {
     margin-bottom: 12px;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
+    color: #ffffff;
   }
 
   .photo-section {
@@ -101,14 +106,15 @@ ion-card {
 
 ion-segment {
   --background: #000000;
-  border: 1px solid #404040;
+  border: 1px solid #5a5a5a; /* borda mais evidente */
   border-radius: 8px;
   min-height: 40px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset; /* leve reforço */
 
   &.segment-motor {
     ion-segment-button {
       --indicator-color: var(--ion-color-primary);
-      --color: #808080;
+      --color: #b5b5b5; /* texto mais legível */
       --color-checked: #ffffff;
       font-weight: 600;
       text-transform: uppercase;
@@ -131,7 +137,7 @@ ion-segment {
   &.segment-limpeza {
     ion-segment-button {
       --indicator-color: var(--ion-color-primary);
-      --color: #808080;
+      --color: #b5b5b5;
       --color-checked: #ffffff;
       font-weight: 600;
       text-transform: capitalize;
@@ -155,6 +161,29 @@ ion-segment {
       }
 
       &[value="pessima"]::part(indicator-background) {
+        background: var(--ion-color-primary);
+      }
+    }
+  }
+
+  &.segment-ferramenta {
+    ion-segment-button {
+      --indicator-color: var(--ion-color-primary);
+      --color: #b5b5b5;
+      --color-checked: #ffffff;
+      font-weight: 600;
+      text-transform: capitalize;
+      font-size: 14px;
+
+      &::part(native) {
+        border-radius: 6px;
+      }
+
+      &[value="contem"]::part(indicator-background) {
+        background: #2dd36f;
+      }
+
+      &[value="nao_contem"]::part(indicator-background) {
         background: var(--ion-color-primary);
       }
     }

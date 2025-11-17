@@ -1,13 +1,13 @@
 <ion-header [translucent]="true">
   <ion-toolbar color="dark">
-    <ion-buttons slot="start">
-      <ion-button (click)="voltar()">
-        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
-      </ion-button>
-    </ion-buttons>
     <ion-title>
       Fotos do Veículo
     </ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="mostrarAjuda()">
+        <ion-icon slot="icon-only" name="help-circle"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -26,8 +26,8 @@
     </div>
 
     <!-- Grid de Fotos -->
-    <div class="fotos-grid">
-      <ion-card *ngFor="let foto of fotos; let i = index" class="foto-card">
+    <div class="fotos-grid" id="tour-grid-fotos">
+      <ion-card *ngFor="let foto of fotos; let i = index" class="foto-card" [id]="'tour-foto-' + i">
         <ion-card-header>
           <ion-card-title>
             <ion-icon [name]="foto.icone" color="primary"></ion-icon>
@@ -82,7 +82,7 @@
     </div>
 
     <!-- Botão Salvar -->
-    <div class="save-section">
+    <div class="save-section" id="tour-salvar-fotos">
       <ion-button
         expand="block"
         size="large"
@@ -180,3 +180,161 @@
     </div>
   </div>
 </ion-content>
+
+<!-- Modal de Ajuda -->
+<ion-modal [isOpen]="exibirAjuda" (didDismiss)="fecharAjuda()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-title>Tutorial - Fotos do Veículo</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="fecharAjuda()">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title color="primary">
+            <ion-icon name="information-circle"></ion-icon>
+            Como tirar as fotos do veículo
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>Esta etapa documenta o estado atual do veículo. Tire fotos claras de todos os ângulos para criar um registro visual completo.</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- FOTO FRONTAL -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="arrow-up"></ion-icon>
+            Foto Frontal
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Como tirar:</strong></p>
+          <ul>
+            <li>Posicione-se de frente para o veículo</li>
+            <li>Capture toda a parte frontal (capô, para-choque, faróis)</li>
+            <li>Mantenha distância de cerca de 3-4 metros</li>
+            <li>Certifique-se de que a placa esteja visível e legível</li>
+            <li>Evite sombras e reflexos no veículo</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- FOTO TRASEIRA -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="arrow-down"></ion-icon>
+            Foto Traseira
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Como tirar:</strong></p>
+          <ul>
+            <li>Posicione-se atrás do veículo</li>
+            <li>Capture toda a parte traseira (porta-malas, para-choque, lanternas)</li>
+            <li>Mantenha distância de cerca de 3-4 metros</li>
+            <li>A placa traseira deve estar visível</li>
+            <li>Verifique se não há obstáculos atrás do veículo</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- FOTO LATERAL DIREITA -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="arrow-forward"></ion-icon>
+            Foto Lateral Direita
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Como tirar:</strong></p>
+          <ul>
+            <li>Posicione-se ao lado direito do veículo</li>
+            <li>Capture todo o lado direito (portas, rodas, espelhos)</li>
+            <li>Mantenha o veículo centralizado na foto</li>
+            <li>A foto deve mostrar da frente até a traseira</li>
+            <li>Verifique se as rodas estão visíveis</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- FOTO LATERAL ESQUERDA -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="arrow-back"></ion-icon>
+            Foto Lateral Esquerda
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Como tirar:</strong></p>
+          <ul>
+            <li>Posicione-se ao lado esquerdo do veículo</li>
+            <li>Capture todo o lado esquerdo (portas, rodas, espelhos)</li>
+            <li>Mantenha o veículo centralizado na foto</li>
+            <li>A foto deve mostrar da frente até a traseira</li>
+            <li>Verifique se as rodas estão visíveis</li>
+          </ul>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- RECURSO DE MARCAÇÃO -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="create-outline"></ion-icon>
+            Recurso de Marcação
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Use o recurso "Marcar Foto" para destacar detalhes:</strong></p>
+          <ul>
+            <li><strong>Amassados:</strong> Circule áreas com danos na lataria</li>
+            <li><strong>Arranhões:</strong> Marque riscos ou arranhões visíveis</li>
+            <li><strong>Áreas com problemas:</strong> Destaque qualquer defeito visual</li>
+          </ul>
+          <p><strong>Como usar:</strong></p>
+          <ol>
+            <li>Tire a foto normalmente</li>
+            <li>Clique em "Marcar Foto"</li>
+            <li>Escolha a cor e espessura da caneta</li>
+            <li>Desenhe sobre a foto para destacar os problemas</li>
+            <li>Clique em "Salvar Marcação"</li>
+          </ol>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card color="warning">
+        <ion-card-content>
+          <ion-text color="dark">
+            <p>
+              <ion-icon name="sunny"></ion-icon>
+              <strong> Dica de Iluminação:</strong> Tire as fotos com boa iluminação natural. Evite fotografar contra a luz (contra o sol).
+            </p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card color="success">
+        <ion-card-content>
+          <ion-text color="dark">
+            <p>
+              <ion-icon name="checkmark-circle"></ion-icon>
+              <strong> Importante:</strong> Todas as 4 fotos são obrigatórias. Elas servem como registro do estado do veículo no momento da inspeção.
+            </p>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+    </ion-content>
+  </ng-template>
+</ion-modal>

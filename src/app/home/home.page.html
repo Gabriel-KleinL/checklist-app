@@ -1,12 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar color="dark">
-    <ion-buttons slot="start">
-      <ion-button (click)="voltar()">
-        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
-      </ion-button>
-    </ion-buttons>
     <ion-title>
-      Inspeção Inicial
+      Checklist Veicular
     </ion-title>
   </ion-toolbar>
 </ion-header>
@@ -14,163 +9,68 @@
 <ion-content [fullscreen]="true" color="dark">
   <ion-header collapse="condense">
     <ion-toolbar color="dark">
-      <ion-title size="large">Inspeção Inicial</ion-title>
+      <ion-title size="large">Checklist Veicular</ion-title>
     </ion-toolbar>
   </ion-header>
 
-  <div class="form-container">
-    <!-- Placa -->
-    <ion-card>
-      <ion-card-header>
-        <ion-card-title>Placa do Veículo</ion-card-title>
-      </ion-card-header>
+  <div class="home-container">
+
+    <div class="welcome-section">
+      <img src="assets/img/logo.png" alt="i9 Checklist" class="logo-img">
+      <h1>Bem-vindo ao i9 Checklist</h1>
+      <p>Sistema de inspeção veicular completo</p>
+    </div>
+
+    <ion-card class="info-card">
       <ion-card-content>
-        <ion-item>
-          <ion-input
-            label="Placa"
-            labelPlacement="floating"
-            placeholder="ABC-1234"
-            [(ngModel)]="inspecao.placa"
-            [maxlength]="8"
-            (ionChange)="salvarLocalmente()"
-          ></ion-input>
-        </ion-item>
-      </ion-card-content>
-    </ion-card>
+        <div class="checklist-info">
+          <div class="info-item">
+            <ion-icon name="clipboard-outline" color="primary"></ion-icon>
+            <div>
+              <h3>Inspeção Inicial</h3>
+              <p>Placa, KM, Combustível e Painel</p>
+            </div>
+          </div>
 
-    <!-- KM Inicial -->
-    <ion-card>
-      <ion-card-header>
-        <ion-card-title>Quilometragem Inicial</ion-card-title>
-      </ion-card-header>
-      <ion-card-content>
-        <ion-item>
-          <ion-input
-            label="KM Inicial"
-            labelPlacement="floating"
-            type="number"
-            placeholder="0"
-            [(ngModel)]="inspecao.kmInicial"
-            (ionChange)="salvarLocalmente()"
-          ></ion-input>
-        </ion-item>
+          <div class="info-item">
+            <ion-icon name="construct-outline" color="primary"></ion-icon>
+            <div>
+              <h3>Inspeção do Veículo</h3>
+              <p>Motor, Elétricos, Limpeza e Ferramentas</p>
+            </div>
+          </div>
 
-        <div class="photo-section">
-          <ion-button
-            expand="block"
-            color="primary"
-            (click)="tirarFoto('km')"
-            [fill]="inspecao.fotoKmInicial ? 'outline' : 'solid'"
-          >
-            <ion-icon slot="start" name="camera"></ion-icon>
-            {{ inspecao.fotoKmInicial ? 'Tirar Nova Foto do KM' : 'Tirar Foto do KM' }}
-          </ion-button>
+          <div class="info-item">
+            <ion-icon name="camera-outline" color="primary"></ion-icon>
+            <div>
+              <h3>Fotos do Veículo</h3>
+              <p>Registro fotográfico completo</p>
+            </div>
+          </div>
 
-          <div *ngIf="inspecao.fotoKmInicial" class="photo-preview">
-            <img [src]="inspecao.fotoKmInicial" />
-            <ion-button
-              size="small"
-              color="danger"
-              fill="clear"
-              (click)="removerFoto('km')"
-            >
-              <ion-icon slot="icon-only" name="trash"></ion-icon>
-            </ion-button>
+          <div class="info-item">
+            <ion-icon name="ellipse-outline" color="primary"></ion-icon>
+            <div>
+              <h3>Inspeção de Pneus</h3>
+              <p>Estado dos pneus e estepe</p>
+            </div>
           </div>
         </div>
       </ion-card-content>
     </ion-card>
 
-    <!-- Nível de Combustível -->
-    <ion-card>
-      <ion-card-header>
-        <ion-card-title>Nível de Combustível</ion-card-title>
-      </ion-card-header>
-      <ion-card-content>
-        <ion-item>
-          <ion-select
-            label="Nível"
-            labelPlacement="floating"
-            [(ngModel)]="inspecao.nivelCombustivel"
-            interface="action-sheet"
-            (ionChange)="salvarLocalmente()"
-          >
-            <ion-select-option *ngFor="let nivel of niveisDisponiveis" [value]="nivel">
-              {{ nivel }}
-            </ion-select-option>
-          </ion-select>
-        </ion-item>
-
-        <div class="photo-section">
-          <ion-button
-            expand="block"
-            color="primary"
-            (click)="tirarFoto('combustivel')"
-            [fill]="inspecao.fotoCombustivel ? 'outline' : 'solid'"
-          >
-            <ion-icon slot="start" name="camera"></ion-icon>
-            {{ inspecao.fotoCombustivel ? 'Tirar Nova Foto do Combustível' : 'Tirar Foto do Combustível' }}
-          </ion-button>
-
-          <div *ngIf="inspecao.fotoCombustivel" class="photo-preview">
-            <img [src]="inspecao.fotoCombustivel" />
-            <ion-button
-              size="small"
-              color="danger"
-              fill="clear"
-              (click)="removerFoto('combustivel')"
-            >
-              <ion-icon slot="icon-only" name="trash"></ion-icon>
-            </ion-button>
-          </div>
-        </div>
-      </ion-card-content>
-    </ion-card>
-
-    <!-- Foto do Painel -->
-    <ion-card>
-      <ion-card-header>
-        <ion-card-title>Foto do Painel</ion-card-title>
-      </ion-card-header>
-      <ion-card-content>
-        <div class="photo-section">
-          <ion-button
-            expand="block"
-            color="primary"
-            (click)="tirarFoto('painel')"
-            [fill]="inspecao.fotoPainel ? 'outline' : 'solid'"
-          >
-            <ion-icon slot="start" name="camera"></ion-icon>
-            {{ inspecao.fotoPainel ? 'Tirar Nova Foto do Painel' : 'Tirar Foto do Painel' }}
-          </ion-button>
-
-          <div *ngIf="inspecao.fotoPainel" class="photo-preview">
-            <img [src]="inspecao.fotoPainel" />
-            <ion-button
-              size="small"
-              color="danger"
-              fill="clear"
-              (click)="removerFoto('painel')"
-            >
-              <ion-icon slot="icon-only" name="trash"></ion-icon>
-            </ion-button>
-          </div>
-        </div>
-      </ion-card-content>
-    </ion-card>
-
-    <!-- Botão Salvar -->
-    <div class="save-section">
+    <div class="action-section">
       <ion-button
         expand="block"
         size="large"
         color="primary"
-        (click)="salvarInspecao()"
-        [disabled]="!validarFormulario()"
+        (click)="iniciarChecklist()"
+        class="start-button"
       >
-        <ion-icon slot="start" name="checkmark-circle"></ion-icon>
-        Salvar e Continuar
+        <ion-icon slot="start" name="play-circle"></ion-icon>
+        Iniciar Checklist
       </ion-button>
     </div>
+
   </div>
 </ion-content>

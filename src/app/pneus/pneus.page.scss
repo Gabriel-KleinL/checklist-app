@@ -6,9 +6,10 @@
 .pneu-card {
   --background: #1a1a1a;
   --color: #ffffff;
-  border: 1px solid #404040;
+  border: 1px solid #5a5a5a; /* borda mais evidente */
   border-radius: 12px;
   margin-bottom: 20px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 
   ion-card-header {
     padding-bottom: 12px;
@@ -41,15 +42,16 @@
 
 ion-segment {
   --background: #000000;
-  border: 1px solid #404040;
+  border: 1px solid #5a5a5a; /* borda mais visível */
   border-radius: 8px;
   min-height: 40px;
   margin-bottom: 20px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 
   &.segment-pneu {
     ion-segment-button {
       --indicator-color: var(--ion-color-primary);
-      --color: #808080;
+      --color: #b5b5b5; /* contraste de texto */
       --color-checked: #ffffff;
       font-weight: 600;
       text-transform: uppercase;

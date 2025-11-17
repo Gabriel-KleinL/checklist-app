@@ -14,7 +14,7 @@ export class ApiService {
   constructor(private http: HttpClient, private photoCompression: PhotoCompressionService) { }
 
   testarConexao(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/veicular_get.php?acao=todos&limite=1`);
+    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=todos&limite=1`);
   }
 
   testarConexaoSimples(): Observable<any> {
@@ -27,39 +27,104 @@ export class ApiService {
     });
 
     console.log('=== SALVANDO CHECKLIST ===');
-    console.log('URL:', `${this.baseUrl}/veicular_set.php`);
+    console.log('URL:', `${this.baseUrl}/b_veicular_set.php`);
     console.log('Headers:', headers);
     console.log('Dados:', dados);
     console.log('Tamanho dos dados:', JSON.stringify(dados).length, 'bytes');
 
-    return this.http.post(`${this.baseUrl}/veicular_set.php`, dados, { headers });
+    return this.http.post(`${this.baseUrl}/b_veicular_set.php`, dados, { headers });
   }
 
-  async salvarChecklistCompleto(checklistCompleto: ChecklistCompleto): Promise<Observable<any>> {
+  criarInspecaoInicial(dados: any): Observable<any> {
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+
+    console.log('=== CRIANDO INSPEÇÃO INICIAL ===');
+    console.log('URL:', `${this.baseUrl}/b_veicular_set.php`);
+    console.log('Dados:', dados);
+
+    return this.http.post(`${this.baseUrl}/b_veicular_set.php`, dados, { headers });
+  }
+
+  atualizarInspecao(inspecaoId: number, dados: any): Observable<any> {
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+
+    const dadosCompletos = {
+      inspecao_id: inspecaoId,
+      ...dados
+    };
+
+    console.log('=== ATUALIZANDO INSPEÇÃO ===');
+    console.log('URL:', `${this.baseUrl}/b_veicular_update.php`);
+    console.log('Dados:', dadosCompletos);
+
+    return this.http.post(`${this.baseUrl}/b_veicular_update.php`, dadosCompletos, { headers });
+  }
+
+  async salvarChecklistSimples(checklistCompleto: ChecklistCompleto): Promise<Observable<any>> {
     console.log('=== COMPRIMINDO FOTOS ===');
-    
+
     // Comprime todas as fotos antes de enviar
     const dadosComprimidos = await this.photoCompression.compressAllPhotos(checklistCompleto);
     const dadosApi = this.transformarParaApiFormat(dadosComprimidos);
-    
+
     console.log('Fotos comprimidas com sucesso');
     return this.salvarChecklist(dadosApi);
   }
 
   buscarTodos(limite: number = 100): Observable<any> {
-    return this.http.get(`${this.baseUrl}/veicular_get.php?acao=todos&limite=${limite}`);
+    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=todos&limite=${limite}`);
   }
 
   buscarPorPlaca(placa: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/veicular_get.php?acao=placa&placa=${placa}`);
+    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=placa&placa=${placa}`);
   }
 
   buscarPorId(id: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/veicular_get.php?acao=id&id=${id}`);
+    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=id&id=${id}`);
+  }
+
+  buscarCompleto(id: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=completo&id=${id}`);
   }
 
   buscarPorPeriodo(dataInicio: string, dataFim: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/veicular_get.php?acao=periodo&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=periodo&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+  }
+
+  // ============================================
+  // Métodos para Checklist Completo
+  // ============================================
+
+  salvarChecklistCompleto(dados: any): Observable<any> {
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json'
+    });
+
+    console.log('=== SALVANDO CHECKLIST COMPLETO ===');
+    console.log('URL:', `${this.baseUrl}/b_checklist_completo_set.php`);
+    console.log('Dados:', dados);
+
+    return this.http.post(`${this.baseUrl}/b_checklist_completo_set.php`, dados, { headers });
+  }
+
+  buscarChecklistCompleto(id: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/b_checklist_completo_get.php?acao=id&id=${id}`);
+  }
+
+  buscarChecklistsCompletos(limite: number = 100): Observable<any> {
+    return this.http.get(`${this.baseUrl}/b_checklist_completo_get.php?acao=todos&limite=${limite}`);
+  }
+
+  buscarChecklistCompletosPorPlaca(placa: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/b_checklist_completo_get.php?acao=placa&placa=${placa}`);
+  }
+
+  buscarChecklistCompletosPorPeriodo(dataInicio: string, dataFim: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/b_checklist_completo_get.php?acao=periodo&data_inicio=${dataInicio}&data_fim=${dataFim}`);
   }
 
   transformarParaApiFormat(checklist: ChecklistCompleto): any {
@@ -68,115 +133,108 @@ export class ApiService {
     const fotosVeiculo = checklist.fotosVeiculo || [];
     const pneus = checklist.pneus || [];
 
-    // Debug logs
+    console.log('=== TRANSFORMANDO DADOS DINAMICAMENTE ===');
     console.log('Checklist completo:', checklist);
-    console.log('Inspecao veiculo:', inspecaoVeiculo);
-    console.log('Fotos veiculo:', fotosVeiculo);
 
-    // Encontra itens específicos do motor
-    const motorItens = inspecaoVeiculo?.motor || [];
-    const aguaRadiador = motorItens.find(i => i.nome === 'Água Radiador');
-    const aguaParabrisa = motorItens.find(i => i.nome === 'Água Limpador Parabrisa');
-    const fluidoFreio = motorItens.find(i => i.nome === 'Fluido de Freio');
-    const nivelOleo = motorItens.find(i => i.nome === 'Nível de Óleo');
-    const tampaReservatorio = motorItens.find(i => i.nome === 'Tampa do Reservatório de Óleo');
-    const tampaRadiador = motorItens.find(i => i.nome === 'Tampa do Radiador');
+    // Monta array de itens de inspeção de forma DINÂMICA
+    const itensInspecao: any[] = [];
 
-    // Encontra itens de limpeza
-    const limpezaItens = inspecaoVeiculo?.limpeza || [];
-    const limpezaInterna = limpezaItens.find(i => i.nome === 'Limpeza Interna');
-    const limpezaExterna = limpezaItens.find(i => i.nome === 'Limpeza Externa');
+    // MOTOR - adiciona todos os itens dinamicamente
+    (inspecaoVeiculo?.motor || []).forEach(item => {
+      itensInspecao.push({
+        categoria: 'MOTOR',
+        item: item.nome,
+        status: item.valor,
+        foto: item.foto || null
+      });
+    });
 
-    // Encontra fotos do veículo
-    const fotoFrontal = fotosVeiculo.find(f => f.tipo === 'Foto Frontal');
-    const fotoTraseira = fotosVeiculo.find(f => f.tipo === 'Foto Traseira');
-    const fotoLateralDireita = fotosVeiculo.find(f => f.tipo === 'Foto Lateral Direita');
-    const fotoLateralEsquerda = fotosVeiculo.find(f => f.tipo === 'Foto Lateral Esquerda');
+    // ELÉTRICOS - adiciona todos os itens dinamicamente
+    (inspecaoVeiculo?.eletricos || []).forEach(item => {
+      itensInspecao.push({
+        categoria: 'ELETRICO',
+        item: item.nome,
+        status: item.valor,
+        foto: item.foto || null
+      });
+    });
 
-    // Debug logs específicos - Motor
-    console.log('=== MOTOR ===');
-    console.log('Água Radiador encontrado:', aguaRadiador);
-    console.log('Água Parabrisa encontrado:', aguaParabrisa);
-    console.log('Fluido Freio encontrado:', fluidoFreio);
-    console.log('Nível Óleo encontrado:', nivelOleo);
-    console.log('Tampa Reservatório encontrado:', tampaReservatorio);
-    console.log('Tampa Radiador encontrado:', tampaRadiador);
-    
-    // Debug logs específicos - Limpeza
-    console.log('=== LIMPEZA ===');
-    console.log('Limpeza Interna encontrada:', limpezaInterna);
-    console.log('Limpeza Externa encontrada:', limpezaExterna);
-    
-    // Debug logs específicos - Fotos
-    console.log('=== FOTOS VEÍCULO ===');
-    console.log('Foto Frontal encontrada:', fotoFrontal);
-    console.log('Foto Traseira encontrada:', fotoTraseira);
-    console.log('Foto Lateral Direita encontrada:', fotoLateralDireita);
-    console.log('Foto Lateral Esquerda encontrada:', fotoLateralEsquerda);
+    // LIMPEZA - adiciona todos os itens dinamicamente
+    (inspecaoVeiculo?.limpeza || []).forEach(item => {
+      itensInspecao.push({
+        categoria: 'LIMPEZA',
+        item: item.nome,
+        status: item.valor,
+        foto: item.foto || null
+      });
+    });
 
-    // Encontra dados dos pneus
-    const pneuDianteiraDireita = pneus.find(p => p.posicao === 'dianteira-direita');
-    const pneuDianteiraEsquerda = pneus.find(p => p.posicao === 'dianteira-esquerda');
-    const pneuTraseiraDireita = pneus.find(p => p.posicao === 'traseira-direita');
-    const pneuTraseiraEsquerda = pneus.find(p => p.posicao === 'traseira-esquerda');
-    const pneuEstepe = pneus.find(p => p.posicao === 'estepe');
-    
-    // Debug logs específicos - Pneus
-    console.log('=== PNEUS ===');
-    console.log('Pneu Dianteira Direita encontrado:', pneuDianteiraDireita);
-    console.log('Pneu Dianteira Esquerda encontrado:', pneuDianteiraEsquerda);
-    console.log('Pneu Traseira Direita encontrado:', pneuTraseiraDireita);
-    console.log('Pneu Traseira Esquerda encontrado:', pneuTraseiraEsquerda);
-    console.log('Pneu Estepe encontrado:', pneuEstepe);
+    // FERRAMENTAS - adiciona todos os itens dinamicamente
+    (inspecaoVeiculo?.ferramentas || []).forEach(item => {
+      itensInspecao.push({
+        categoria: 'FERRAMENTA',
+        item: item.nome,
+        status: item.valor,
+        foto: item.foto || null
+      });
+    });
 
+    // PNEUS - adiciona todos os itens dinamicamente
+    const itensPneus: any[] = [];
+    pneus.forEach(pneu => {
+      itensPneus.push({
+        item: pneu.nome,
+        status: pneu.valor,
+        foto: pneu.foto || null,
+        pressao: pneu.pressao || null,
+        foto_caneta: pneu.fotoCaneta || null
+      });
+    });
+
+    // FOTOS DO VEÍCULO - mapeia tipos dinamicamente
+    const fotosMapeadas: any = {};
+    const mapaTiposFotos: any = {
+      'Foto Frontal': 'foto_frontal',
+      'Foto Traseira': 'foto_traseira',
+      'Foto Lateral Direita': 'foto_lateral_direita',
+      'Foto Lateral Esquerda': 'foto_lateral_esquerda'
+    };
+
+    fotosVeiculo.forEach(foto => {
+      const chave = mapaTiposFotos[foto.tipo];
+      if (chave) {
+        fotosMapeadas[chave] = foto.foto || '';
+      }
+    });
+
+    console.log('Total de itens de inspeção:', itensInspecao.length);
+    console.log('Total de pneus:', itensPneus.length);
+    console.log('Fotos mapeadas:', Object.keys(fotosMapeadas));
+
+    // Monta o objeto final com os arrays dinâmicos
     const dadosFinais = {
+      // Dados da inspeção inicial
       placa: inspecaoInicial?.placa || '',
       km_inicial: inspecaoInicial?.kmInicial || 0,
       nivel_combustivel: inspecaoInicial?.nivelCombustivel || '0%',
-      foto_km_inicial: inspecaoInicial?.fotoKmInicial || '',
-      foto_combustivel: inspecaoInicial?.fotoCombustivel || '',
       foto_painel: inspecaoInicial?.fotoPainel || '',
+      observacao_painel: inspecaoInicial?.observacaoPainel || '',
+      usuario_id: checklist.usuario_id || null,
 
-      motor_agua_radiador: aguaRadiador?.valor || null,
-      motor_agua_radiador_foto: aguaRadiador?.foto || '',
-      motor_agua_parabrisa: aguaParabrisa?.valor || null,
-      motor_agua_parabrisa_foto: aguaParabrisa?.foto || '',
-      motor_fluido_freio: fluidoFreio?.valor || null,
-      motor_fluido_freio_foto: fluidoFreio?.foto || '',
-      motor_nivel_oleo: nivelOleo?.valor || null,
-      motor_nivel_oleo_foto: nivelOleo?.foto || '',
-      motor_tampa_reservatorio: tampaReservatorio?.valor || null,
-      motor_tampa_reservatorio_foto: tampaReservatorio?.foto || '',
-      motor_tampa_radiador: tampaRadiador?.valor || null,
-      motor_tampa_radiador_foto: tampaRadiador?.foto || '',
+      // Arrays dinâmicos
+      itens_inspecao: itensInspecao,
+      itens_pneus: itensPneus,
 
-      limpeza_interna: limpezaInterna?.valor || null,
-      limpeza_interna_foto: limpezaInterna?.foto || '',
-      limpeza_externa: limpezaExterna?.valor || null,
-      limpeza_externa_foto: limpezaExterna?.foto || '',
-
-      foto_frontal: fotoFrontal?.foto || '',
-      foto_traseira: fotoTraseira?.foto || '',
-      foto_lateral_direita: fotoLateralDireita?.foto || '',
-      foto_lateral_esquerda: fotoLateralEsquerda?.foto || '',
-
-      pneu_dianteira_direita: pneuDianteiraDireita?.valor || null,
-      pneu_dianteira_direita_foto: pneuDianteiraDireita?.foto || '',
-      pneu_dianteira_esquerda: pneuDianteiraEsquerda?.valor || null,
-      pneu_dianteira_esquerda_foto: pneuDianteiraEsquerda?.foto || '',
-      pneu_traseira_direita: pneuTraseiraDireita?.valor || null,
-      pneu_traseira_direita_foto: pneuTraseiraDireita?.foto || '',
-      pneu_traseira_esquerda: pneuTraseiraEsquerda?.valor || null,
-      pneu_traseira_esquerda_foto: pneuTraseiraEsquerda?.foto || '',
-      pneu_estepe: pneuEstepe?.valor || null,
-      pneu_estepe_foto: pneuEstepe?.foto || ''
+      // Fotos do veículo (mantém formato antigo para compatibilidade)
+      ...fotosMapeadas
     };
-    
+
     // Log final dos dados que serão enviados
-    console.log('=== DADOS FINAIS PARA ENVIO ===');
-    console.log('Total de campos:', Object.keys(dadosFinais).length);
+    console.log('=== DADOS FINAIS DINÂMICOS PARA ENVIO ===');
+    console.log('Itens de inspeção:', dadosFinais.itens_inspecao.length);
+    console.log('Itens de pneus:', dadosFinais.itens_pneus.length);
     console.log('Dados completos:', dadosFinais);
-    
+
     return dadosFinais;
   }
 }
