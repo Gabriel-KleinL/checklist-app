@@ -37,6 +37,39 @@ if (!$dados) {
 }
 
 try {
+    // ============================================
+    // VALIDAÇÃO: Verifica se já existe registro da mesma placa nas últimas 1 hora
+    // ============================================
+    $placaParaValidar = isset($dados['placa']) ? strtoupper(trim($dados['placa'])) : '';
+
+    if (!empty($placaParaValidar)) {
+        $sqlValidacao = "SELECT id, data_realizacao
+                        FROM bbb_inspecao_veiculo
+                        WHERE placa = :placa
+                        AND data_realizacao >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                        ORDER BY data_realizacao DESC
+                        LIMIT 1";
+
+        $stmtValidacao = $pdo->prepare($sqlValidacao);
+        $stmtValidacao->execute(array('placa' => $placaParaValidar));
+        $registroRecente = $stmtValidacao->fetch();
+
+        if ($registroRecente) {
+            error_log("VALIDAÇÃO FALHOU: Placa $placaParaValidar já possui registro recente (ID: {$registroRecente['id']})");
+            error_log("Data do último registro: {$registroRecente['data_realizacao']}");
+
+            http_response_code(409); // 409 Conflict
+            echo json_encode(array(
+                'erro' => 'Registro duplicado',
+                'mensagem' => 'A placa ' . $placaParaValidar . ' já possui um registro nas últimas 1 hora. Aguarde antes de registrar novamente.',
+                'ultimo_registro' => $registroRecente['data_realizacao']
+            ));
+            exit;
+        }
+
+        error_log("VALIDAÇÃO OK: Placa $placaParaValidar pode ser registrada");
+    }
+
     // Inicia uma transação para garantir consistência
     $pdo->beginTransaction();
 
@@ -138,8 +171,8 @@ try {
     // ============================================
     // 3. Insere itens de inspeção de forma DINÂMICA
     // ============================================
-    $sqlItem = "INSERT INTO bbb_inspecao_item (inspecao_id, categoria, item, status, foto, pressao, foto_caneta)
-                VALUES (:inspecao_id, :categoria, :item, :status, :foto, :pressao, :foto_caneta)";
+    $sqlItem = "INSERT INTO bbb_inspecao_item (inspecao_id, categoria, item, status, foto, pressao, foto_caneta, descricao)
+                VALUES (:inspecao_id, :categoria, :item, :status, :foto, :pressao, :foto_caneta, :descricao)";
     $stmtItem = $pdo->prepare($sqlItem);
 
     // Processa itens de inspeção enviados como array dinâmico
@@ -156,7 +189,8 @@ try {
                     'status' => $item['status'],
                     'foto' => isset($item['foto']) ? $item['foto'] : null,
                     'pressao' => null,
-                    'foto_caneta' => null
+                    'foto_caneta' => null,
+                    'descricao' => isset($item['descricao']) ? $item['descricao'] : null
                 ));
                 error_log("Item inserido dinamicamente: {$item['categoria']} - {$item['item']} = {$item['status']}");
             }
@@ -177,7 +211,8 @@ try {
                     'status' => $pneu['status'],
                     'foto' => isset($pneu['foto']) ? $pneu['foto'] : null,
                     'pressao' => isset($pneu['pressao']) ? $pneu['pressao'] : null,
-                    'foto_caneta' => isset($pneu['foto_caneta']) ? $pneu['foto_caneta'] : null
+                    'foto_caneta' => isset($pneu['foto_caneta']) ? $pneu['foto_caneta'] : null,
+                    'descricao' => isset($pneu['descricao']) ? $pneu['descricao'] : null
                 ));
                 error_log("Pneu inserido dinamicamente: {$pneu['item']} = {$pneu['status']} | Pressão: " . (isset($pneu['pressao']) ? $pneu['pressao'] : 'N/A'));
             }

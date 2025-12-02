@@ -327,7 +327,7 @@ export class ChecklistCompletoPage implements OnInit {
   async tirarFotoPainel() {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
@@ -349,7 +349,7 @@ export class ChecklistCompletoPage implements OnInit {
   async tirarFotoItem(nomeItem: string) {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
@@ -454,7 +454,23 @@ export class ChecklistCompletoPage implements OnInit {
       error: async (error) => {
         await loading.dismiss();
         console.error('Erro ao salvar checklist:', error);
-        await this.mostrarAlerta('Erro', 'Erro ao salvar o checklist. Tente novamente.');
+
+        // Tratamento específico para erro de duplicata (409)
+        if (error.status === 409 && error.error) {
+          const mensagem = error.error.mensagem || 'Esta placa já possui um registro recente. Aguarde antes de registrar novamente.';
+          const ultimoRegistro = error.error.ultimo_registro;
+
+          let mensagemCompleta = mensagem;
+          if (ultimoRegistro) {
+            mensagemCompleta += `\n\nÚltimo registro: ${new Date(ultimoRegistro).toLocaleString('pt-BR')}`;
+          }
+
+          await this.mostrarAlerta('Registro Duplicado', mensagemCompleta);
+        } else {
+          // Outros erros
+          const mensagemErro = error.error?.mensagem || error.error?.erro || 'Erro ao salvar o checklist. Tente novamente.';
+          await this.mostrarAlerta('Erro', mensagemErro);
+        }
       }
     });
   }

@@ -5,7 +5,9 @@ import { TempoTelasService } from '../services/tempo-telas.service';
 import { ConfigItensService, ConfigItem } from '../services/config-itens.service';
 import { ConfigItensCompletoService, ConfigItemCompleto } from '../services/config-itens-completo.service';
 import { AuthService } from '../services/auth.service';
-import { AlertController, ToastController } from '@ionic/angular';
+import { AlertController, ToastController, ActionSheetController, LoadingController } from '@ionic/angular';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { PhotoCompressionService } from '../services/photo-compression.service';
 
 interface Checklist {
   id: number;
@@ -86,7 +88,10 @@ export class AdminPage implements OnInit {
     private configItensCompletoService: ConfigItensCompletoService,
     private authService: AuthService,
     private alertController: AlertController,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private actionSheetController: ActionSheetController,
+    private photoCompressionService: PhotoCompressionService,
+    private loadingController: LoadingController
   ) { }
 
   ngOnInit() {
@@ -936,5 +941,135 @@ export class AdminPage implements OnInit {
       return 'N/A';
     }
     return String(valor);
+  }
+
+  async testarQualidadeImagem() {
+    const actionSheet = await this.actionSheetController.create({
+      header: 'Teste de Qualidade de Imagem',
+      subHeader: 'Qualidade atual: 60% | Largura máx: 1200px',
+      buttons: [
+        {
+          text: 'Tirar Foto',
+          icon: 'camera',
+          handler: () => {
+            this.capturarFotoTeste(CameraSource.Camera);
+          }
+        },
+        {
+          text: 'Escolher da Galeria',
+          icon: 'images',
+          handler: () => {
+            this.capturarFotoTeste(CameraSource.Photos);
+          }
+        },
+        {
+          text: 'Cancelar',
+          icon: 'close',
+          role: 'cancel'
+        }
+      ]
+    });
+    await actionSheet.present();
+  }
+
+  async capturarFotoTeste(source: CameraSource) {
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source: source,
+        quality: 100, // Captura em qualidade máxima para testar a compressão
+        allowEditing: false,
+        saveToGallery: false
+      });
+
+      if (photo.dataUrl) {
+        // Exibe loading
+        const loading = await this.loadingController.create({
+          message: 'Processando qualidades...',
+          spinner: 'crescent'
+        });
+        await loading.present();
+
+        const tamanhoOriginal = photo.dataUrl.length;
+        const testeQualidades: any[] = [];
+
+        // Testa qualidades de 10% a 100%, de 10 em 10
+        for (let q = 10; q <= 100; q += 10) {
+          const quality = q / 100; // Converte para 0.1 - 1.0
+          const fotoComprimida = await this.photoCompressionService.compressPhoto(photo.dataUrl, 1200, quality);
+          const tamanhoComprimido = fotoComprimida.length;
+          const reducaoPercentual = Math.round(((tamanhoOriginal - tamanhoComprimido) / tamanhoOriginal) * 100);
+
+          testeQualidades.push({
+            qualidade: q,
+            foto: fotoComprimida,
+            tamanho: (tamanhoComprimido / (1024 * 1024)).toFixed(2) + ' MB',
+            tamanhoBytes: tamanhoComprimido,
+            reducao: reducaoPercentual
+          });
+        }
+
+        await loading.dismiss();
+
+        // Mostra comparação de todas as qualidades
+        this.mostrarComparacaoMultiplasQualidades(
+          photo.dataUrl,
+          (tamanhoOriginal / (1024 * 1024)).toFixed(2) + ' MB',
+          testeQualidades
+        );
+      }
+    } catch (error) {
+      console.error('Erro ao capturar foto:', error);
+      const toast = await this.toastController.create({
+        message: 'Erro ao capturar foto',
+        duration: 3000,
+        color: 'danger'
+      });
+      await toast.present();
+    }
+  }
+
+  fotoOriginalTeste: string | null = null;
+  fotoComprimidaTeste: string | null = null;
+  tamanhoOriginalTeste: string = '';
+  tamanhoComprimidoTeste: string = '';
+  reducaoPercentualTeste: number = 0;
+  testesQualidades: any[] = [];
+  mostrarModalTestes: boolean = false;
+
+  mostrarComparacaoFotos(
+    original: string,
+    comprimida: string,
+    tamanhoOriginal: string,
+    tamanhoComprimido: string,
+    reducao: number
+  ) {
+    this.fotoOriginalTeste = original;
+    this.fotoComprimidaTeste = comprimida;
+    this.tamanhoOriginalTeste = tamanhoOriginal;
+    this.tamanhoComprimidoTeste = tamanhoComprimido;
+    this.reducaoPercentualTeste = reducao;
+  }
+
+  mostrarComparacaoMultiplasQualidades(
+    fotoOriginal: string,
+    tamanhoOriginal: string,
+    testesQualidades: any[]
+  ) {
+    this.fotoOriginalTeste = fotoOriginal;
+    this.tamanhoOriginalTeste = tamanhoOriginal;
+    this.testesQualidades = testesQualidades;
+    this.mostrarModalTestes = true;
+  }
+
+  fecharModalTestes() {
+    this.mostrarModalTestes = false;
+    this.testesQualidades = [];
+    this.fotoOriginalTeste = null;
+  }
+
+  fecharFotoTeste() {
+    this.fotoOriginalTeste = null;
+    this.fotoComprimidaTeste = null;
   }
 }

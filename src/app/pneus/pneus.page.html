@@ -63,44 +63,6 @@
           </ion-item>
         </div>
 
-        <!-- Seção de Foto da Caneta -->
-        <div class="photo-section">
-          <div class="photo-label">
-            <ion-icon name="create" color="primary"></ion-icon>
-            <span>Foto da Caneta (Obrigatória)</span>
-          </div>
-
-          <!-- Botão de tirar foto da caneta -->
-          <ion-button
-            expand="block"
-            color="secondary"
-            (click)="tirarFotoCaneta(i)"
-            [fill]="pneu.fotoCaneta ? 'outline' : 'solid'"
-          >
-            <ion-icon slot="start" name="camera"></ion-icon>
-            {{ pneu.fotoCaneta ? 'Alterar Foto da Caneta' : 'Tirar Foto da Caneta' }}
-          </ion-button>
-
-          <!-- Preview da foto da caneta -->
-          <div *ngIf="pneu.fotoCaneta" class="photo-preview">
-            <img [src]="pneu.fotoCaneta" />
-            <ion-button
-              size="small"
-              color="danger"
-              fill="clear"
-              (click)="removerFotoCaneta(i)"
-            >
-              <ion-icon slot="icon-only" name="trash"></ion-icon>
-            </ion-button>
-          </div>
-
-          <!-- Placeholder quando não há foto da caneta -->
-          <div *ngIf="!pneu.fotoCaneta" class="photo-placeholder">
-            <ion-icon name="create-outline"></ion-icon>
-            <p>Nenhuma foto da caneta</p>
-          </div>
-        </div>
-
         <!-- Seção de Foto -->
         <div class="photo-section">
           <div class="photo-label">
@@ -136,6 +98,19 @@
           <div *ngIf="!pneu.foto" class="photo-placeholder">
             <ion-icon name="camera-outline"></ion-icon>
             <p>Nenhuma foto</p>
+          </div>
+
+          <!-- Campo de descrição quando pneu for ruim -->
+          <div *ngIf="pneu.valor === 'ruim'" style="margin-top: 15px;">
+            <ion-item color="dark" lines="none" class="description-item">
+              <ion-textarea
+                [(ngModel)]="pneu.descricao"
+                (ionChange)="salvarLocalmente()"
+                placeholder="Descreva o problema do pneu (ex: desgaste irregular, corte, furação, etc)..."
+                rows="3"
+                color="light"
+              ></ion-textarea>
+            </ion-item>
           </div>
         </div>
       </ion-card-content>

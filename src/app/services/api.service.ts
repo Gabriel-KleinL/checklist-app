@@ -186,8 +186,7 @@ export class ApiService {
         item: pneu.nome,
         status: pneu.valor,
         foto: pneu.foto || null,
-        pressao: pneu.pressao || null,
-        foto_caneta: pneu.fotoCaneta || null
+        pressao: pneu.pressao || null
       });
     });
 

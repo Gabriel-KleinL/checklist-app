@@ -77,7 +77,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
   async tirarFotoPainel() {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,

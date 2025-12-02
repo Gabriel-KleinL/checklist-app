@@ -11,10 +11,10 @@ export class PhotoCompressionService {
    * Comprime uma foto base64 para reduzir o tamanho
    * @param base64String String base64 da foto
    * @param maxWidth Largura máxima (padrão: 1200px)
-   * @param quality Qualidade da compressão (0.1 a 1.0, padrão: 0.8)
+   * @param quality Qualidade da compressão (0.1 a 1.0, padrão: 0.6)
    * @returns Promise<string> Base64 comprimida
    */
-  async compressPhoto(base64String: string, maxWidth: number = 1200, quality: number = 0.8): Promise<string> {
+  async compressPhoto(base64String: string, maxWidth: number = 1200, quality: number = 0.6): Promise<string> {
     return new Promise((resolve, reject) => {
       try {
         // Remove o prefixo data:image/...;base64,

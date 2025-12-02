@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { MicrosoftAuthService } from '../services/microsoft-auth.service';
-import { AlertController, LoadingController } from '@ionic/angular';
+import { AlertController, LoadingController, ModalController } from '@ionic/angular';
 
 @Component({
   selector: 'app-login',
@@ -21,7 +21,8 @@ export class LoginPage implements OnInit {
     private microsoftAuthService: MicrosoftAuthService,
     private router: Router,
     private alertController: AlertController,
-    private loadingController: LoadingController
+    private loadingController: LoadingController,
+    private modalController: ModalController
   ) { }
 
   async ngOnInit() {
@@ -297,5 +298,15 @@ export class LoginPage implements OnInit {
         'Ocorreu um erro ao tentar fazer login com Microsoft'
       );
     }
+  }
+
+  mostrarAjudaPrimeiroAcesso = false;
+
+  async mostrarAjudaPrimeiroLogin() {
+    this.mostrarAjudaPrimeiroAcesso = true;
+  }
+
+  fecharAjuda() {
+    this.mostrarAjudaPrimeiroAcesso = false;
   }
 }

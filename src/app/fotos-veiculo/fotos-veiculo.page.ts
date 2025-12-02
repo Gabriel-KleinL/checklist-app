@@ -85,7 +85,7 @@ export class FotosVeiculoPage implements OnInit, OnDestroy {
   async tirarFoto(index: number) {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,

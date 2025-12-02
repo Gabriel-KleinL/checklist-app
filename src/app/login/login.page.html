@@ -4,6 +4,16 @@
       <img src="assets/img/logo.png" alt="i9 Checklist" class="logo-img">
       <h1>i9 Checklist</h1>
       <p>Inspeção Veicular</p>
+      <ion-button
+        fill="clear"
+        size="small"
+        color="light"
+        (click)="mostrarAjudaPrimeiroLogin()"
+        class="help-button"
+      >
+        <ion-icon slot="start" name="help-circle-outline"></ion-icon>
+        Primeiro Acesso?
+      </ion-button>
     </div>
 
     <ion-card class="login-card">
@@ -66,14 +76,14 @@
         </form>
 
         <!-- Divisor -->
-        <div class="divider-container">
+        <!-- <div class="divider-container">
           <div class="divider-line"></div>
           <span class="divider-text">ou</span>
           <div class="divider-line"></div>
-        </div>
+        </div> -->
 
         <!-- Botão Microsoft -->
-        <ion-button
+        <!-- <ion-button
           expand="block"
           size="large"
           fill="outline"
@@ -83,7 +93,7 @@
         >
           <ion-icon slot="start" name="logo-microsoft"></ion-icon>
           Entrar com Microsoft
-        </ion-button>
+        </ion-button> -->
 
         <div class="login-info">
           <p>
@@ -96,6 +106,77 @@
 
     <div class="login-footer">
       <p>Checklist App v1.0</p>
+    </div>
+  </div>
+
+  <!-- Modal de Ajuda Primeiro Acesso -->
+  <div class="ajuda-modal-overlay" *ngIf="mostrarAjudaPrimeiroAcesso" (click)="fecharAjuda()">
+    <div class="ajuda-modal-content" (click)="$event.stopPropagation()">
+      <div class="ajuda-header">
+        <ion-icon name="help-circle" color="primary"></ion-icon>
+        <h2>Primeiro Acesso</h2>
+        <ion-button fill="clear" (click)="fecharAjuda()" class="close-button">
+          <ion-icon slot="icon-only" name="close"></ion-icon>
+        </ion-button>
+      </div>
+
+      <div class="ajuda-body">
+        <p class="ajuda-intro">Siga os passos abaixo para fazer seu primeiro login:</p>
+
+        <div class="ajuda-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Digite seu nome de usuário</h3>
+            <p>Insira apenas o seu nome de usuário no campo indicado</p>
+          </div>
+        </div>
+
+        <div class="ajuda-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Deixe o campo de senha vazio</h3>
+            <p>No primeiro acesso, não é necessário preencher a senha</p>
+          </div>
+        </div>
+
+        <div class="ajuda-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Clique em Entrar</h3>
+            <p>Pressione o botão de login para continuar</p>
+          </div>
+        </div>
+
+        <div class="ajuda-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>Crie sua senha</h3>
+            <p>O sistema solicitará que você crie uma senha segura</p>
+          </div>
+        </div>
+
+        <div class="ajuda-step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <h3>Faça login normalmente</h3>
+            <p>Após criar a senha, use-a para acessar o sistema</p>
+          </div>
+        </div>
+
+        <div class="ajuda-tip">
+          <ion-icon name="bulb" color="warning"></ion-icon>
+          <div>
+            <strong>Dica:</strong>
+            <p>Marque a opção "Lembrar senha" para não precisar digitá-la toda vez!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ajuda-footer">
+        <ion-button expand="block" (click)="fecharAjuda()" color="primary">
+          Entendi
+        </ion-button>
+      </div>
     </div>
   </div>
 </ion-content>

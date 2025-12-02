@@ -17,7 +17,7 @@ interface Pneu {
   valor: 'bom' | 'ruim' | null;
   foto?: string;
   pressao?: number;
-  fotoCaneta?: string;
+  descricao?: string;
 }
 
 @Component({
@@ -88,6 +88,7 @@ export class PneusPage implements OnInit, OnDestroy {
 
         // Mapeia itens do banco para a estrutura de pneus
         this.pneus = itensHabilitados
+          .filter(item => !item.nome_item.toLowerCase().includes('caneta'))
           .map((item, index) => ({
             nome: item.nome_item,
             posicao: this.gerarPosicao(item.nome_item, index),
@@ -131,7 +132,7 @@ export class PneusPage implements OnInit, OnDestroy {
   async tirarFoto(index: number) {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
@@ -146,33 +147,14 @@ export class PneusPage implements OnInit, OnDestroy {
     }
   }
 
-  async tirarFotoCaneta(index: number) {
-    try {
-      const image = await Camera.getPhoto({
-        quality: 50,
-        allowEditing: false,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera,
-        width: 800,
-        height: 800
-      });
 
-      this.pneus[index].fotoCaneta = image.dataUrl;
-      await this.salvarLocalmente();
-    } catch (error) {
-      console.log('Foto da caneta cancelada ou erro:', error);
-    }
-  }
 
   async removerFoto(index: number) {
     this.pneus[index].foto = undefined;
     await this.salvarLocalmente();
   }
 
-  async removerFotoCaneta(index: number) {
-    this.pneus[index].fotoCaneta = undefined;
-    await this.salvarLocalmente();
-  }
+
 
   async atualizarPressao(index: number, event: any) {
     const valor = event.target.value;
@@ -186,17 +168,16 @@ export class PneusPage implements OnInit, OnDestroy {
       const valorPreenchido = pneu.valor !== null;
       // Se o pneu está ruim, a foto é obrigatória
       const fotoObrigatoria = pneu.valor === 'ruim' && !pneu.foto;
-      // Pressão e foto da caneta são obrigatórias
+      // Pressão é obrigatória
       const pressaoPreenchida = pneu.pressao !== undefined && pneu.pressao !== null;
-      const fotoCanetaPreenchida = !!pneu.fotoCaneta;
 
-      return valorPreenchido && !fotoObrigatoria && pressaoPreenchida && fotoCanetaPreenchida;
+      return valorPreenchido && !fotoObrigatoria && pressaoPreenchida;
     });
   }
 
   async finalizarChecklist() {
     if (!this.validarFormulario()) {
-      alert('Por favor, preencha todos os campos: condição, pressão e foto da caneta para cada pneu. Tire também a foto do pneu se estiver marcado como "ruim".');
+      alert('Por favor, preencha todos os campos: condição e pressão para cada pneu. Tire também a foto do pneu se estiver marcado como "ruim".');
       return;
     }
 
@@ -225,7 +206,7 @@ export class PneusPage implements OnInit, OnDestroy {
             status: pneu.valor,
             foto: pneu.foto || null,
             pressao: pneu.pressao || null,
-            foto_caneta: pneu.fotoCaneta || null
+            descricao: pneu.descricao || null
           });
         }
       });
@@ -329,7 +310,27 @@ export class PneusPage implements OnInit, OnDestroy {
   }
 
   async mostrarErro(error: any) {
-    // Extrai informações detalhadas do erro
+    // Tratamento específico para erro de duplicata (409)
+    if (error.status === 409 && error.error) {
+      const mensagem = error.error.mensagem || 'Esta placa já possui um registro recente. Aguarde antes de registrar novamente.';
+      const ultimoRegistro = error.error.ultimo_registro;
+
+      let mensagemCompleta = mensagem;
+      if (ultimoRegistro) {
+        mensagemCompleta += `\n\nÚltimo registro: ${new Date(ultimoRegistro).toLocaleString('pt-BR')}`;
+      }
+
+      const alert = await this.alertController.create({
+        header: 'Registro Duplicado',
+        message: mensagemCompleta,
+        buttons: ['OK']
+      });
+
+      await alert.present();
+      return;
+    }
+
+    // Extrai informações detalhadas do erro (para outros erros)
     let mensagemErro = 'Erro desconhecido';
     let detalhesCompletos = '';
 

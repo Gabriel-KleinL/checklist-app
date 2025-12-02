@@ -75,8 +75,8 @@ try {
     // ============================================
     // 2. Insere itens de inspeção de forma DINÂMICA
     // ============================================
-    $sqlItem = "INSERT INTO bbb_inspecao_item (inspecao_id, categoria, item, status, foto, pressao, foto_caneta)
-                VALUES (:inspecao_id, :categoria, :item, :status, :foto, :pressao, :foto_caneta)";
+    $sqlItem = "INSERT INTO bbb_inspecao_item (inspecao_id, categoria, item, status, foto, pressao, foto_caneta, descricao)
+                VALUES (:inspecao_id, :categoria, :item, :status, :foto, :pressao, :foto_caneta, :descricao)";
     $stmtItem = $pdo->prepare($sqlItem);
 
     // Processa itens de inspeção enviados como array dinâmico
@@ -93,7 +93,8 @@ try {
                     'status' => $item['status'],
                     'foto' => isset($item['foto']) ? $item['foto'] : null,
                     'pressao' => null,
-                    'foto_caneta' => null
+                    'foto_caneta' => null,
+                    'descricao' => isset($item['descricao']) ? $item['descricao'] : null
                 ));
                 error_log("Item inserido dinamicamente: {$item['categoria']} - {$item['item']} = {$item['status']}");
             }
@@ -114,7 +115,8 @@ try {
                     'status' => $pneu['status'],
                     'foto' => isset($pneu['foto']) ? $pneu['foto'] : null,
                     'pressao' => isset($pneu['pressao']) ? $pneu['pressao'] : null,
-                    'foto_caneta' => isset($pneu['foto_caneta']) ? $pneu['foto_caneta'] : null
+                    'foto_caneta' => isset($pneu['foto_caneta']) ? $pneu['foto_caneta'] : null,
+                    'descricao' => isset($pneu['descricao']) ? $pneu['descricao'] : null
                 ));
                 error_log("Pneu inserido dinamicamente: {$pneu['item']} = {$pneu['status']} | Pressão: " . (isset($pneu['pressao']) ? $pneu['pressao'] : 'N/A'));
             }

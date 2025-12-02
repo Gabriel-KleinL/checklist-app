@@ -13,24 +13,28 @@ interface ItemMotor {
   nome: string;
   valor: 'bom' | 'ruim' | null;
   foto?: string;
+  descricao?: string;
 }
 
 interface ItemLimpeza {
   nome: string;
   valor: 'pessima' | 'ruim' | 'satisfatoria' | 'otimo' | null;
   foto?: string;
+  descricao?: string;
 }
 
 interface ItemEletrico {
   nome: string;
   valor: 'bom' | 'ruim' | null;
   foto?: string;
+  descricao?: string;
 }
 
 interface ItemFerramenta {
   nome: string;
   valor: 'contem' | 'nao_contem' | null;
   foto?: string;
+  descricao?: string;
 }
 
 interface InspecaoVeiculo {
@@ -224,7 +228,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   async tirarFotoMotor(index: number) {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
@@ -242,7 +246,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   async tirarFotoLimpeza(index: number) {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
@@ -270,7 +274,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   async tirarFotoEletrico(index: number) {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
@@ -293,7 +297,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   async tirarFotoFerramenta(index: number) {
     try {
       const image = await Camera.getPhoto({
-        quality: 50,
+        quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
@@ -314,33 +318,37 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   }
 
   async onValorMotorChange(item: ItemMotor) {
-    // Se mudou para "bom", remove a foto
+    // Se mudou para "bom", remove a foto e descrição
     if (item.valor === 'bom') {
       item.foto = undefined;
+      item.descricao = undefined;
     }
     await this.salvarLocalmente();
   }
 
   async onValorLimpezaChange(item: ItemLimpeza) {
-    // Se mudou para "satisfatória" ou "ótimo", remove a foto
+    // Se mudou para "satisfatória" ou "ótimo", remove a foto e descrição
     if (item.valor === 'satisfatoria' || item.valor === 'otimo') {
       item.foto = undefined;
+      item.descricao = undefined;
     }
     await this.salvarLocalmente();
   }
 
   async onValorEletricoChange(item: ItemEletrico) {
-    // Se mudou para "bom", remove a foto
+    // Se mudou para "bom", remove a foto e descrição
     if (item.valor === 'bom') {
       item.foto = undefined;
+      item.descricao = undefined;
     }
     await this.salvarLocalmente();
   }
 
   async onValorFerramentaChange(item: ItemFerramenta) {
-    // Se mudou para "contém", remove a foto
+    // Se mudou para "contém", remove a foto e descrição
     if (item.valor === 'contem') {
       item.foto = undefined;
+      item.descricao = undefined;
     }
     await this.salvarLocalmente();
   }
@@ -396,7 +404,8 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
             categoria: 'MOTOR',
             item: item.nome,
             status: item.valor,
-            foto: item.foto || null
+            foto: item.foto || null,
+            descricao: item.descricao || null
           });
         }
       });
@@ -408,7 +417,8 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
             categoria: 'ELETRICO',
             item: item.nome,
             status: item.valor,
-            foto: item.foto || null
+            foto: item.foto || null,
+            descricao: item.descricao || null
           });
         }
       });
@@ -420,7 +430,8 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
             categoria: 'LIMPEZA',
             item: item.nome,
             status: item.valor,
-            foto: item.foto || null
+            foto: item.foto || null,
+            descricao: item.descricao || null
           });
         }
       });
@@ -432,7 +443,8 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
             categoria: 'FERRAMENTA',
             item: item.nome,
             status: item.valor,
-            foto: item.foto || null
+            foto: item.foto || null,
+            descricao: item.descricao || null
           });
         }
       });

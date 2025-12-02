@@ -12,24 +12,28 @@ export interface ItemMotor {
   nome: string;
   valor: 'bom' | 'ruim' | null;
   foto?: string;
+  descricao?: string;
 }
 
 export interface ItemLimpeza {
   nome: string;
   valor: 'pessima' | 'ruim' | 'satisfatoria' | 'otimo' | null;
   foto?: string;
+  descricao?: string;
 }
 
 export interface ItemEletrico {
   nome: string;
   valor: 'bom' | 'ruim' | null;
   foto?: string;
+  descricao?: string;
 }
 
 export interface ItemFerramenta {
   nome: string;
   valor: 'contem' | 'nao_contem' | null;
   foto?: string;
+  descricao?: string;
 }
 
 export interface InspecaoVeiculoData {
@@ -51,8 +55,8 @@ export interface PneuData {
   posicao: string;
   valor: 'bom' | 'ruim' | null;
   foto?: string;
-  pressao?: number | null;
-  fotoCaneta?: string;
+  pressao?: number;
+  descricao?: string;
 }
 
 export interface ChecklistCompleto {
