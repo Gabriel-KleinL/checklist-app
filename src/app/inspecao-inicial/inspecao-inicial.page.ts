@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { LoadingController, AlertController } from '@ionic/angular';
 import { ChecklistDataService, InspecaoInicialData } from '../services/checklist-data.service';
 import { LocalStorageService } from '../services/local-storage';
 import { AuthService } from '../services/auth.service';
@@ -34,13 +35,20 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
 
   exibirAjuda = false;
 
+  // Autocomplete de placas
+  placasFiltradas: string[] = [];
+  mostrarSugestoes = false;
+  carregandoPlacas = false;
+
   constructor(
     private router: Router,
     private checklistData: ChecklistDataService,
     private localStorage: LocalStorageService,
     private authService: AuthService,
     private tempoTelasService: TempoTelasService,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private loadingController: LoadingController,
+    private alertController: AlertController
   ) { }
 
   async ngOnInit() {
@@ -101,6 +109,59 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
     await this.salvarLocalmente();
   }
 
+  onPlacaInput(event: any) {
+    let termo = event.target?.value || '';
+
+    // Força maiúsculas
+    if (termo) {
+      termo = termo.toUpperCase();
+      this.inspecaoInicial.placa = termo;
+      // Atualiza o valor no input visualmente se necessário (embora o ngModel deva cuidar disso)
+      if (event.target) {
+        event.target.value = termo;
+      }
+    }
+
+    if (termo && termo.length >= 2) {
+      this.carregandoPlacas = true;
+      this.mostrarSugestoes = true;
+
+      this.apiService.buscarPlacas(termo, 10).subscribe({
+        next: (response) => {
+          if (response && response.sucesso) {
+            this.placasFiltradas = response.placas || [];
+          } else {
+            this.placasFiltradas = [];
+          }
+          this.carregandoPlacas = false;
+        },
+        error: (error) => {
+          console.error('Erro ao buscar placas:', error);
+          this.placasFiltradas = [];
+          this.carregandoPlacas = false;
+        }
+      });
+    } else {
+      this.placasFiltradas = [];
+      this.mostrarSugestoes = false;
+    }
+
+    this.onCampoChange();
+  }
+
+  selecionarPlaca(placa: string) {
+    this.inspecaoInicial.placa = placa;
+    this.mostrarSugestoes = false;
+    this.placasFiltradas = [];
+    this.onCampoChange();
+  }
+
+  fecharSugestoes() {
+    setTimeout(() => {
+      this.mostrarSugestoes = false;
+    }, 200);
+  }
+
   validarFormulario(): boolean {
     return !!(
       this.inspecaoInicial.placa &&
@@ -110,9 +171,52 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
     );
   }
 
+  async verificarPlacaNoBanco(placa: string): Promise<boolean> {
+    try {
+      // Valida se a placa existe no cadastro de veículos (tabela Vehicles)
+      const response = await this.apiService.validarPlaca(placa).toPromise();
+
+      // Verifica se retornou sucesso
+      if (response && response.sucesso === true) {
+        return true;
+      }
+
+      return false;
+    } catch (error: any) {
+      console.error('Erro ao validar placa:', error);
+      // Se retornou 404 (placa não encontrada), retorna false
+      if (error?.status === 404) {
+        return false;
+      }
+      // Para outros erros, também retorna false
+      return false;
+    }
+  }
+
   async salvarInspecao() {
     if (!this.validarFormulario()) {
       alert('Por favor, preencha todos os campos obrigatórios: Placa, KM Inicial, Combustível e Foto do Painel.');
+      return;
+    }
+
+    // Validação da placa no backend
+    const loading = await this.loadingController.create({
+      message: 'Validando placa...',
+      spinner: 'crescent'
+    });
+    await loading.present();
+
+    const placaValida = await this.verificarPlacaNoBanco(this.inspecaoInicial.placa);
+    await loading.dismiss();
+
+    if (!placaValida) {
+      const alert = await this.alertController.create({
+        header: '🚫 Placa Não Autorizada',
+        message: `A placa ${this.inspecaoInicial.placa.toUpperCase()} não foi encontrada na base de dados.\n\nVerifique se digitou corretamente ou entre em contato com o gestor da frota.`,
+        buttons: ['OK'],
+        cssClass: 'custom-alert-danger'
+      });
+      await alert.present();
       return;
     }
 

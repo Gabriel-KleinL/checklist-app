@@ -119,3 +119,47 @@ ion-item {
     margin-top: 4px;
   }
 }
+
+// Autocomplete de placas
+.autocomplete-container {
+  position: relative;
+  margin-top: 8px;
+  background: var(--ion-color-step-100);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 1000;
+
+  ion-spinner {
+    display: block;
+    margin: 16px auto;
+  }
+
+  ion-list {
+    background: transparent;
+    padding: 0;
+
+    ion-item {
+      --background: transparent;
+      --padding-start: 16px;
+      --inner-padding-end: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &:hover {
+        --background: rgba(var(--ion-color-primary-rgb), 0.1);
+      }
+
+      ion-label {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--ion-color-light);
+      }
+
+      ion-icon {
+        font-size: 20px;
+      }
+    }
+  }
+}

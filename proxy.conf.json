@@ -1,0 +1,11 @@
+{
+    "/api": {
+        "target": "https://floripa.in9automacao.com.br",
+        "secure": false,
+        "changeOrigin": true,
+        "logLevel": "debug",
+        "pathRewrite": {
+            "^/api": ""
+        }
+    }
+}

@@ -83,6 +83,10 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=placa&placa=${placa}`);
   }
 
+  validarPlaca(placa: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=validar_placa&placa=${encodeURIComponent(placa)}`);
+  }
+
   buscarPorId(id: number): Observable<any> {
     return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=id&id=${id}`);
   }
@@ -93,6 +97,48 @@ export class ApiService {
 
   buscarPorPeriodo(dataInicio: string, dataFim: string): Observable<any> {
     return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=periodo&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+  }
+
+  buscarAnomalias(tipo: string = 'ativas'): Observable<any> {
+    return this.http.get(`${this.baseUrl}/b_veicular_anomalias.php?tipo=${tipo}`);
+  }
+
+  buscarPlacas(termo: string = '', limite: number = 20): Observable<any> {
+    const params = termo ? `?termo=${encodeURIComponent(termo)}&limite=${limite}` : `?limite=${limite}`;
+    return this.http.get(`${this.baseUrl}/b_buscar_placas.php${params}`);
+  }
+
+  aprovarAnomalia(placa: string, categoria: string, item: string, usuarioId?: number): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post(`${this.baseUrl}/b_anomalia_status.php`, {
+      placa,
+      categoria,
+      item,
+      acao: 'aprovar',
+      usuario_id: usuarioId
+    }, { headers });
+  }
+
+  reprovarAnomalia(placa: string, categoria: string, item: string, observacao?: string): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post(`${this.baseUrl}/b_anomalia_status.php`, {
+      placa,
+      categoria,
+      item,
+      acao: 'reprovar',
+      observacao
+    }, { headers });
+  }
+
+  finalizarAnomalia(placa: string, categoria: string, item: string, observacao?: string): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post(`${this.baseUrl}/b_anomalia_status.php`, {
+      placa,
+      categoria,
+      item,
+      acao: 'finalizar',
+      observacao
+    }, { headers });
   }
 
   // ============================================

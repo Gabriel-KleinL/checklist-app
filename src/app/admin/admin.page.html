@@ -55,10 +55,18 @@
     </ion-card>
 
     <!-- Segmentos (Abas) -->
-    <ion-segment [(ngModel)]="abaSelecionada" (ionChange)="mudarAba(abaSelecionada)">
+    <ion-segment [(ngModel)]="abaSelecionada" (ionChange)="mudarAba(abaSelecionada)" scrollable>
       <ion-segment-button value="historico">
         <ion-label>Histórico</ion-label>
         <ion-icon name="list"></ion-icon>
+      </ion-segment-button>
+      <ion-segment-button value="anomalias">
+        <ion-label>Anomalias</ion-label>
+        <ion-icon name="warning"></ion-icon>
+      </ion-segment-button>
+      <ion-segment-button value="metricas">
+        <ion-label>Métricas</ion-label>
+        <ion-icon name="analytics"></ion-icon>
       </ion-segment-button>
       <ion-segment-button value="configuracao">
         <ion-label>Configurar Itens</ion-label>
@@ -248,6 +256,304 @@
           </ion-item-options>
         </ion-item-sliding>
       </ion-list>
+    </div>
+
+    <!-- ========================================= -->
+    <!-- ABA: ANOMALIAS -->
+    <!-- ========================================= -->
+    <div *ngIf="abaSelecionada === 'anomalias'">
+      <ion-card color="danger">
+        <ion-card-content>
+          <ion-icon name="warning"></ion-icon>
+          Veículos com problemas detectados nos checklists
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Segmento para alternar entre ativas e finalizadas -->
+      <ion-segment [(ngModel)]="tipoAnomalias" (ionChange)="mudarTipoAnomalia()" style="margin-bottom: 20px;">
+        <ion-segment-button value="ativas">
+          <ion-label>Ativas</ion-label>
+          <ion-icon name="alert-circle"></ion-icon>
+        </ion-segment-button>
+        <ion-segment-button value="finalizadas">
+          <ion-label>Finalizadas</ion-label>
+          <ion-icon name="checkmark-circle"></ion-icon>
+        </ion-segment-button>
+      </ion-segment>
+
+      <!-- Loading -->
+      <div *ngIf="carregandoAnomalias" class="loading-container">
+        <ion-spinner name="crescent" color="danger"></ion-spinner>
+        <p>Carregando anomalias...</p>
+      </div>
+
+      <!-- Erro -->
+      <ion-card *ngIf="erroAnomalias && !carregandoAnomalias" color="danger">
+        <ion-card-content>
+          <ion-icon name="alert-circle"></ion-icon>
+          {{ erroAnomalias }}
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Lista vazia -->
+      <div *ngIf="!carregandoAnomalias && !erroAnomalias && anomalias.length === 0" class="empty-state animate-in">
+        <ion-icon name="checkmark-circle-outline" color="success"></ion-icon>
+        <h3>Nenhuma anomalia encontrada</h3>
+        <p>Todos os veículos estão em bom estado!</p>
+      </div>
+
+      <!-- Lista de Anomalias por Placa -->
+      <div *ngIf="!carregandoAnomalias && anomalias.length > 0">
+        <ion-card *ngFor="let veiculo of anomalias" class="anomalia-card">
+          <ion-card-header [style.background]="'linear-gradient(135deg, #eb445a 0%, #c1365d 100%)'">
+            <ion-card-title style="color: white; display: flex; align-items: center; justify-content: space-between;">
+              <span>
+                <ion-icon name="car" style="margin-right: 8px;"></ion-icon>
+                {{ veiculo.placa }}
+              </span>
+              <ion-badge color="light">
+                {{ veiculo.total_problemas }} problema{{ veiculo.total_problemas > 1 ? 's' : '' }}
+              </ion-badge>
+            </ion-card-title>
+          </ion-card-header>
+
+          <ion-card-content>
+            <!-- Resumo -->
+            <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span><strong>Total de problemas:</strong></span>
+                <span>{{ veiculo.total_problemas }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span><strong>Inspeções com problema:</strong></span>
+                <span>{{ veiculo.total_inspecoes_com_problema }}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span><strong>Última inspeção:</strong></span>
+                <span>{{ formatarData(veiculo.data_ultima_inspecao) }}</span>
+              </div>
+            </div>
+
+            <!-- Lista de Problemas -->
+            <ion-button expand="block" fill="outline" color="danger" (click)="toggleDetalhesAnomalia(veiculo.placa)">
+              <ion-icon name="{{ detalhesAnomaliaExpandido[veiculo.placa] ? 'chevron-up' : 'chevron-down' }}"
+                slot="start"></ion-icon>
+              {{ detalhesAnomaliaExpandido[veiculo.placa] ? 'Ocultar' : 'Ver' }} Detalhes dos Problemas
+            </ion-button>
+
+            <ion-list *ngIf="detalhesAnomaliaExpandido[veiculo.placa]">
+              <ion-item *ngFor="let anomalia of veiculo.anomalias" lines="full">
+                <ion-icon name="alert-circle" slot="start" color="danger"></ion-icon>
+                <ion-label class="ion-text-wrap">
+                  <h3><strong>{{ anomalia.item }}</strong></h3>
+                  <p>
+                    <span *ngIf="anomalia.statuses && anomalia.statuses.length > 1">
+                      <ion-badge *ngFor="let st of anomalia.statuses" [color]="getCorStatus(st)"
+                        style="margin-right: 4px;">{{ st }}</ion-badge>
+                    </span>
+                    <ion-badge *ngIf="!anomalia.statuses || anomalia.statuses.length === 1"
+                      [color]="getCorStatus(anomalia.status)">{{ anomalia.status }}</ion-badge>
+                    <span style="margin-left: 8px;">{{ formatarCategoria(anomalia.categoria) }}</span>
+                  </p>
+                  <p style="font-size: 0.85em; color: var(--ion-color-medium); margin-top: 4px;">
+                    <ion-icon name="calendar-outline" style="font-size: 0.9em;"></ion-icon>
+                    {{ formatarData(anomalia.data_realizacao) }}
+                    <span *ngIf="anomalia.total_ocorrencias && anomalia.total_ocorrencias > 1"
+                      style="margin-left: 4px;">
+                      <strong>({{ anomalia.total_ocorrencias }} ocorrências)</strong>
+                    </span>
+                    <span *ngIf="anomalia.inspecoes_ids && anomalia.inspecoes_ids.length > 1" style="margin-left: 4px;">
+                      - {{ anomalia.inspecoes_ids.length }} inspeções
+                    </span>
+                  </p>
+                  <p *ngIf="anomalia.usuarios && anomalia.usuarios.length > 0"
+                    style="font-size: 0.85em; margin-top: 4px;">
+                    <ion-icon name="people-outline"></ion-icon>
+                    <span style="font-weight: 500;">{{ formatarUsuarios(anomalia.usuarios) }}</span>
+                  </p>
+
+                  <!-- Botões de Aprovação (apenas para ativas) -->
+                  <div *ngIf="tipoAnomalias === 'ativas'"
+                    style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <!-- Pendente: mostra botões Sim/Não -->
+                    <div *ngIf="!anomalia.status_anomalia || anomalia.status_anomalia === 'pendente'"
+                      style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                      <ion-button expand="block" color="success" (click)="aprovarAnomalia(veiculo.placa, anomalia)">
+                        <ion-icon name="checkmark-circle" slot="start"></ion-icon>
+                        Aprovar
+                      </ion-button>
+                      <ion-button expand="block" color="danger" (click)="reprovarAnomalia(veiculo.placa, anomalia)">
+                        <ion-icon name="close-circle" slot="start"></ion-icon>
+                        Reprovar
+                      </ion-button>
+                    </div>
+
+                    <!-- Aprovado: mostra botão Finalizar -->
+                    <div *ngIf="anomalia.status_anomalia === 'aprovado'" style="width: 100%;">
+                      <ion-badge color="success" style="margin-bottom: 8px;">Aprovado</ion-badge>
+                      <ion-button size="small" expand="block" color="warning"
+                        (click)="finalizarAnomalia(veiculo.placa, anomalia)">
+                        <ion-icon name="checkmark-done" slot="start"></ion-icon>
+                        Finalizar
+                      </ion-button>
+                    </div>
+                  </div>
+
+                  <!-- Informação de finalização -->
+                  <div *ngIf="tipoAnomalias === 'finalizadas' && anomalia.data_finalizacao" style="margin-top: 8px;">
+                    <ion-badge color="medium">Finalizado em {{ formatarData(anomalia.data_finalizacao) }}</ion-badge>
+                  </div>
+
+                  <!-- Informações de aprovação (aparece tanto em ativas quanto finalizadas) -->
+                  <div *ngIf="anomalia.status_anomalia === 'aprovado' || anomalia.status_anomalia === 'finalizado'"
+                    style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; font-size: 0.85em; color: #000;">
+                    <div *ngIf="anomalia.data_aprovacao" style="margin-bottom: 4px; color: #000;">
+                      <ion-icon name="checkmark-circle" color="success"
+                        style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                      <strong style="color: #000;">Aprovado em:</strong> {{ formatarData(anomalia.data_aprovacao) }}
+                    </div>
+                    <div *ngIf="anomalia.usuario_aprovador_nome" style="margin-bottom: 4px; color: #000;">
+                      <ion-icon name="person" color="primary"
+                        style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                      <strong style="color: #000;">Aprovado por:</strong> {{ anomalia.usuario_aprovador_nome }}
+                    </div>
+                    <div *ngIf="anomalia.observacao" style="margin-top: 4px; color: #000;">
+                      <ion-icon name="chatbox" color="medium"
+                        style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                      <strong style="color: #000;">Observação:</strong> {{ anomalia.observacao }}
+                    </div>
+                  </div>
+                </ion-label>
+                <ion-button slot="end" fill="clear" *ngIf="anomalia.foto" (click)="expandirFoto(anomalia.foto)">
+                  <ion-icon name="image" color="primary"></ion-icon>
+                </ion-button>
+              </ion-item>
+            </ion-list>
+          </ion-card-content>
+        </ion-card>
+      </div>
+    </div>
+
+    <!-- ========================================= -->
+    <!-- ABA: MÉTRICAS -->
+    <!-- ========================================= -->
+    <div *ngIf="abaSelecionada === 'metricas'">
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="analytics" color="primary"></ion-icon>
+            Dashboard de Métricas
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p style="color: #666;">Visão geral do sistema de inspeções</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Resumo Geral -->
+      <ion-row>
+        <ion-col size="6" size-md="3">
+          <ion-card color="primary">
+            <ion-card-content style="text-align: center; padding: 16px;">
+              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ totalChecklists }}</h2>
+              <p style="color: white; margin: 0; font-size: 0.8em;">Checklists</p>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+        <ion-col size="6" size-md="3">
+          <ion-card color="warning">
+            <ion-card-content style="text-align: center; padding: 16px;">
+              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ anomalias.length }}</h2>
+              <p style="color: white; margin: 0; font-size: 0.8em;">Veíc. c/ Prob.</p>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+        <ion-col size="6" size-md="3">
+          <ion-card color="success">
+            <ion-card-content style="text-align: center; padding: 16px;">
+              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ checklistsHoje }}</h2>
+              <p style="color: white; margin: 0; font-size: 0.8em;">Hoje</p>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+        <ion-col size="6" size-md="3">
+          <ion-card color="tertiary">
+            <ion-card-content style="text-align: center; padding: 16px;">
+              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ checklistsSemana }}</h2>
+              <p style="color: white; margin: 0; font-size: 0.8em;">Semana</p>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+
+      <!-- Seletor de Gráficos -->
+      <ion-segment [(ngModel)]="graficoSelecionado" (ionChange)="mudarGrafico($event)" scrollable mode="md"
+        class="chart-segment">
+        <ion-segment-button value="usuarios">
+          <ion-label>Usuários</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="veiculos">
+          <ion-label>Veículos</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="veiculos_anomalias">
+          <ion-label>Veic. c/ Prob.</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="tipos_anomalias">
+          <ion-label>Tipos</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="status_anomalias">
+          <ion-label>Status</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      <!-- Busca -->
+      <ion-searchbar placeholder="Filtrar dados do gráfico..." [(ngModel)]="termoBuscaGrafico"
+        (ionInput)="buscarGrafico($event)" debounce="300" animated></ion-searchbar>
+
+      <!-- Container do Gráfico -->
+      <ion-card class="chart-card animate-in-up">
+        <ion-card-header>
+          <ion-card-title class="ion-text-center">{{ getTituloGrafico() }}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="chart-container"
+            style="position: relative; height: 600px; width: 100%; display: flex; justify-content: center; align-items: center;">
+            <canvas id="chartCanvas"></canvas>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Lista de Dados -->
+      <ion-card class="animate-in-up" *ngIf="dadosGraficoFiltrados.length > 0">
+        <ion-card-header>
+          <ion-card-title>Detalhamento ({{ dadosGraficoFiltrados.length }})</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-list>
+            <ion-item *ngFor="let item of dadosGraficoFiltrados">
+              <ion-avatar slot="start" [style.background]="item.color"
+                style="width: 24px; height: 24px; border-radius: 50%; margin-right: 16px;"></ion-avatar>
+              <ion-label>
+                <h2>{{ item.label }}</h2>
+                <p>Quantidade: {{ item.value }}</p>
+              </ion-label>
+              <ion-badge slot="end" color="medium">{{ item.value }}</ion-badge>
+            </ion-item>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Botão para Atualizar -->
+      <ion-card>
+        <ion-card-content style="text-align: center;">
+          <ion-button expand="block" (click)="mudarAba('metricas')" [disabled]="carregandoMetricas">
+            <ion-icon name="refresh" slot="start"></ion-icon>
+            Atualizar Gráficos
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+
+
     </div>
 
     <!-- ========================================= -->

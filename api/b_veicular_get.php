@@ -66,6 +66,38 @@ try {
             echo json_encode($resultado);
             break;
 
+        case 'validar_placa':
+            // Nova ação para validar se a placa existe na tabela de veículos
+            if (!isset($_GET['placa'])) {
+                http_response_code(400);
+                echo json_encode(['erro' => 'Placa não informada']);
+                exit;
+            }
+
+            // Busca a placa na tabela Vehicles (cadastro de veículos)
+            $sql = "SELECT LicensePlate as placa
+                    FROM Vehicles
+                    WHERE UPPER(LicensePlate) = UPPER(:placa)
+                    LIMIT 1";
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute(['placa' => $_GET['placa']]);
+            $veiculo = $stmt->fetch();
+
+            if ($veiculo) {
+                echo json_encode([
+                    'sucesso' => true,
+                    'placa' => $veiculo['placa']
+                ]);
+            } else {
+                http_response_code(404);
+                echo json_encode([
+                    'sucesso' => false,
+                    'erro' => 'Placa não encontrada no cadastro de veículos'
+                ]);
+            }
+            break;
+
         case 'placa':
             if (!isset($_GET['placa'])) {
                 http_response_code(400);

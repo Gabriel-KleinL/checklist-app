@@ -147,6 +147,11 @@ export class ChecklistCompletoPage implements OnInit {
     { valor: '3/4', label: '3/4' },
     { valor: 'cheio', label: 'Cheio' }
   ];
+
+  // Autocomplete de placas
+  placasFiltradas: string[] = [];
+  mostrarSugestoes = false;
+  carregandoPlacas = false;
   niveisDisponiveis = ['Vazio', '1/4', '1/2', '3/4', 'Cheio'];
 
   // PARTE 1 - INTERNA (agora com índice dinâmico para suportar itens do banco)
@@ -403,18 +408,109 @@ export class ChecklistCompletoPage implements OnInit {
     }
   }
 
+  onPlacaInput(event: any) {
+    let termo = event.target?.value || '';
+
+    // Força maiúsculas
+    if (termo) {
+      termo = termo.toUpperCase();
+      this.placa = termo;
+      // Atualiza o valor no input visualmente
+      if (event.target) {
+        event.target.value = termo;
+      }
+    }
+
+    if (termo && termo.length >= 2) {
+      this.carregandoPlacas = true;
+      this.mostrarSugestoes = true;
+
+      this.apiService.buscarPlacas(termo, 10).subscribe({
+        next: (response) => {
+          if (response && response.sucesso) {
+            this.placasFiltradas = response.placas || [];
+          } else {
+            this.placasFiltradas = [];
+          }
+          this.carregandoPlacas = false;
+        },
+        error: (error) => {
+          console.error('Erro ao buscar placas:', error);
+          this.placasFiltradas = [];
+          this.carregandoPlacas = false;
+        }
+      });
+    } else {
+      this.placasFiltradas = [];
+      this.mostrarSugestoes = false;
+    }
+  }
+
+  selecionarPlaca(placa: string) {
+    this.placa = placa;
+    this.mostrarSugestoes = false;
+    this.placasFiltradas = [];
+  }
+
+  fecharSugestoes() {
+    setTimeout(() => {
+      this.mostrarSugestoes = false;
+    }, 200);
+  }
+
   getProgresso(): number {
     return ((this.parteAtual + 1) / this.totalPartes) * 100;
   }
 
+  async verificarPlacaNoBanco(placa: string): Promise<boolean> {
+    try {
+      // Valida se a placa existe no cadastro de veículos (tabela Vehicles)
+      const response = await this.apiService.validarPlaca(placa).toPromise();
+
+      // Verifica se retornou sucesso
+      if (response && response.sucesso === true) {
+        return true;
+      }
+
+      return false;
+    } catch (error: any) {
+      console.error('Erro ao validar placa:', error);
+      // Se retornou 404 (placa não encontrada), retorna false
+      if (error?.status === 404) {
+        return false;
+      }
+      // Para outros erros, também retorna false
+      return false;
+    }
+  }
+
   async salvarChecklist() {
-    // Validação básica - apenas aviso se placa estiver preenchida incorretamente
+    // Validação básica de formato
     if (this.placa && !this.validarPlaca(this.placa)) {
       const confirmar = confirm('A placa informada está em formato inválido. Deseja continuar mesmo assim?');
       if (!confirmar) {
         this.irParaParte(0);
         return;
       }
+    }
+
+    // Validação da placa no backend
+    const loadingValidacao = await this.loadingController.create({
+      message: 'Validando placa...',
+      spinner: 'crescent'
+    });
+    await loadingValidacao.present();
+
+    const placaValida = await this.verificarPlacaNoBanco(this.placa);
+    await loadingValidacao.dismiss();
+
+    if (!placaValida) {
+      await this.mostrarAlerta(
+        '🚫 Placa Não Autorizada',
+        `A placa ${this.placa.toUpperCase()} não foi encontrada na base de dados.\n\nVerifique se digitou corretamente ou entre em contato com o gestor da frota.`
+      );
+      this.irParaParte(0); // Volta para a primeira parte onde está a placa
+      return;
     }
 
     const loading = await this.loadingController.create({

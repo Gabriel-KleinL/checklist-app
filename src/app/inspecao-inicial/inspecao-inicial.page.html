@@ -36,13 +36,28 @@
           </ion-label>
           <ion-input
             [(ngModel)]="inspecaoInicial.placa"
-            (ionChange)="onCampoChange()"
+            (ionInput)="onPlacaInput($event)"
+            (ionBlur)="fecharSugestoes()"
             placeholder="Digite a placa do veículo"
             color="light"
             type="text"
             maxlength="8"
           ></ion-input>
         </ion-item>
+
+        <!-- SUGESTÕES DE PLACAS -->
+        <div *ngIf="mostrarSugestoes && (placasFiltradas.length > 0 || carregandoPlacas)" class="autocomplete-container">
+          <ion-spinner *ngIf="carregandoPlacas" name="crescent" color="primary"></ion-spinner>
+          <ion-list *ngIf="!carregandoPlacas && placasFiltradas.length > 0">
+            <ion-item *ngFor="let placa of placasFiltradas" (click)="selecionarPlaca(placa)" button detail="false">
+              <ion-icon slot="start" name="car-outline" color="primary"></ion-icon>
+              <ion-label>{{ placa }}</ion-label>
+            </ion-item>
+          </ion-list>
+          <ion-item *ngIf="!carregandoPlacas && placasFiltradas.length === 0">
+            <ion-label color="medium">Nenhuma placa encontrada</ion-label>
+          </ion-item>
+        </div>
 
         <div class="spacer"></div>
 

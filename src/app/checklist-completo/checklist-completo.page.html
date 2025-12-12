@@ -63,9 +63,25 @@
             class="modern-input"
             [(ngModel)]="placa"
             placeholder="ABC1234 ou ABC1D23"
-            (ionBlur)="formatarPlaca()"
+            (ionInput)="onPlacaInput($event)"
+            (ionBlur)="formatarPlaca(); fecharSugestoes()"
             maxlength="8">
           </ion-input>
+
+          <!-- SUGESTÕES DE PLACAS -->
+          <div *ngIf="mostrarSugestoes && (placasFiltradas.length > 0 || carregandoPlacas)" class="autocomplete-container">
+            <ion-spinner *ngIf="carregandoPlacas" name="crescent" color="primary"></ion-spinner>
+            <ion-list *ngIf="!carregandoPlacas && placasFiltradas.length > 0">
+              <ion-item *ngFor="let placaSugestao of placasFiltradas" (click)="selecionarPlaca(placaSugestao)" button detail="false">
+                <ion-icon slot="start" name="car-outline" color="primary"></ion-icon>
+                <ion-label>{{ placaSugestao }}</ion-label>
+              </ion-item>
+            </ion-list>
+            <ion-item *ngIf="!carregandoPlacas && placasFiltradas.length === 0">
+              <ion-label color="medium">Nenhuma placa encontrada</ion-label>
+            </ion-item>
+          </div>
+
           <div *ngIf="placa && !validarPlaca(placa)" class="error-message">
             <ion-icon name="alert-circle"></ion-icon>
             Formato inválido! Use AAA1A11 (Mercosul) ou AAA1111 (antigo)
