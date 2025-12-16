@@ -7,42 +7,17 @@ import { AuthService } from '../services/auth.service';
 import { TempoTelasService } from '../services/tempo-telas.service';
 import { ConfigItensService } from '../services/config-itens.service';
 import { ApiService } from '../services/api.service';
+import { LoggerService } from '../services/logger.service';
+import { ErrorHandlerService } from '../services/error-handler.service';
 import { driver } from 'driver.js';
-
-interface ItemMotor {
-  nome: string;
-  valor: 'bom' | 'ruim' | null;
-  foto?: string;
-  descricao?: string;
-}
-
-interface ItemLimpeza {
-  nome: string;
-  valor: 'pessima' | 'ruim' | 'satisfatoria' | 'otimo' | null;
-  foto?: string;
-  descricao?: string;
-}
-
-interface ItemEletrico {
-  nome: string;
-  valor: 'bom' | 'ruim' | null;
-  foto?: string;
-  descricao?: string;
-}
-
-interface ItemFerramenta {
-  nome: string;
-  valor: 'contem' | 'nao_contem' | null;
-  foto?: string;
-  descricao?: string;
-}
-
-interface InspecaoVeiculo {
-  motor: ItemMotor[];
-  limpeza: ItemLimpeza[];
-  eletricos: ItemEletrico[];
-  ferramentas: ItemFerramenta[];
-}
+import { CAMERA_CONFIG, MESSAGES, STATUS_COLORS, STATUS_LABELS } from '../config/app.constants';
+import {
+  ItemMotor,
+  ItemLimpeza,
+  ItemEletrico,
+  ItemFerramenta,
+  InspecaoVeiculo
+} from '../models/checklist.models';
 
 @Component({
   selector: 'app-inspecao-veiculo',
@@ -53,38 +28,19 @@ interface InspecaoVeiculo {
 export class InspecaoVeiculoPage implements OnInit, OnDestroy {
 
   inspecao: InspecaoVeiculo = {
-    motor: [
-      { nome: 'Água Radiador', valor: null },
-      { nome: 'Água Limpador Parabrisa', valor: null },
-      { nome: 'Fluido de Freio', valor: null },
-      { nome: 'Nível de Óleo', valor: null },
-      { nome: 'Tampa do Radiador', valor: null },
-      { nome: 'Freio de Mão', valor: null }
-    ],
-    limpeza: [
-      { nome: 'Limpeza Interna', valor: null },
-      { nome: 'Limpeza Externa', valor: null }
-    ],
-    eletricos: [
-      { nome: 'Seta Esquerda', valor: null },
-      { nome: 'Seta Direita', valor: null },
-      { nome: 'Pisca Alerta', valor: null },
-      { nome: 'Farol', valor: null }
-    ],
-    ferramentas: [
-      { nome: 'Macaco', valor: null },
-      { nome: 'Chave de Roda', valor: null },
-      { nome: 'Chave do Estepe', valor: null },
-      { nome: 'Triângulo', valor: null }
-    ]
+    motor: [],
+    limpeza: [],
+    eletricos: [],
+    ferramentas: []
   };
 
-  opcoesMotor = ['bom', 'ruim'];
-  opcoesLimpeza = ['pessima', 'ruim', 'satisfatoria', 'otimo'];
-  opcoesEletricos = ['bom', 'ruim'];
-  opcoesFerramentas = ['contem', 'nao_contem'];
+  readonly opcoesMotor = ['bom', 'ruim'];
+  readonly opcoesLimpeza = ['pessima', 'ruim', 'satisfatoria', 'otimo'];
+  readonly opcoesEletricos = ['bom', 'ruim'];
+  readonly opcoesFerramentas = ['contem', 'nao_contem'];
 
   exibirAjuda = false;
+  carregandoItens = false;
 
   constructor(
     private router: Router,
@@ -93,7 +49,9 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     private authService: AuthService,
     private tempoTelasService: TempoTelasService,
     private configItensService: ConfigItensService,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private logger: LoggerService,
+    private errorHandler: ErrorHandlerService
   ) { }
 
   async ngOnInit() {
@@ -119,16 +77,15 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     }
   }
 
-  async carregarItensHabilitados() {
-    try {
-      console.log('[Config Itens] Carregando itens habilitados do banco...');
+  async carregarItensHabilitados(): Promise<void> {
+    this.carregandoItens = true;
+    this.logger.info('Carregando itens habilitados do banco de dados...');
 
+    try {
       // Carrega apenas itens habilitados
       const itensHabilitados = await this.configItensService.buscarHabilitados().toPromise();
 
       if (itensHabilitados && itensHabilitados.length > 0) {
-        console.log('[Config Itens] Itens carregados:', itensHabilitados);
-
         // Filtra itens por categoria e mapeia para a estrutura do componente
         this.inspecao.motor = itensHabilitados
           .filter(item => item.categoria === 'MOTOR')
@@ -146,13 +103,26 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
           .filter(item => item.categoria === 'FERRAMENTA')
           .map(item => ({ nome: item.nome_item, valor: null }));
 
-        console.log('[Config Itens] Inspeção configurada com itens do banco:', this.inspecao);
+        this.logger.info(
+          `Itens carregados: ${this.inspecao.motor.length} motor, ` +
+          `${this.inspecao.eletricos.length} elétricos, ` +
+          `${this.inspecao.limpeza.length} limpeza, ` +
+          `${this.inspecao.ferramentas.length} ferramentas`
+        );
+        this.logger.debug('Inspeção configurada:', this.inspecao);
       } else {
-        console.log('[Config Itens] Nenhum item habilitado encontrado, usando itens padrão');
+        this.logger.warn('Nenhum item habilitado encontrado no banco de dados');
+        await this.errorHandler.showWarning('Nenhum item de inspeção configurado. Entre em contato com o administrador.');
       }
     } catch (error) {
-      console.error('[Config Itens] Erro ao carregar itens:', error);
-      console.log('[Config Itens] Mantendo itens padrão hardcoded devido ao erro');
+      this.logger.error('Erro ao carregar itens de configuração', error);
+      await this.errorHandler.handleError(
+        error,
+        'Erro ao carregar itens de inspeção. Verifique sua conexão.',
+        { showToast: true }
+      );
+    } finally {
+      this.carregandoItens = false;
     }
   }
 
@@ -225,39 +195,41 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     return item.valor === 'nao_contem';
   }
 
-  async tirarFotoMotor(index: number) {
+  async tirarFotoMotor(index: number): Promise<void> {
     try {
       const image = await Camera.getPhoto({
-        quality: 45,
+        quality: CAMERA_CONFIG.QUALITY,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
-        width: 800,
-        height: 800
+        width: CAMERA_CONFIG.MAX_WIDTH,
+        height: CAMERA_CONFIG.MAX_HEIGHT
       });
 
       this.inspecao.motor[index].foto = image.dataUrl;
       await this.salvarLocalmente();
+      this.logger.debug(`Foto capturada para item de motor: ${this.inspecao.motor[index].nome}`);
     } catch (error) {
-      console.log('Foto cancelada ou erro:', error);
+      this.logger.warn('Captura de foto cancelada ou erro', error);
     }
   }
 
-  async tirarFotoLimpeza(index: number) {
+  async tirarFotoLimpeza(index: number): Promise<void> {
     try {
       const image = await Camera.getPhoto({
-        quality: 45,
+        quality: CAMERA_CONFIG.QUALITY,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
         source: CameraSource.Camera,
-        width: 800,
-        height: 800
+        width: CAMERA_CONFIG.MAX_WIDTH,
+        height: CAMERA_CONFIG.MAX_HEIGHT
       });
 
       this.inspecao.limpeza[index].foto = image.dataUrl;
       await this.salvarLocalmente();
+      this.logger.debug(`Foto capturada para item de limpeza: ${this.inspecao.limpeza[index].nome}`);
     } catch (error) {
-      console.log('Foto cancelada ou erro:', error);
+      this.logger.warn('Captura de foto cancelada ou erro', error);
     }
   }
 
@@ -354,34 +326,17 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   }
 
   getCorStatus(valor: string): string {
-    switch (valor) {
-      case 'bom':
-      case 'otimo':
-        return 'success';
-      case 'satisfatoria':
-        return 'warning';
-      case 'ruim':
-        return 'danger';
-      case 'pessima':
-        return 'danger';
-      default:
-        return 'medium';
-    }
+    return STATUS_COLORS[valor as keyof typeof STATUS_COLORS] || 'medium';
   }
 
   getLabelLimpeza(valor: string): string {
-    const labels: { [key: string]: string } = {
-      'pessima': 'Péssima',
-      'ruim': 'Ruim',
-      'satisfatoria': 'Satisfatória',
-      'otimo': 'Ótimo'
-    };
-    return labels[valor] || valor;
+    return STATUS_LABELS[valor as keyof typeof STATUS_LABELS] || valor;
   }
 
-  async salvarInspecao() {
+  async salvarInspecao(): Promise<void> {
+    // Validação
     if (!this.validarFormulario()) {
-      alert('Por favor, preencha todos os campos da inspeção e tire fotos dos itens marcados como "ruim", "péssima" ou "não contém".');
+      await this.errorHandler.showWarning(MESSAGES.ERROR.VALIDATION);
       return;
     }
 
@@ -389,9 +344,16 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     const inspecaoId = this.checklistData.getInspecaoId();
 
     if (!inspecaoId) {
-      alert('Erro: ID da inspeção não encontrado. Por favor, reinicie o processo.');
+      await this.errorHandler.handleError(
+        new Error('ID da inspeção não encontrado'),
+        'Erro: ID da inspeção não encontrado. Por favor, reinicie o processo.',
+        { showAlert: true }
+      );
       return;
     }
+
+    this.logger.group('Salvando Inspeção do Veículo');
+    this.logger.info(`Inspeção ID: ${inspecaoId}`);
 
     try {
       // Monta os itens de inspeção no formato da API
@@ -449,13 +411,14 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
         }
       });
 
+      this.logger.info(`Salvando ${itensInspecao.length} itens de inspeção`);
+
       // Atualiza a inspeção na API
-      console.log('[Inspeção] Atualizando inspeção com itens...');
       await this.apiService.atualizarInspecao(inspecaoId, {
         itens_inspecao: itensInspecao
       }).toPromise();
 
-      console.log('[Inspeção] Inspeção atualizada com sucesso');
+      this.logger.info('Inspeção atualizada com sucesso');
 
       // Salva os dados no serviço compartilhado
       this.checklistData.setInspecaoVeiculo(this.inspecao);
@@ -465,17 +428,21 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
       if (observable) {
         try {
           await observable.toPromise();
-          console.log('[Tempo] Tempo da tela inspecao-veiculo salvo com sucesso com inspecao_id:', inspecaoId);
+          this.logger.debug('Tempo de tela salvo com sucesso');
         } catch (error) {
-          console.error('[Tempo] Erro ao salvar tempo:', error);
+          this.logger.warn('Erro ao salvar tempo de tela (não crítico)', error);
         }
       }
 
+      this.logger.groupEnd();
+
       // Navega para a próxima tela
+      await this.errorHandler.showSuccess(MESSAGES.SUCCESS.SAVED);
       this.router.navigate(['/fotos-veiculo']);
     } catch (error) {
-      console.error('[Inspeção] Erro ao atualizar inspeção:', error);
-      alert('Erro ao salvar dados. Por favor, tente novamente.');
+      this.logger.error('Erro ao salvar inspeção', error);
+      this.logger.groupEnd();
+      await this.errorHandler.handleApiError(error, 'salvar inspeção');
     }
   }
 

@@ -1,186 +1,382 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ChecklistCompleto } from './checklist-data.service';
 import { PhotoCompressionService } from './photo-compression.service';
+import { LoggerService } from './logger.service';
+import { API_CONFIG } from '../config/app.constants';
+import {
+  ChecklistSimples,
+  ChecklistDetalhado,
+  ChecklistCompleto,
+  ApiResponse,
+  VeiculoComAnomalias,
+  CategoriaItem
+} from '../models/checklist.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private baseUrl = environment.apiUrl;
+  private readonly baseUrl = environment.apiUrl;
+  private readonly headers = new HttpHeaders({ 'Content-Type': 'application/json' });
 
-  constructor(private http: HttpClient, private photoCompression: PhotoCompressionService) { }
+  constructor(
+    private http: HttpClient,
+    private photoCompression: PhotoCompressionService,
+    private logger: LoggerService
+  ) { }
 
-  testarConexao(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=todos&limite=1`);
+  // ============================================
+  // TESTES DE CONEXÃO
+  // ============================================
+
+  testarConexao(): Observable<ApiResponse> {
+    const url = `${this.baseUrl}/b_veicular_get.php?acao=todos&limite=1`;
+    this.logger.apiRequest('GET', url);
+
+    return this.http.get<ApiResponse>(url).pipe(
+      tap(response => this.logger.apiResponse('GET', url, response)),
+      catchError(error => {
+        this.logger.apiError('GET', url, error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  testarConexaoSimples(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/test_connection.php`);
+  testarConexaoSimples(): Observable<ApiResponse> {
+    const url = `${this.baseUrl}/test_connection.php`;
+    this.logger.apiRequest('GET', url);
+
+    return this.http.get<ApiResponse>(url).pipe(
+      tap(response => this.logger.apiResponse('GET', url, response)),
+      catchError(error => {
+        this.logger.apiError('GET', url, error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  salvarChecklist(dados: any): Observable<any> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
+  // ============================================
+  // OPERAÇÕES DE CHECKLIST
+  // ============================================
 
-    console.log('=== SALVANDO CHECKLIST ===');
-    console.log('URL:', `${this.baseUrl}/b_veicular_set.php`);
-    console.log('Headers:', headers);
-    console.log('Dados:', dados);
-    console.log('Tamanho dos dados:', JSON.stringify(dados).length, 'bytes');
+  salvarChecklist(dados: Partial<ChecklistCompleto>): Observable<ApiResponse> {
+    const url = `${this.baseUrl}/b_veicular_set.php`;
+    const tamanho = JSON.stringify(dados).length;
 
-    return this.http.post(`${this.baseUrl}/b_veicular_set.php`, dados, { headers });
+    this.logger.group('Salvando Checklist');
+    this.logger.info(`URL: ${url}`);
+    this.logger.info(`Tamanho dos dados: ${tamanho} bytes`);
+    this.logger.debug('Dados:', dados);
+    this.logger.groupEnd();
+
+    return this.http.post<ApiResponse>(url, dados, { headers: this.headers }).pipe(
+      tap(response => {
+        this.logger.info('Checklist salvo com sucesso');
+        this.logger.debug('Response:', response);
+      }),
+      catchError(error => {
+        this.logger.error('Erro ao salvar checklist', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  criarInspecaoInicial(dados: any): Observable<any> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
+  criarInspecaoInicial(dados: Partial<ChecklistSimples>): Observable<ApiResponse> {
+    const url = `${this.baseUrl}/b_veicular_set.php`;
 
-    console.log('=== CRIANDO INSPEÇÃO INICIAL ===');
-    console.log('URL:', `${this.baseUrl}/b_veicular_set.php`);
-    console.log('Dados:', dados);
+    this.logger.group('Criando Inspeção Inicial');
+    this.logger.info(`URL: ${url}`);
+    this.logger.debug('Dados:', dados);
+    this.logger.groupEnd();
 
-    return this.http.post(`${this.baseUrl}/b_veicular_set.php`, dados, { headers });
+    return this.http.post<ApiResponse>(url, dados, { headers: this.headers }).pipe(
+      tap(response => this.logger.info('Inspeção inicial criada com sucesso')),
+      catchError(error => {
+        this.logger.error('Erro ao criar inspeção inicial', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  atualizarInspecao(inspecaoId: number, dados: any): Observable<any> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
+  atualizarInspecao(inspecaoId: number, dados: Partial<ChecklistSimples>): Observable<ApiResponse> {
+    const url = `${this.baseUrl}/b_veicular_update.php`;
+    const dadosCompletos = { inspecao_id: inspecaoId, ...dados };
 
-    const dadosCompletos = {
-      inspecao_id: inspecaoId,
-      ...dados
-    };
+    this.logger.group('Atualizando Inspeção');
+    this.logger.info(`URL: ${url}`);
+    this.logger.info(`ID: ${inspecaoId}`);
+    this.logger.debug('Dados:', dadosCompletos);
+    this.logger.groupEnd();
 
-    console.log('=== ATUALIZANDO INSPEÇÃO ===');
-    console.log('URL:', `${this.baseUrl}/b_veicular_update.php`);
-    console.log('Dados:', dadosCompletos);
-
-    return this.http.post(`${this.baseUrl}/b_veicular_update.php`, dadosCompletos, { headers });
+    return this.http.post<ApiResponse>(url, dadosCompletos, { headers: this.headers }).pipe(
+      tap(response => this.logger.info('Inspeção atualizada com sucesso')),
+      catchError(error => {
+        this.logger.error('Erro ao atualizar inspeção', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  async salvarChecklistSimples(checklistCompleto: ChecklistCompleto): Promise<Observable<any>> {
-    console.log('=== COMPRIMINDO FOTOS ===');
+  async salvarChecklistSimples(checklistCompleto: ChecklistCompleto): Promise<Observable<ApiResponse>> {
+    this.logger.time('Compressão de fotos');
+    this.logger.info('Comprimindo fotos do checklist...');
 
     // Comprime todas as fotos antes de enviar
     const dadosComprimidos = await this.photoCompression.compressAllPhotos(checklistCompleto);
     const dadosApi = this.transformarParaApiFormat(dadosComprimidos);
 
-    console.log('Fotos comprimidas com sucesso');
+    this.logger.timeEnd('Compressão de fotos');
+    this.logger.info('Fotos comprimidas com sucesso');
+
     return this.salvarChecklist(dadosApi);
   }
 
-  buscarTodos(limite: number = 100): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=todos&limite=${limite}`);
+  // ============================================
+  // CONSULTAS DE CHECKLIST
+  // ============================================
+
+  buscarTodos(limite: number = API_CONFIG.DEFAULT_LIMIT): Observable<ChecklistSimples[]> {
+    const url = `${this.baseUrl}/b_veicular_get.php?acao=todos&limite=${limite}`;
+    this.logger.debug(`Buscando todos os checklists (limite: ${limite})`);
+
+    return this.http.get<ChecklistSimples[]>(url).pipe(
+      tap(response => this.logger.debug(`${response.length} checklists encontrados`)),
+      catchError(error => {
+        this.logger.error('Erro ao buscar checklists', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarPorPlaca(placa: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=placa&placa=${placa}`);
+  buscarPorPlaca(placa: string): Observable<ChecklistSimples[]> {
+    const url = `${this.baseUrl}/b_veicular_get.php?acao=placa&placa=${placa}`;
+    this.logger.debug(`Buscando checklists da placa: ${placa}`);
+
+    return this.http.get<ChecklistSimples[]>(url).pipe(
+      tap(response => this.logger.debug(`${response.length} checklists encontrados para placa ${placa}`)),
+      catchError(error => {
+        this.logger.error(`Erro ao buscar checklists da placa ${placa}`, error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  validarPlaca(placa: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=validar_placa&placa=${encodeURIComponent(placa)}`);
+  validarPlaca(placa: string): Observable<ApiResponse<boolean>> {
+    const url = `${this.baseUrl}/b_veicular_get.php?acao=validar_placa&placa=${encodeURIComponent(placa)}`;
+    this.logger.debug(`Validando placa: ${placa}`);
+
+    return this.http.get<ApiResponse<boolean>>(url).pipe(
+      tap(response => this.logger.debug(`Placa ${placa} válida: ${response.dados}`)),
+      catchError(error => {
+        this.logger.error(`Erro ao validar placa ${placa}`, error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarPorId(id: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=id&id=${id}`);
+  buscarPorId(id: number): Observable<ChecklistSimples> {
+    const url = `${this.baseUrl}/b_veicular_get.php?acao=id&id=${id}`;
+    this.logger.debug(`Buscando checklist ID: ${id}`);
+
+    return this.http.get<ChecklistSimples>(url).pipe(
+      tap(() => this.logger.debug(`Checklist ${id} encontrado`)),
+      catchError(error => {
+        this.logger.error(`Erro ao buscar checklist ${id}`, error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarCompleto(id: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=completo&id=${id}`);
+  buscarCompleto(id: number): Observable<ChecklistDetalhado> {
+    const url = `${this.baseUrl}/b_veicular_get.php?acao=completo&id=${id}`;
+    this.logger.debug(`Buscando checklist completo ID: ${id}`);
+
+    return this.http.get<ChecklistDetalhado>(url).pipe(
+      tap(() => this.logger.debug(`Checklist completo ${id} encontrado`)),
+      catchError(error => {
+        this.logger.error(`Erro ao buscar checklist completo ${id}`, error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarPorPeriodo(dataInicio: string, dataFim: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_veicular_get.php?acao=periodo&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+  buscarPorPeriodo(dataInicio: string, dataFim: string): Observable<ChecklistSimples[]> {
+    const url = `${this.baseUrl}/b_veicular_get.php?acao=periodo&data_inicio=${dataInicio}&data_fim=${dataFim}`;
+    this.logger.debug(`Buscando checklists entre ${dataInicio} e ${dataFim}`);
+
+    return this.http.get<ChecklistSimples[]>(url).pipe(
+      tap(response => this.logger.debug(`${response.length} checklists encontrados no período`)),
+      catchError(error => {
+        this.logger.error('Erro ao buscar checklists por período', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarAnomalias(tipo: string = 'ativas'): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_veicular_anomalias.php?tipo=${tipo}`);
+  // ============================================
+  // ANOMALIAS
+  // ============================================
+
+  buscarAnomalias(tipo: 'ativas' | 'finalizadas' = 'ativas'): Observable<VeiculoComAnomalias[]> {
+    const url = `${this.baseUrl}/b_veicular_anomalias.php?tipo=${tipo}`;
+    this.logger.debug(`Buscando anomalias ${tipo}`);
+
+    return this.http.get<VeiculoComAnomalias[]>(url).pipe(
+      tap(response => this.logger.debug(`${response.length} veículos com anomalias ${tipo}`)),
+      catchError(error => {
+        this.logger.error(`Erro ao buscar anomalias ${tipo}`, error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarPlacas(termo: string = '', limite: number = 20): Observable<any> {
+  buscarPlacas(termo: string = '', limite: number = 20): Observable<string[]> {
     const params = termo ? `?termo=${encodeURIComponent(termo)}&limite=${limite}` : `?limite=${limite}`;
-    return this.http.get(`${this.baseUrl}/b_buscar_placas.php${params}`);
+    const url = `${this.baseUrl}/b_buscar_placas.php${params}`;
+
+    return this.http.get<string[]>(url).pipe(
+      tap(response => this.logger.debug(`${response.length} placas encontradas`)),
+      catchError(error => {
+        this.logger.error('Erro ao buscar placas', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  aprovarAnomalia(placa: string, categoria: string, item: string, usuarioId?: number): Observable<any> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post(`${this.baseUrl}/b_anomalia_status.php`, {
-      placa,
-      categoria,
-      item,
-      acao: 'aprovar',
-      usuario_id: usuarioId
-    }, { headers });
+  aprovarAnomalia(placa: string, categoria: CategoriaItem, item: string, usuarioId?: number): Observable<ApiResponse> {
+    const url = `${this.baseUrl}/b_anomalia_status.php`;
+    const dados = { placa, categoria, item, acao: 'aprovar', usuario_id: usuarioId };
+
+    this.logger.info(`Aprovando anomalia: ${item} da placa ${placa}`);
+
+    return this.http.post<ApiResponse>(url, dados, { headers: this.headers }).pipe(
+      tap(() => this.logger.info('Anomalia aprovada com sucesso')),
+      catchError(error => {
+        this.logger.error('Erro ao aprovar anomalia', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  reprovarAnomalia(placa: string, categoria: string, item: string, observacao?: string): Observable<any> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post(`${this.baseUrl}/b_anomalia_status.php`, {
-      placa,
-      categoria,
-      item,
-      acao: 'reprovar',
-      observacao
-    }, { headers });
+  reprovarAnomalia(placa: string, categoria: CategoriaItem, item: string, observacao?: string): Observable<ApiResponse> {
+    const url = `${this.baseUrl}/b_anomalia_status.php`;
+    const dados = { placa, categoria, item, acao: 'reprovar', observacao };
+
+    this.logger.warn(`Reprovando anomalia: ${item} da placa ${placa}`);
+
+    return this.http.post<ApiResponse>(url, dados, { headers: this.headers }).pipe(
+      tap(() => this.logger.info('Anomalia reprovada')),
+      catchError(error => {
+        this.logger.error('Erro ao reprovar anomalia', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  finalizarAnomalia(placa: string, categoria: string, item: string, observacao?: string): Observable<any> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post(`${this.baseUrl}/b_anomalia_status.php`, {
-      placa,
-      categoria,
-      item,
-      acao: 'finalizar',
-      observacao
-    }, { headers });
+  finalizarAnomalia(placa: string, categoria: CategoriaItem, item: string, observacao?: string): Observable<ApiResponse> {
+    const url = `${this.baseUrl}/b_anomalia_status.php`;
+    const dados = { placa, categoria, item, acao: 'finalizar', observacao };
+
+    this.logger.info(`Finalizando anomalia: ${item} da placa ${placa}`);
+
+    return this.http.post<ApiResponse>(url, dados, { headers: this.headers }).pipe(
+      tap(() => this.logger.info('Anomalia finalizada com sucesso')),
+      catchError(error => {
+        this.logger.error('Erro ao finalizar anomalia', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   // ============================================
   // Métodos para Checklist Completo
   // ============================================
 
-  salvarChecklistCompleto(dados: any): Observable<any> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
+  salvarChecklistCompleto(dados: Partial<ChecklistCompleto>): Observable<ApiResponse> {
+    const url = `${this.baseUrl}/b_checklist_completo_set.php`;
 
-    console.log('=== SALVANDO CHECKLIST COMPLETO ===');
-    console.log('URL:', `${this.baseUrl}/b_checklist_completo_set.php`);
-    console.log('Dados:', dados);
+    this.logger.group('Salvando Checklist Completo');
+    this.logger.info(`URL: ${url}`);
+    this.logger.debug('Dados:', dados);
+    this.logger.groupEnd();
 
-    return this.http.post(`${this.baseUrl}/b_checklist_completo_set.php`, dados, { headers });
+    return this.http.post<ApiResponse>(url, dados, { headers: this.headers }).pipe(
+      tap(() => this.logger.info('Checklist completo salvo com sucesso')),
+      catchError(error => {
+        this.logger.error('Erro ao salvar checklist completo', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarChecklistCompleto(id: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_checklist_completo_get.php?acao=id&id=${id}`);
+  buscarChecklistCompleto(id: number): Observable<ChecklistCompleto> {
+    const url = `${this.baseUrl}/b_checklist_completo_get.php?acao=id&id=${id}`;
+    this.logger.debug(`Buscando checklist completo ID: ${id}`);
+
+    return this.http.get<ChecklistCompleto>(url).pipe(
+      tap(() => this.logger.debug(`Checklist completo ${id} encontrado`)),
+      catchError(error => {
+        this.logger.error(`Erro ao buscar checklist completo ${id}`, error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarChecklistsCompletos(limite: number = 100): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_checklist_completo_get.php?acao=todos&limite=${limite}`);
+  buscarChecklistsCompletos(limite: number = API_CONFIG.DEFAULT_LIMIT): Observable<ChecklistCompleto[]> {
+    const url = `${this.baseUrl}/b_checklist_completo_get.php?acao=todos&limite=${limite}`;
+    this.logger.debug(`Buscando checklists completos (limite: ${limite})`);
+
+    return this.http.get<ChecklistCompleto[]>(url).pipe(
+      tap(response => this.logger.debug(`${response.length} checklists completos encontrados`)),
+      catchError(error => {
+        this.logger.error('Erro ao buscar checklists completos', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarChecklistCompletosPorPlaca(placa: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_checklist_completo_get.php?acao=placa&placa=${placa}`);
+  buscarChecklistCompletosPorPlaca(placa: string): Observable<ChecklistCompleto[]> {
+    const url = `${this.baseUrl}/b_checklist_completo_get.php?acao=placa&placa=${placa}`;
+    this.logger.debug(`Buscando checklists completos da placa: ${placa}`);
+
+    return this.http.get<ChecklistCompleto[]>(url).pipe(
+      tap(response => this.logger.debug(`${response.length} checklists completos encontrados para placa ${placa}`)),
+      catchError(error => {
+        this.logger.error(`Erro ao buscar checklists completos da placa ${placa}`, error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  buscarChecklistCompletosPorPeriodo(dataInicio: string, dataFim: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/b_checklist_completo_get.php?acao=periodo&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+  buscarChecklistCompletosPorPeriodo(dataInicio: string, dataFim: string): Observable<ChecklistCompleto[]> {
+    const url = `${this.baseUrl}/b_checklist_completo_get.php?acao=periodo&data_inicio=${dataInicio}&data_fim=${dataFim}`;
+    this.logger.debug(`Buscando checklists completos entre ${dataInicio} e ${dataFim}`);
+
+    return this.http.get<ChecklistCompleto[]>(url).pipe(
+      tap(response => this.logger.debug(`${response.length} checklists completos encontrados no período`)),
+      catchError(error => {
+        this.logger.error('Erro ao buscar checklists completos por período', error);
+        return throwError(() => error);
+      })
+    );
   }
 
-  transformarParaApiFormat(checklist: ChecklistCompleto): any {
+  // ============================================
+  // TRANSFORMAÇÃO DE DADOS
+  // ============================================
+
+  transformarParaApiFormat(checklist: ChecklistCompleto): Partial<ChecklistCompleto> {
     const inspecaoInicial = checklist.inspecaoInicial;
     const inspecaoVeiculo = checklist.inspecaoVeiculo;
     const fotosVeiculo = checklist.fotosVeiculo || [];
     const pneus = checklist.pneus || [];
 
-    console.log('=== TRANSFORMANDO DADOS DINAMICAMENTE ===');
-    console.log('Checklist completo:', checklist);
+    this.logger.group('Transformando dados para formato API', true);
+    this.logger.debug('Checklist completo:', checklist);
 
     // Monta array de itens de inspeção de forma DINÂMICA
     const itensInspecao: any[] = [];
@@ -191,7 +387,8 @@ export class ApiService {
         categoria: 'MOTOR',
         item: item.nome,
         status: item.valor,
-        foto: item.foto || null
+        foto: item.foto || null,
+        descricao: item.descricao || null
       });
     });
 
@@ -201,7 +398,8 @@ export class ApiService {
         categoria: 'ELETRICO',
         item: item.nome,
         status: item.valor,
-        foto: item.foto || null
+        foto: item.foto || null,
+        descricao: item.descricao || null
       });
     });
 
@@ -211,7 +409,8 @@ export class ApiService {
         categoria: 'LIMPEZA',
         item: item.nome,
         status: item.valor,
-        foto: item.foto || null
+        foto: item.foto || null,
+        descricao: item.descricao || null
       });
     });
 
@@ -221,7 +420,8 @@ export class ApiService {
         categoria: 'FERRAMENTA',
         item: item.nome,
         status: item.valor,
-        foto: item.foto || null
+        foto: item.foto || null,
+        descricao: item.descricao || null
       });
     });
 
@@ -237,8 +437,8 @@ export class ApiService {
     });
 
     // FOTOS DO VEÍCULO - mapeia tipos dinamicamente
-    const fotosMapeadas: any = {};
-    const mapaTiposFotos: any = {
+    const fotosMapeadas: Record<string, string> = {};
+    const mapaTiposFotos: Record<string, string> = {
       'Foto Frontal': 'foto_frontal',
       'Foto Traseira': 'foto_traseira',
       'Foto Lateral Direita': 'foto_lateral_direita',
@@ -252,9 +452,8 @@ export class ApiService {
       }
     });
 
-    console.log('Total de itens de inspeção:', itensInspecao.length);
-    console.log('Total de pneus:', itensPneus.length);
-    console.log('Fotos mapeadas:', Object.keys(fotosMapeadas));
+    this.logger.info(`Transformação concluída: ${itensInspecao.length} itens, ${itensPneus.length} pneus, ${Object.keys(fotosMapeadas).length} fotos`);
+    this.logger.groupEnd();
 
     // Monta o objeto final com os arrays dinâmicos
     const dadosFinais = {
@@ -273,12 +472,6 @@ export class ApiService {
       // Fotos do veículo (mantém formato antigo para compatibilidade)
       ...fotosMapeadas
     };
-
-    // Log final dos dados que serão enviados
-    console.log('=== DADOS FINAIS DINÂMICOS PARA ENVIO ===');
-    console.log('Itens de inspeção:', dadosFinais.itens_inspecao.length);
-    console.log('Itens de pneus:', dadosFinais.itens_pneus.length);
-    console.log('Dados completos:', dadosFinais);
 
     return dadosFinais;
   }
