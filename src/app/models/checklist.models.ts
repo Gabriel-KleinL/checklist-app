@@ -13,15 +13,24 @@ export type NivelCombustivel = '0%' | '25%' | '50%' | '75%' | '100%';
 // ============================================
 
 export interface ChecklistSimples {
-  id: number;
+  id?: number;
   placa: string;
-  km_inicial: number;
+  km_inicial?: number | null;
   nivel_combustivel: NivelCombustivel;
-  data_realizacao: string;
+  data_realizacao?: string;
   status_geral?: StatusGeral;
   usuario_nome?: string;
-  usuario_id?: number;
+  usuario_id?: number | null;
   observacao_painel?: string;
+  // Campos da API
+  itens_inspecao?: any[];
+  itens_pneus?: any[];
+  fotos?: any[];
+  foto_painel?: string;
+  foto_frontal?: string;
+  foto_traseira?: string;
+  foto_lateral_direita?: string;
+  foto_lateral_esquerda?: string;
 }
 
 export interface ChecklistDetalhado extends ChecklistSimples {
@@ -210,6 +219,8 @@ export interface ApiResponse<T = any> {
   mensagem?: string;
   dados?: T;
   detalhes?: string;
+  id?: number;
+  placas?: string[];
 }
 
 export interface ApiErrorResponse {
@@ -226,15 +237,23 @@ export interface ApiErrorResponse {
 export interface ChecklistCompleto {
   id?: number;
   placa: string;
-  km_inicial: number;
+  km_inicial?: number | null;
   nivel_combustivel: NivelCombustivel;
   data_realizacao?: string;
-  usuario_id?: number;
+  usuario_id?: number | null;
   usuario_nome?: string;
   inspecaoInicial?: InspecaoInicial;
   inspecaoVeiculo?: InspecaoVeiculo;
   fotosVeiculo?: FotoVeiculo[];
   pneus?: PneuInspecao[];
+  // Campos da API para checklist completo
+  foto_painel?: string;
+  observacao_painel?: string;
+  parte1?: any;
+  parte2?: any;
+  parte3?: any;
+  parte4?: any;
+  parte5?: any;
 }
 
 export interface InspecaoInicial {
