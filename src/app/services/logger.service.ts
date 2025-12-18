@@ -168,12 +168,13 @@ export class LoggerService {
 
   private getTimestamp(): string {
     const now = new Date();
-    return now.toLocaleTimeString('pt-BR', {
+    const time = now.toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
-      fractionalSecondDigits: 3
+      second: '2-digit'
     });
+    const ms = now.getMilliseconds().toString().padStart(3, '0');
+    return `${time}.${ms}`;
   }
 
   private getStyle(level: string): string {

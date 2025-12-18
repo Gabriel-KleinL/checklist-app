@@ -128,11 +128,8 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
 
       this.apiService.buscarPlacas(termo, 10).subscribe({
         next: (response) => {
-          if (response && response.sucesso) {
-            this.placasFiltradas = response.placas || [];
-          } else {
-            this.placasFiltradas = [];
-          }
+          // response é direto o array de placas
+          this.placasFiltradas = Array.isArray(response) ? response : [];
           this.carregandoPlacas = false;
         },
         error: (error) => {
