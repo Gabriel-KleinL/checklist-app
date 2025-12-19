@@ -1,0 +1,219 @@
+ion-content {
+  --background: #f5f5f5;
+}
+
+// Seções
+.secao {
+  background: white;
+  margin: 16px 16px 0 16px;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  &:first-of-type {
+    margin-top: 8px;
+  }
+
+  &:last-of-type {
+    margin-bottom: 16px;
+  }
+}
+
+.secao-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e0e0e0;
+
+  ion-icon {
+    font-size: 24px;
+    margin-right: 12px;
+    color: var(--ion-color-primary);
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    flex: 1;
+  }
+
+  ion-button {
+    margin: 0;
+  }
+}
+
+// Botões
+ion-button {
+  --border-radius: 8px;
+  text-transform: none;
+  font-weight: 500;
+  margin: 4px 0;
+
+  ion-icon {
+    margin-right: 4px;
+  }
+}
+
+// Grid
+ion-grid {
+  padding: 0;
+}
+
+ion-col {
+  padding: 4px;
+}
+
+// Console de Resultados
+.resultados {
+  .console {
+    background: #1e1e1e;
+    border-radius: 8px;
+    padding: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+
+    .resultado-item {
+      color: #d4d4d4;
+      padding: 4px 0;
+      border-bottom: 1px solid #2d2d2d;
+      word-wrap: break-word;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      // Cores para diferentes tipos de mensagens
+      &:contains('✅') {
+        color: #4ec9b0;
+      }
+
+      &:contains('❌') {
+        color: #f48771;
+      }
+
+      &:contains('ℹ️') {
+        color: #9cdcfe;
+      }
+    }
+  }
+
+  ion-card {
+    margin: 0;
+    box-shadow: none;
+    border: 2px dashed #e0e0e0;
+  }
+
+  .vazio {
+    text-align: center;
+    padding: 32px 16px;
+    color: #999;
+
+    ion-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+    }
+  }
+}
+
+// Footer informativo
+.info-footer {
+  background: white;
+  padding: 16px;
+  margin: 16px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  p {
+    margin: 8px 0;
+    color: #666;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ion-icon {
+      margin-right: 8px;
+      font-size: 18px;
+    }
+
+    &.small {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+  }
+}
+
+// Progress bar
+ion-progress-bar {
+  --progress-background: var(--ion-color-primary);
+}
+
+// Responsividade
+@media (max-width: 576px) {
+  .secao {
+    margin: 12px 8px 0 8px;
+    padding: 12px;
+  }
+
+  .secao-header {
+    h3 {
+      font-size: 16px;
+    }
+
+    ion-icon {
+      font-size: 20px;
+    }
+  }
+
+  ion-button {
+    font-size: 13px;
+  }
+}
+
+// Animações
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.secao {
+  animation: fadeIn 0.3s ease-out;
+}
+
+// Scrollbar customizada para o console
+.console::-webkit-scrollbar {
+  width: 8px;
+}
+
+.console::-webkit-scrollbar-track {
+  background: #2d2d2d;
+  border-radius: 4px;
+}
+
+.console::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+
+  &:hover {
+    background: #666;
+  }
+}

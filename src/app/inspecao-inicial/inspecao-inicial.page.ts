@@ -20,17 +20,17 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
   inspecaoInicial: InspecaoInicialData = {
     placa: '',
     kmInicial: null,
-    nivelCombustivel: '',
+    nivelCombustivel: undefined,
     fotoPainel: undefined,
     observacaoPainel: ''
   };
 
   opcoesCombustivel = [
-    { valor: 'vazio', label: 'Vazio' },
-    { valor: '1/4', label: '1/4' },
-    { valor: '1/2', label: '1/2' },
-    { valor: '3/4', label: '3/4' },
-    { valor: 'cheio', label: 'Cheio' }
+    { valor: '0%', label: 'Vazio' },
+    { valor: '25%', label: '1/4' },
+    { valor: '50%', label: '1/2' },
+    { valor: '75%', label: '3/4' },
+    { valor: '100%', label: 'Cheio' }
   ];
 
   exibirAjuda = false;

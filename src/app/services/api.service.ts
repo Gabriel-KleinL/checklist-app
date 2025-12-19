@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, map } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { PhotoCompressionService } from './photo-compression.service';
@@ -238,8 +238,9 @@ export class ApiService {
     const params = termo ? `?termo=${encodeURIComponent(termo)}&limite=${limite}` : `?limite=${limite}`;
     const url = `${this.baseUrl}/b_buscar_placas.php${params}`;
 
-    return this.http.get<string[]>(url).pipe(
-      tap(response => this.logger.debug(`${response.length} placas encontradas`)),
+    return this.http.get<{sucesso: boolean; total: number; placas: string[]}>(url).pipe(
+      tap(response => this.logger.debug(`${response.placas?.length || 0} placas encontradas`)),
+      map(response => response.placas || []),
       catchError(error => {
         this.logger.error('Erro ao buscar placas', error);
         return throwError(() => error);

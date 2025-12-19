@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
+import { NivelCombustivel } from '../models/checklist.models';
 
 export interface InspecaoInicialData {
   placa: string;
   kmInicial: number | null;
-  nivelCombustivel: string;
+  nivelCombustivel: NivelCombustivel | undefined;
   fotoPainel: string | undefined;
   observacaoPainel: string;
 }

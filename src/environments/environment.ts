@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  apiUrl: '/api'
+  apiUrl: 'https://floripa.in9automacao.com.br'
 };
 
 /*

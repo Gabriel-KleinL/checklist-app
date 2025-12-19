@@ -38,6 +38,10 @@ const routes: Routes = [
   {
     path: 'inspecao-inicial',
     loadChildren: () => import('./inspecao-inicial/inspecao-inicial.module').then( m => m.InspecaoInicialPageModule)
+  },
+  {
+    path: 'test',
+    loadChildren: () => import('./test/test.module').then( m => m.TestPageModule)
   }
 ];
 

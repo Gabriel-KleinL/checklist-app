@@ -9,17 +9,7 @@ import { AlertController, ToastController, ActionSheetController, LoadingControl
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { PhotoCompressionService } from '../services/photo-compression.service';
 import { Chart, registerables } from 'chart.js';
-
-interface Checklist {
-  id: number;
-  placa: string;
-  km_inicial: number;
-  nivel_combustivel: string;
-  data_realizacao: string;
-  status_geral?: string;
-  usuario_nome?: string;
-  observacao_painel?: string;
-}
+import { ChecklistSimples, ChecklistCompleto } from '../models/checklist.models';
 
 @Component({
   selector: 'app-admin',
@@ -32,12 +22,12 @@ export class AdminPage implements OnInit {
   tipoChecklistSelecionado: 'simples' | 'completo' = 'simples';
 
   // Checklists Simples
-  checklists: Checklist[] = [];
-  checklistsFiltrados: Checklist[] = [];
+  checklists: ChecklistSimples[] = [];
+  checklistsFiltrados: ChecklistSimples[] = [];
 
   // Checklists Completos
-  checklistsCompletos: Checklist[] = [];
-  checklistsCompletosFiltrados: Checklist[] = [];
+  checklistsCompletos: ChecklistCompleto[] = [];
+  checklistsCompletosFiltrados: ChecklistCompleto[] = [];
 
   carregando = false;
   erro = '';
@@ -833,12 +823,14 @@ export class AdminPage implements OnInit {
     inicioSemana.setHours(0, 0, 0, 0);
 
     this.checklistsHoje = this.checklists.filter(c => {
+      if (!c.data_realizacao) return false;
       const data = new Date(c.data_realizacao);
       data.setHours(0, 0, 0, 0);
       return data.getTime() === hoje.getTime();
     }).length;
 
     this.checklistsSemana = this.checklists.filter(c => {
+      if (!c.data_realizacao) return false;
       const data = new Date(c.data_realizacao);
       return data >= inicioSemana;
     }).length;
@@ -855,12 +847,14 @@ export class AdminPage implements OnInit {
     inicioSemana.setHours(0, 0, 0, 0);
 
     this.checklistsCompletosHoje = this.checklistsCompletos.filter(c => {
+      if (!c.data_realizacao) return false;
       const data = new Date(c.data_realizacao);
       data.setHours(0, 0, 0, 0);
       return data.getTime() === hoje.getTime();
     }).length;
 
     this.checklistsCompletosSemana = this.checklistsCompletos.filter(c => {
+      if (!c.data_realizacao) return false;
       const data = new Date(c.data_realizacao);
       return data >= inicioSemana;
     }).length;
@@ -874,11 +868,11 @@ export class AdminPage implements OnInit {
           checklist.placa.toLowerCase().includes(this.filtroPlaca.toLowerCase());
 
         // Filtro por data inicial
-        const passaDataInicio = !this.filtroDataInicio ||
+        const passaDataInicio = !this.filtroDataInicio || !checklist.data_realizacao ||
           new Date(checklist.data_realizacao) >= new Date(this.filtroDataInicio);
 
         // Filtro por data final
-        const passaDataFim = !this.filtroDataFim ||
+        const passaDataFim = !this.filtroDataFim || !checklist.data_realizacao ||
           new Date(checklist.data_realizacao) <= new Date(this.filtroDataFim);
 
         return passaPlaca && passaDataInicio && passaDataFim;
@@ -890,11 +884,11 @@ export class AdminPage implements OnInit {
           checklist.placa.toLowerCase().includes(this.filtroPlaca.toLowerCase());
 
         // Filtro por data inicial
-        const passaDataInicio = !this.filtroDataInicio ||
+        const passaDataInicio = !this.filtroDataInicio || !checklist.data_realizacao ||
           new Date(checklist.data_realizacao) >= new Date(this.filtroDataInicio);
 
         // Filtro por data final
-        const passaDataFim = !this.filtroDataFim ||
+        const passaDataFim = !this.filtroDataFim || !checklist.data_realizacao ||
           new Date(checklist.data_realizacao) <= new Date(this.filtroDataFim);
 
         return passaPlaca && passaDataInicio && passaDataFim;
@@ -932,16 +926,16 @@ export class AdminPage implements OnInit {
   mostrarFotoExpandida = false;
   zoomLevel = 1;
 
-  async verDetalhes(checklist: Checklist) {
+  async verDetalhes(checklist: ChecklistSimples) {
     this.carregando = true;
     try {
       // Busca todos os detalhes do checklist usando o endpoint 'completo'
-      this.apiService.buscarCompleto(checklist.id).subscribe({
+      this.apiService.buscarCompleto(checklist.id!).subscribe({
         next: (dados) => {
           this.checklistDetalhado = dados;
 
           // Busca os tempos de tela para esta inspeção
-          this.tempoTelasService.buscarPorInspecao(checklist.id).subscribe({
+          this.tempoTelasService.buscarPorInspecao(checklist.id!).subscribe({
             next: (tempos) => {
               this.temposTelas = tempos;
               console.log('Tempos de telas:', tempos);
@@ -991,7 +985,7 @@ export class AdminPage implements OnInit {
     }
   }
 
-  async mostrarAlertBasico(checklist: Checklist) {
+  async mostrarAlertBasico(checklist: ChecklistSimples) {
     const alert = await this.alertController.create({
       header: `Checklist - ${checklist.placa}`,
       message: `
@@ -1006,11 +1000,11 @@ export class AdminPage implements OnInit {
     await alert.present();
   }
 
-  async verDetalhesCompleto(checklist: Checklist) {
+  async verDetalhesCompleto(checklist: ChecklistCompleto) {
     this.carregando = true;
     try {
       // Busca os detalhes do checklist completo
-      this.apiService.buscarChecklistCompleto(checklist.id).subscribe({
+      this.apiService.buscarChecklistCompleto(checklist.id!).subscribe({
         next: (dados) => {
           this.checklistCompletoDetalhado = dados;
           this.mostrarModalCompleto = true;
@@ -1138,7 +1132,7 @@ export class AdminPage implements OnInit {
     this.zoomLevel = 1;
   }
 
-  formatarData(data: string): string {
+  formatarData(data: string | undefined): string {
     if (!data) return '-';
     const d = new Date(data);
     return d.toLocaleString('pt-BR');

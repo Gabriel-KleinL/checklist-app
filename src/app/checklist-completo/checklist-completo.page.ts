@@ -5,6 +5,7 @@ import { AuthService } from '../services/auth.service';
 import { ConfigItensCompletoService, ConfigItemCompleto } from '../services/config-itens-completo.service';
 import { AlertController, LoadingController } from '@ionic/angular';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { NivelCombustivel } from '../models/checklist.models';
 
 interface ItemChecklist {
   descricao: string;
@@ -135,17 +136,17 @@ export class ChecklistCompletoPage implements OnInit {
   // Dados básicos
   placa: string = '';
   kmInicial: number | null = null;
-  nivelCombustivel: string = '';
+  nivelCombustivel: NivelCombustivel | undefined = undefined;
   fotoPainel: string | undefined = undefined;
   observacaoPainel: string = '';
 
   // Níveis de combustível disponíveis
   opcoesCombustivel = [
-    { valor: 'vazio', label: 'Vazio' },
-    { valor: '1/4', label: '1/4' },
-    { valor: '1/2', label: '1/2' },
-    { valor: '3/4', label: '3/4' },
-    { valor: 'cheio', label: 'Cheio' }
+    { valor: '0%', label: 'Vazio' },
+    { valor: '25%', label: '1/4' },
+    { valor: '50%', label: '1/2' },
+    { valor: '75%', label: '3/4' },
+    { valor: '100%', label: 'Cheio' }
   ];
 
   // Autocomplete de placas
@@ -571,7 +572,7 @@ export class ChecklistCompletoPage implements OnInit {
   limparFormulario() {
     this.placa = '';
     this.kmInicial = null;
-    this.nivelCombustivel = '';
+    this.nivelCombustivel = undefined;
     this.fotoPainel = undefined;
     this.observacaoPainel = '';
     this.parteAtual = 0;

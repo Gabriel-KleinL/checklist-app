@@ -1,0 +1,188 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Página de Testes</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="voltarParaLogin()">
+        <ion-icon name="home-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-progress-bar *ngIf="carregando" type="indeterminate"></ion-progress-bar>
+
+  <!-- SEÇÃO: CONEXÃO -->
+  <div class="secao">
+    <div class="secao-header">
+      <ion-icon name="globe-outline"></ion-icon>
+      <h3>Conexão</h3>
+    </div>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="6">
+          <ion-button expand="block" (click)="testarConexaoSimples()" [disabled]="carregando">
+            <ion-icon slot="start" name="flash-outline"></ion-icon>
+            Conexão Simples
+          </ion-button>
+        </ion-col>
+        <ion-col size="6">
+          <ion-button expand="block" (click)="testarConexao()" [disabled]="carregando">
+            <ion-icon slot="start" name="server-outline"></ion-icon>
+            Conexão Banco
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+  <!-- SEÇÃO: AUTENTICAÇÃO -->
+  <div class="secao">
+    <div class="secao-header">
+      <ion-icon name="person-outline"></ion-icon>
+      <h3>Autenticação</h3>
+    </div>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="6">
+          <ion-button expand="block" (click)="testarUsuarioAtual()" color="secondary">
+            <ion-icon slot="start" name="person-circle-outline"></ion-icon>
+            Usuário Atual
+          </ion-button>
+        </ion-col>
+        <ion-col size="6">
+          <ion-button expand="block" (click)="testarLogin()" color="secondary">
+            <ion-icon slot="start" name="log-in-outline"></ion-icon>
+            Testar Login
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+  <!-- SEÇÃO: CHECKLISTS SIMPLES -->
+  <div class="secao">
+    <div class="secao-header">
+      <ion-icon name="clipboard-outline"></ion-icon>
+      <h3>Checklists Simples</h3>
+    </div>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="6">
+          <ion-button expand="block" (click)="buscarChecklists()" color="success" [disabled]="carregando">
+            <ion-icon slot="start" name="search-outline"></ion-icon>
+            Buscar Todos
+          </ion-button>
+        </ion-col>
+        <ion-col size="6">
+          <ion-button expand="block" (click)="buscarChecklistPorId()" color="success" [disabled]="carregando">
+            <ion-icon slot="start" name="document-text-outline"></ion-icon>
+            Buscar por ID
+          </ion-button>
+        </ion-col>
+      </ion-row>
+      <ion-row>
+        <ion-col size="12">
+          <ion-button expand="block" (click)="criarChecklistTeste()" color="warning" [disabled]="carregando">
+            <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+            Criar Checklist Teste
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+  <!-- SEÇÃO: CHECKLISTS COMPLETOS -->
+  <div class="secao">
+    <div class="secao-header">
+      <ion-icon name="document-attach-outline"></ion-icon>
+      <h3>Checklists Completos</h3>
+    </div>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12">
+          <ion-button expand="block" (click)="buscarChecklistsCompletos()" color="tertiary" [disabled]="carregando">
+            <ion-icon slot="start" name="folder-open-outline"></ion-icon>
+            Buscar Completos
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+  <!-- SEÇÃO: ANOMALIAS -->
+  <div class="secao">
+    <div class="secao-header">
+      <ion-icon name="warning-outline"></ion-icon>
+      <h3>Anomalias</h3>
+    </div>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12">
+          <ion-button expand="block" (click)="buscarAnomalias()" color="danger" [disabled]="carregando">
+            <ion-icon slot="start" name="alert-circle-outline"></ion-icon>
+            Buscar Anomalias
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+  <!-- SEÇÃO: PLACAS -->
+  <div class="secao">
+    <div class="secao-header">
+      <ion-icon name="car-outline"></ion-icon>
+      <h3>Placas</h3>
+    </div>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="6">
+          <ion-button expand="block" (click)="buscarPlacas()" color="medium" [disabled]="carregando">
+            <ion-icon slot="start" name="list-outline"></ion-icon>
+            Listar Placas
+          </ion-button>
+        </ion-col>
+        <ion-col size="6">
+          <ion-button expand="block" (click)="validarPlaca()" color="medium" [disabled]="carregando">
+            <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+            Validar Placa
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+  <!-- SEÇÃO: RESULTADOS -->
+  <div class="secao resultados">
+    <div class="secao-header">
+      <ion-icon name="terminal-outline"></ion-icon>
+      <h3>Console de Resultados</h3>
+      <ion-button fill="clear" size="small" (click)="limparResultados()">
+        <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+      </ion-button>
+    </div>
+
+    <ion-card *ngIf="resultados.length === 0">
+      <ion-card-content class="vazio">
+        <ion-icon name="information-circle-outline"></ion-icon>
+        <p>Execute um teste para ver os resultados aqui</p>
+      </ion-card-content>
+    </ion-card>
+
+    <div class="console" *ngIf="resultados.length > 0">
+      <div class="resultado-item" *ngFor="let resultado of resultados">
+        {{ resultado }}
+      </div>
+    </div>
+  </div>
+
+  <!-- INFORMAÇÕES -->
+  <div class="info-footer">
+    <p>
+      <ion-icon name="information-circle-outline"></ion-icon>
+      Use esta página para testar todas as funcionalidades do aplicativo
+    </p>
+    <p class="small">Versão 4.0.0 - Ambiente de Testes</p>
+  </div>
+
+</ion-content>
