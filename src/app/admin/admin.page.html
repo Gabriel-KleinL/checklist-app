@@ -216,7 +216,7 @@
           <ion-item button (click)="verDetalhes(checklist)">
             <ion-icon name="car-sport" slot="start" color="primary"></ion-icon>
             <ion-label>
-              <h2><strong>{{ checklist.placa }}</strong></h2>
+              <h2><strong>{{ checklist.placa }}</strong><span *ngIf="checklist.local"> - {{ checklist.local }}</span></h2>
               <p>KM: {{ checklist.km_inicial }} | Combustível: {{ checklist.nivel_combustivel }}</p>
               <p *ngIf="checklist.usuario_nome"><ion-icon name="person"></ion-icon> Inspetor: {{ checklist.usuario_nome
                 }}</p>
@@ -240,7 +240,7 @@
           <ion-item button (click)="verDetalhesCompleto(checklist)">
             <ion-icon name="clipboard" slot="start" color="success"></ion-icon>
             <ion-label>
-              <h2><strong>{{ checklist.placa }}</strong></h2>
+              <h2><strong>{{ checklist.placa }}</strong><span *ngIf="checklist.local"> - {{ checklist.local }}</span></h2>
               <p>KM: {{ checklist.km_inicial }} | Combustível: {{ checklist.nivel_combustivel }}</p>
               <p *ngIf="checklist.usuario_nome"><ion-icon name="person"></ion-icon> Inspetor: {{ checklist.usuario_nome
                 }}</p>
@@ -495,6 +495,9 @@
         <ion-segment-button value="veiculos">
           <ion-label>Veículos</ion-label>
         </ion-segment-button>
+        <ion-segment-button value="locais">
+          <ion-label>Locais</ion-label>
+        </ion-segment-button>
         <ion-segment-button value="veiculos_anomalias">
           <ion-label>Veic. c/ Prob.</ion-label>
         </ion-segment-button>
@@ -509,6 +512,24 @@
       <!-- Busca -->
       <ion-searchbar placeholder="Filtrar dados do gráfico..." [(ngModel)]="termoBuscaGrafico"
         (ionInput)="buscarGrafico($event)" debounce="300" animated></ion-searchbar>
+
+      <!-- Botão de Filtro para Locais (apenas quando gráfico de locais estiver selecionado) -->
+      <ion-card *ngIf="graficoSelecionado === 'locais'" class="animate-in-up">
+        <ion-card-content style="padding: 12px;">
+          <ion-button 
+            expand="block" 
+            [color]="filtrarLocaisHoje ? 'success' : 'medium'"
+            (click)="toggleFiltroLocaisHoje()"
+            fill="outline">
+            <ion-icon [name]="filtrarLocaisHoje ? 'checkmark-circle' : 'calendar-outline'" slot="start"></ion-icon>
+            {{ filtrarLocaisHoje ? 'Mostrando apenas hoje' : 'Filtrar apenas hoje' }}
+          </ion-button>
+          <p *ngIf="filtrarLocaisHoje" style="margin-top: 8px; text-align: center; color: var(--ion-color-success); font-size: 0.9em;">
+            <ion-icon name="information-circle-outline"></ion-icon>
+            Exibindo apenas checklists realizados hoje
+          </p>
+        </ion-card-content>
+      </ion-card>
 
       <!-- Container do Gráfico -->
       <ion-card class="chart-card animate-in-up">
@@ -716,6 +737,14 @@
                 <div class="info-content">
                   <span class="info-label">Placa</span>
                   <span class="info-value">{{ checklistDetalhado.placa }}</span>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <ion-icon name="location" color="danger"></ion-icon>
+                <div class="info-content">
+                  <span class="info-label">Local</span>
+                  <span class="info-value">{{ checklistDetalhado.local || 'Não informado' }}</span>
                 </div>
               </div>
 
@@ -1194,6 +1223,14 @@
                 <div class="info-content">
                   <span class="info-label">Placa</span>
                   <span class="info-value">{{ checklistCompletoDetalhado.placa }}</span>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <ion-icon name="location" color="danger"></ion-icon>
+                <div class="info-content">
+                  <span class="info-label">Local</span>
+                  <span class="info-value">{{ checklistCompletoDetalhado.local || 'Não informado' }}</span>
                 </div>
               </div>
 

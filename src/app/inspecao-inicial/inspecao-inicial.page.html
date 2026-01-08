@@ -61,6 +61,26 @@
 
         <div class="spacer"></div>
 
+        <!-- LOCAL -->
+        <ion-item color="dark" lines="none" id="tour-local">
+          <ion-label position="stacked" color="light">
+            Local *
+          </ion-label>
+          <ion-select
+            [(ngModel)]="inspecaoInicial.local"
+            (ionChange)="onCampoChange()"
+            placeholder="Selecione o local"
+            interface="action-sheet"
+            cancelText="Cancelar"
+          >
+            <ion-select-option *ngFor="let local of opcoesLocais" [value]="local">
+              {{ local }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <div class="spacer"></div>
+
         <!-- KM INICIAL -->
         <ion-item color="dark" lines="none" id="tour-km">
           <ion-label position="stacked" color="light">
@@ -224,6 +244,19 @@
           <p><strong>Digite a placa do veículo</strong></p>
           <p>Formato aceito: ABC-1234 ou ABC1D34</p>
           <p>Exemplo: <code>FLO-9876</code> ou <code>FLO1A23</code></p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card>
+        <ion-card-header>
+          <ion-card-subtitle>
+            <ion-icon name="location"></ion-icon>
+            Local
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p><strong>Selecione o local onde a inspeção está sendo realizada</strong></p>
+          <p>Escolha uma das opções disponíveis na lista.</p>
         </ion-card-content>
       </ion-card>
 

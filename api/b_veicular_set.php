@@ -96,20 +96,31 @@ try {
     // ============================================
     // 1. Insere dados principais na bbb_inspecao_veiculo
     // ============================================
+
+    // Processa data de realização
+    $dataRealizacao = isset($dados['data_realizacao']) ? $dados['data_realizacao'] : date('Y-m-d H:i:s');
+    if (strpos($dataRealizacao, 'T') !== false) {
+        $dataRealizacao = date('Y-m-d H:i:s', strtotime($dataRealizacao));
+    }
+
     $sqlInspecao = "INSERT INTO bbb_inspecao_veiculo (
         placa,
+        local,
         km_inicial,
         nivel_combustivel,
         observacao_painel,
         usuario_id,
-        status_geral
+        status_geral,
+        data_realizacao
     ) VALUES (
         :placa,
+        :local,
         :km_inicial,
         :nivel_combustivel,
         :observacao_painel,
         :usuario_id,
-        'PENDENTE'
+        'PENDENTE',
+        :data_realizacao
     )";
 
     // Converte o nível de combustível para o formato do banco
@@ -130,14 +141,18 @@ try {
     }
 
     error_log("Usuario ID usado: " . $usuarioId);
+    error_log("Local recebido: " . (isset($dados['local']) ? $dados['local'] : 'VAZIO'));
+    error_log("Data realizacao: " . $dataRealizacao);
 
     $stmtInspecao = $pdo->prepare($sqlInspecao);
     $stmtInspecao->execute(array(
         'placa' => isset($dados['placa']) ? $dados['placa'] : '',
+        'local' => isset($dados['local']) ? $dados['local'] : '',
         'km_inicial' => isset($dados['km_inicial']) ? $dados['km_inicial'] : 0,
         'nivel_combustivel' => $nivelCombustivelConvertido,
         'observacao_painel' => isset($dados['observacao_painel']) ? $dados['observacao_painel'] : '',
-        'usuario_id' => $usuarioId
+        'usuario_id' => $usuarioId,
+        'data_realizacao' => $dataRealizacao
     ));
 
     $inspecaoId = $pdo->lastInsertId();

@@ -19,11 +19,22 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
 
   inspecaoInicial: InspecaoInicialData = {
     placa: '',
+    local: undefined,
     kmInicial: null,
     nivelCombustivel: undefined,
     fotoPainel: undefined,
     observacaoPainel: ''
   };
+
+  opcoesLocais = [
+    'Metropolitana - Serra',
+    'Nova Venécia',
+    'Guarapari',
+    'Santa Tereza',
+    'Rio de Janeiro',
+    'Castelo',
+    'Barra de São Francisco'
+  ];
 
   opcoesCombustivel = [
     { valor: '0%', label: 'Vazio' },
@@ -162,6 +173,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
   validarFormulario(): boolean {
     return !!(
       this.inspecaoInicial.placa &&
+      this.inspecaoInicial.local &&
       this.inspecaoInicial.kmInicial !== null &&
       this.inspecaoInicial.nivelCombustivel &&
       this.inspecaoInicial.fotoPainel
@@ -192,7 +204,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
 
   async salvarInspecao() {
     if (!this.validarFormulario()) {
-      alert('Por favor, preencha todos os campos obrigatórios: Placa, KM Inicial, Combustível e Foto do Painel.');
+      alert('Por favor, preencha todos os campos obrigatórios: Placa, Local, KM Inicial, Combustível e Foto do Painel.');
       return;
     }
 
@@ -223,6 +235,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
       // Cria a inspeção na API com os dados iniciais
       const dadosInspecao = {
         placa: this.inspecaoInicial.placa,
+        local: this.inspecaoInicial.local,
         km_inicial: this.inspecaoInicial.kmInicial,
         nivel_combustivel: this.inspecaoInicial.nivelCombustivel,
         foto_painel: this.inspecaoInicial.fotoPainel,
@@ -303,9 +316,18 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
           }
         },
         {
+          element: '#tour-local',
+          popover: {
+            title: '2. Local',
+            description: 'Selecione o local onde a inspeção está sendo realizada.',
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
           element: '#tour-km',
           popover: {
-            title: '2. Quilometragem Inicial',
+            title: '3. Quilometragem Inicial',
             description: 'Informe a quilometragem atual do veículo. Você pode conferir este valor no painel do veículo.',
             side: 'bottom',
             align: 'start'
@@ -314,7 +336,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
         {
           element: '#tour-combustivel',
           popover: {
-            title: '3. Nível de Combustível',
+            title: '4. Nível de Combustível',
             description: 'Selecione o nível aproximado de combustível: Vazio, 1/4, 1/2, 3/4 ou Cheio. Verifique o marcador de combustível no painel.',
             side: 'bottom',
             align: 'start'
@@ -323,7 +345,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
         {
           element: '#tour-foto-painel',
           popover: {
-            title: '4. Foto do Painel',
+            title: '5. Foto do Painel',
             description: 'Tire uma foto clara do painel do veículo LIGADO. A foto deve mostrar o hodômetro e o marcador de combustível.',
             side: 'bottom',
             align: 'start'
@@ -332,7 +354,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
         {
           element: '#tour-observacoes',
           popover: {
-            title: '5. Observações do Painel (Opcional)',
+            title: '6. Observações do Painel (Opcional)',
             description: 'Registre qualquer anomalia visível no painel, como luzes de alerta acesas, avisos de manutenção, etc. Este campo é opcional.',
             side: 'bottom',
             align: 'start'
@@ -341,7 +363,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
         {
           element: '#tour-continuar',
           popover: {
-            title: '6. Continuar para Inspeção',
+            title: '7. Continuar para Inspeção',
             description: 'Após preencher todos os campos obrigatórios, clique aqui para continuar para a próxima etapa da inspeção.',
             side: 'top',
             align: 'center'

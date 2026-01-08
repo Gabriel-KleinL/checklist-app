@@ -3,6 +3,7 @@ import { NivelCombustivel } from '../models/checklist.models';
 
 export interface InspecaoInicialData {
   placa: string;
+  local: string | undefined;
   kmInicial: number | null;
   nivelCombustivel: NivelCombustivel | undefined;
   fotoPainel: string | undefined;

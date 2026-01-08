@@ -15,6 +15,7 @@ export type NivelCombustivel = '0%' | '25%' | '50%' | '75%' | '100%';
 export interface ChecklistSimples {
   id?: number;
   placa: string;
+  local?: string;
   km_inicial?: number | null;
   nivel_combustivel: NivelCombustivel;
   data_realizacao?: string;
@@ -237,6 +238,7 @@ export interface ApiErrorResponse {
 export interface ChecklistCompleto {
   id?: number;
   placa: string;
+  local?: string;
   km_inicial?: number | null;
   nivel_combustivel: NivelCombustivel;
   data_realizacao?: string;

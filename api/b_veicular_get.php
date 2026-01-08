@@ -158,7 +158,15 @@ try {
 
             // Busca inspeção com dados do usuário
             $sqlInspecao = "SELECT
-                                i.*,
+                                i.id,
+                                i.placa,
+                                i.local,
+                                i.km_inicial,
+                                i.nivel_combustivel,
+                                i.observacao_painel,
+                                i.data_realizacao,
+                                i.status_geral,
+                                i.usuario_id,
                                 COALESCE(u.nome, 'Usuário não identificado') as usuario_nome
                             FROM bbb_inspecao_veiculo i
                             LEFT JOIN bbb_usuario u ON i.usuario_id = u.id
@@ -172,6 +180,14 @@ try {
                 echo json_encode(['erro' => 'Checklist não encontrado']);
                 exit;
             }
+
+            // DEBUG: Log de todos os campos retornados
+            error_log("GET COMPLETO - Campos retornados da query:");
+            error_log("ID: " . (isset($inspecao['id']) ? $inspecao['id'] : 'NULL'));
+            error_log("PLACA: " . (isset($inspecao['placa']) ? $inspecao['placa'] : 'NULL'));
+            error_log("LOCAL: " . (isset($inspecao['local']) ? $inspecao['local'] : 'NULL'));
+            error_log("KM: " . (isset($inspecao['km_inicial']) ? $inspecao['km_inicial'] : 'NULL'));
+            error_log("JSON completo do registro: " . json_encode($inspecao));
 
             // Busca fotos organizadas por tipo
             $sqlFotos = "SELECT tipo, foto FROM bbb_inspecao_foto WHERE inspecao_id = :id";
@@ -257,6 +273,7 @@ try {
             $resultado = [
                 'id' => $inspecao['id'],
                 'placa' => $inspecao['placa'],
+                'local' => $inspecao['local'],
                 'km_inicial' => $inspecao['km_inicial'],
                 'nivel_combustivel' => $inspecao['nivel_combustivel'],
                 'observacao_painel' => $inspecao['observacao_painel'],
@@ -270,6 +287,7 @@ try {
                 'itens' => $itens
             ];
 
+            error_log("GET COMPLETO - ID: {$inspecao['id']}, Local retornado: " . (isset($inspecao['local']) ? $inspecao['local'] : 'NULL'));
             echo json_encode($resultado);
             break;
 
@@ -280,6 +298,7 @@ try {
             $sql = "SELECT
                         i.id,
                         i.placa,
+                        i.local,
                         i.data_realizacao,
                         i.km_inicial,
                         i.nivel_combustivel,

@@ -132,10 +132,15 @@ export class AdminPage implements OnInit {
   termoBuscaGrafico: string = '';
   dadosGrafico: { label: string, value: number, color: string }[] = [];
   dadosGraficoFiltrados: { label: string, value: number, color: string }[] = [];
+  filtrarLocaisHoje: boolean = false;
 
   mudarGrafico(evento: any) {
     this.graficoSelecionado = evento.detail.value;
     this.termoBuscaGrafico = ''; // Limpa busca ao mudar
+    // Reseta filtro de hoje ao mudar de gráfico
+    if (this.graficoSelecionado !== 'locais') {
+      this.filtrarLocaisHoje = false;
+    }
     // Pequeno delay para garantir que o *ngIf renderizou o canvas
     setTimeout(() => this.atualizarGrafico(), 100);
   }
@@ -146,10 +151,16 @@ export class AdminPage implements OnInit {
     this.renderizarGraficoGeneric();
   }
 
+  toggleFiltroLocaisHoje() {
+    this.filtrarLocaisHoje = !this.filtrarLocaisHoje;
+    this.atualizarGrafico();
+  }
+
   getTituloGrafico(): string {
     switch (this.graficoSelecionado) {
       case 'usuarios': return 'Usuários que mais realizam checklists';
       case 'veiculos': return 'Veículos mais inspecionados';
+      case 'locais': return 'Checklists por local';
       case 'veiculos_anomalias': return 'Veículos com maior índice de problemas';
       case 'tipos_anomalias': return 'Tipos de anomalias mais frequentes';
       case 'status_anomalias': return 'Status de resolução das anomalias';
@@ -172,10 +183,55 @@ export class AdminPage implements OnInit {
           const nome = c.usuario_nome || 'Desconhecido';
           dados[nome] = (dados[nome] || 0) + 1;
         });
+        // Adiciona checklists completos
+        this.checklistsCompletos.forEach(c => {
+          const nome = c.usuario_nome || 'Desconhecido';
+          dados[nome] = (dados[nome] || 0) + 1;
+        });
         break;
       case 'veiculos':
         this.checklists.forEach(c => {
           dados[c.placa] = (dados[c.placa] || 0) + 1;
+        });
+        // Adiciona checklists completos
+        this.checklistsCompletos.forEach(c => {
+          dados[c.placa] = (dados[c.placa] || 0) + 1;
+        });
+        break;
+      case 'locais':
+        // Função auxiliar para verificar se é do dia atual
+        const isHoje = (dataRealizacao: string | Date | undefined): boolean => {
+          if (!dataRealizacao) return false;
+          try {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            const dataChecklist = new Date(dataRealizacao);
+            if (isNaN(dataChecklist.getTime())) return false; // Data inválida
+            dataChecklist.setHours(0, 0, 0, 0);
+            return dataChecklist.getTime() === hoje.getTime();
+          } catch (error) {
+            console.error('Erro ao verificar data:', error);
+            return false;
+          }
+        };
+
+        // Conta checklists simples por local (ignora vazios)
+        this.checklists.forEach(c => {
+          if (c.local && c.local.trim() !== '') {
+            // Se o filtro de hoje estiver ativo, verifica a data
+            if (!this.filtrarLocaisHoje || isHoje(c.data_realizacao)) {
+              dados[c.local] = (dados[c.local] || 0) + 1;
+            }
+          }
+        });
+        // Adiciona checklists completos (ignora vazios)
+        this.checklistsCompletos.forEach(c => {
+          if (c.local && c.local.trim() !== '') {
+            // Se o filtro de hoje estiver ativo, verifica a data
+            if (!this.filtrarLocaisHoje || isHoje(c.data_realizacao)) {
+              dados[c.local] = (dados[c.local] || 0) + 1;
+            }
+          }
         });
         break;
       case 'veiculos_anomalias':
@@ -932,6 +988,11 @@ export class AdminPage implements OnInit {
       // Busca todos os detalhes do checklist usando o endpoint 'completo'
       this.apiService.buscarCompleto(checklist.id!).subscribe({
         next: (dados) => {
+          console.log('[ADMIN] Dados recebidos da API:', dados);
+          console.log('[ADMIN] Campo local:', dados.local);
+          console.log('[ADMIN] Tipo do campo local:', typeof dados.local);
+          console.log('[ADMIN] Local é nulo/undefined?', dados.local === null || dados.local === undefined);
+
           this.checklistDetalhado = dados;
 
           // Busca os tempos de tela para esta inspeção
