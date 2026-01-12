@@ -1,23 +1,62 @@
 <?php
+// Desabilita exibição de erros/warnings que possam poluir o JSON
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Inicia output buffering para capturar qualquer output indesejado
+// Deve vir depois de error_reporting mas antes de qualquer output
+if (!ob_get_level()) {
+    ob_start();
+}
+
 // Headers CORS - DEVE VIR ANTES DE QUALQUER SAÍDA
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Max-Age: 86400');
-header('Content-Type: application/json; charset=utf-8');
+// Nota: b_veicular_config.php também define headers, mas vamos definir aqui primeiro
+// para garantir que temos controle sobre eles
+if (!headers_sent()) {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Max-Age: 86400');
+    header('Content-Type: application/json; charset=utf-8');
+}
 
 // Responde requisições OPTIONS (preflight) IMEDIATAMENTE
+// Nota: b_veicular_config.php também trata OPTIONS, mas vamos tratar aqui primeiro
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    if (ob_get_level()) {
+        ob_clean();
+    }
     http_response_code(200);
     exit(0);
 }
 
-require_once 'b_veicular_config.php';
+// Carrega configuração do banco de dados
+// O arquivo b_veicular_config.php também define headers CORS, mas como já definimos acima,
+// não haverá problema. Ele também trata OPTIONS, mas já tratamos acima.
+try {
+    require_once 'b_veicular_config.php';
+} catch (Exception $e) {
+    error_log("ERRO AO CARREGAR CONFIG: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    http_response_code(500);
+    echo json_encode(array(
+        'erro' => 'Erro ao carregar configuração',
+        'detalhes' => 'Erro interno do servidor'
+    ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    if (ob_get_level()) {
+        ob_clean();
+    }
     http_response_code(405);
-    echo json_encode(array('erro' => 'Método não permitido. Use GET.'));
+    echo json_encode(array('erro' => 'Método não permitido. Use GET.'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
@@ -27,6 +66,9 @@ try {
 
     // Determina o tipo de busca
     $tipo = isset($_GET['tipo']) ? $_GET['tipo'] : 'ativas'; // 'ativas' ou 'finalizadas'
+
+    // Log de debug
+    error_log("Tipo de busca solicitado: " . $tipo);
 
     // Busca todas as inspeções com itens que têm problemas
     $sql = "SELECT
@@ -68,7 +110,20 @@ try {
 
     $sql .= " ORDER BY i.placa, i.data_realizacao DESC";
 
+    error_log("Query preview: " . substr($sql, 0, 300) . "...");
+
     $stmt = $pdo->prepare($sql);
+
+    // Verifica erro na preparação
+    if (!$stmt) {
+        $errorInfo = $pdo->errorInfo();
+        error_log("ERRO NA PREPARAÇÃO DA QUERY:");
+        error_log("SQLSTATE: " . $errorInfo[0]);
+        error_log("Driver Error Code: " . ($errorInfo[1] ?? 'N/A'));
+        error_log("Driver Error Message: " . ($errorInfo[2] ?? 'N/A'));
+        throw new PDOException("Erro ao preparar query: " . ($errorInfo[2] ?? 'Erro desconhecido'));
+    }
+
     $stmt->execute();
     $anomalias = $stmt->fetchAll();
 
@@ -188,11 +243,17 @@ try {
     // Monta resultado final
     $resultado = array();
     foreach ($anomaliasPorPlaca as $placa => $dados) {
+        // Verifica se há problemas antes de acessar
+        $dataUltimaInspecao = null;
+        if (!empty($dados['problemas']) && is_array($dados['problemas']) && isset($dados['problemas'][0])) {
+            $dataUltimaInspecao = $dados['problemas'][0]['data_realizacao'];
+        }
+        
         $resultado[] = array(
             'placa' => $placa,
             'total_problemas' => $dados['total'],
             'total_inspecoes_com_problema' => count($dados['inspecoes']),
-            'data_ultima_inspecao' => $dados['problemas'][0]['data_realizacao'],
+            'data_ultima_inspecao' => $dataUltimaInspecao,
             'anomalias' => $dados['problemas']
         );
     }
@@ -205,21 +266,62 @@ try {
     $tempoTotal = microtime(true) - $inicio;
     error_log("Tempo total: " . $tempoTotal . "s - Placas: " . count($resultado));
 
+    // Limpa qualquer output buffer antes de enviar JSON
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    
+    // Valida e codifica JSON
+    $json = json_encode($resultado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    
+    // Verifica se o JSON é válido
+    if ($json === false) {
+        $jsonError = json_last_error_msg();
+        error_log("ERRO JSON ENCODE: " . $jsonError);
+        throw new Exception('Erro ao codificar JSON: ' . $jsonError);
+    }
+    
     http_response_code(200);
-    echo json_encode($resultado);
+    echo $json;
 
 } catch (PDOException $e) {
-    error_log("ERRO ANOMALIAS: " . $e->getMessage());
+    error_log("ERRO ANOMALIAS PDO: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    
     http_response_code(500);
-    echo json_encode(array(
+    $erroJson = json_encode(array(
         'erro' => 'Erro ao buscar anomalias',
         'detalhes' => $e->getMessage()
-    ));
+    ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    
+    if ($erroJson === false) {
+        // Fallback se não conseguir codificar o erro
+        echo '{"erro":"Erro ao buscar anomalias","detalhes":"Erro interno do servidor"}';
+    } else {
+        echo $erroJson;
+    }
 } catch (Exception $e) {
     error_log("ERRO GERAL ANOMALIAS: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    
     http_response_code(500);
-    echo json_encode(array(
+    $erroJson = json_encode(array(
         'erro' => 'Erro inesperado ao processar anomalias',
         'detalhes' => $e->getMessage()
-    ));
+    ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    
+    if ($erroJson === false) {
+        // Fallback se não conseguir codificar o erro
+        echo '{"erro":"Erro inesperado ao processar anomalias","detalhes":"Erro interno do servidor"}';
+    } else {
+        echo $erroJson;
+    }
 }
