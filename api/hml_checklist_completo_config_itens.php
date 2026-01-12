@@ -1,39 +1,19 @@
 <?php
-// Output buffering para garantir JSON limpo
-ob_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-
 // Headers CORS - DEVE VIR ANTES DE QUALQUER SAÍDA
-if (!headers_sent()) {
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Max-Age: 86400');
-    header('Content-Type: application/json; charset=utf-8');
-}
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Max-Age: 86400');
+header('Content-Type: application/json; charset=utf-8');
 
 // Responde requisições OPTIONS (preflight) IMEDIATAMENTE
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    ob_clean();
     http_response_code(200);
     exit(0);
 }
 
-try {
-    require_once 'b_veicular_config.php';
-} catch (Exception $e) {
-    ob_clean();
-    error_log("ERRO ao carregar config: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode([
-        'erro' => 'Erro ao carregar configuração',
-        'mensagem' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
+require_once 'hml_veicular_config.php';
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];
@@ -48,9 +28,8 @@ try {
             case 'categoria':
                 // Buscar itens de uma categoria específica
                 if (!isset($_GET['categoria'])) {
-                    ob_clean();
                     http_response_code(400);
-                    echo json_encode(['erro' => 'Categoria não informada'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    echo json_encode(['erro' => 'Categoria não informada']);
                     exit;
                 }
 
@@ -61,12 +40,7 @@ try {
                 $stmt->execute(['categoria' => $_GET['categoria']]);
                 $resultados = $stmt->fetchAll();
 
-                ob_clean();
-                $json = json_encode($resultados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
+                echo json_encode($resultados);
                 break;
 
             case 'habilitados':
@@ -88,12 +62,7 @@ try {
                 }
 
                 $resultados = $stmt->fetchAll();
-                ob_clean();
-                $json = json_encode($resultados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
+                echo json_encode($resultados);
                 break;
 
             case 'por_parte':
@@ -120,12 +89,7 @@ try {
                     }
                 }
 
-                ob_clean();
-                $json = json_encode($agrupado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
+                echo json_encode($agrupado);
                 break;
 
             case 'todos':
@@ -137,12 +101,7 @@ try {
                 $stmt->execute();
                 $resultados = $stmt->fetchAll();
 
-                ob_clean();
-                $json = json_encode($resultados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
+                echo json_encode($resultados);
                 break;
         }
 
@@ -313,22 +272,18 @@ try {
     }
 
 } catch (PDOException $e) {
-    ob_clean();
     error_log("ERRO PDO: " . $e->getMessage());
     http_response_code(500);
-    $json = json_encode([
+    echo json_encode([
         'erro' => 'Erro no banco de dados',
         'mensagem' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    echo $json ? $json : '{"erro":"Erro ao codificar JSON de erro"}';
+    ]);
 } catch (Exception $e) {
-    ob_clean();
     error_log("ERRO GERAL: " . $e->getMessage());
     http_response_code(500);
-    $json = json_encode([
+    echo json_encode([
         'erro' => 'Erro interno do servidor',
         'mensagem' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    echo $json ? $json : '{"erro":"Erro ao codificar JSON de erro"}';
+    ]);
 }
 ?>

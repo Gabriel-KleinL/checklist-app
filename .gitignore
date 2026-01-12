@@ -20,6 +20,7 @@ log.txt
 # Ionic
 /.ionic
 /www
+/www-staging
 /platforms
 /plugins
 
@@ -73,3 +74,8 @@ Thumbs.db
 android/key.properties
 *.jks
 *.keystore
+
+# Staging environment (sensitive config)
+api/hml_veicular_config.php
+.env.staging
+.env.local

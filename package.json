@@ -7,6 +7,10 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:staging": "ng build --configuration staging --output-path www-staging",
+    "serve:staging": "ng serve --configuration staging",
+    "build:homolog": "ng build --configuration homolog --output-path www-homolog",
+    "serve:homolog": "ng serve --configuration homolog --port 4201",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint"

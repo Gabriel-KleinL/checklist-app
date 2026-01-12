@@ -1699,3 +1699,426 @@ ion-card[color="danger"] {
     }
   }
 }
+
+// ========================================
+// ESTILOS PARA RELATÓRIOS
+// ========================================
+
+// Cards de relatórios - Estilo geral melhorado
+.aba-relatorios ion-card {
+  margin: 0 0 20px 0;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white;
+  animation: slideInUp 0.5s ease-out;
+  border: none;
+
+  &:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+
+  &:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  &:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  }
+
+  ion-card-header {
+    padding: 24px;
+    background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+    border-bottom: none;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+      animation: shimmer 3s infinite ease-in-out;
+    }
+
+    ion-card-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+      ion-icon {
+        font-size: 28px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        animation: pulse 2s infinite ease-in-out;
+      }
+    }
+
+    ion-card-subtitle {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-top: 8px;
+      font-weight: 500;
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  ion-card-content {
+    padding: 24px;
+    background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+
+    p {
+      color: var(--ion-color-dark);
+      font-size: 15px;
+      line-height: 1.6;
+      margin: 0 0 20px 0;
+    }
+
+    ion-button {
+      --border-radius: 12px;
+      --box-shadow: 0 4px 16px rgba(var(--ion-color-success-rgb), 0.3);
+      height: 52px;
+      font-weight: 700;
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
+      transition: all 0.3s ease;
+
+      &:hover:not([disabled]) {
+        --box-shadow: 0 6px 20px rgba(var(--ion-color-success-rgb), 0.4);
+        transform: translateY(-2px);
+      }
+
+      &:active:not([disabled]) {
+        transform: translateY(0);
+      }
+
+      ion-icon {
+        font-size: 24px;
+      }
+    }
+
+    .loading-container {
+      margin-top: 16px;
+      padding: 24px;
+      background: rgba(var(--ion-color-light-rgb), 0.5);
+      border-radius: 12px;
+      border: 2px dashed var(--ion-color-medium-tint);
+
+      ion-spinner {
+        width: 40px;
+        height: 40px;
+      }
+
+      p {
+        margin-top: 12px;
+        color: var(--ion-color-primary);
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// Card terciário (Exportar Relatórios)
+.aba-relatorios ion-card[color="tertiary"] {
+  background: linear-gradient(135deg, var(--ion-color-tertiary) 0%, var(--ion-color-tertiary-shade) 100%);
+  box-shadow: 0 8px 24px rgba(var(--ion-color-tertiary-rgb), 0.25);
+
+  ion-card-header {
+    background: linear-gradient(135deg, var(--ion-color-tertiary) 0%, var(--ion-color-tertiary-shade) 100%);
+  }
+}
+
+// Card principal de relatório (Veículos sem Checklist)
+.aba-relatorios ion-card:not([color]):nth-child(2) {
+  background: white;
+  border: 2px solid var(--ion-color-light-shade);
+
+  ion-card-header {
+    background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+  }
+
+  ion-card-content {
+    p:first-of-type {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      padding: 16px;
+      border-radius: 12px;
+      border-left: 4px solid var(--ion-color-primary);
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: var(--ion-color-dark);
+      line-height: 1.7;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+  }
+}
+
+// Card placeholder (Mais Relatórios)
+.aba-relatorios ion-card:not([color]):nth-child(3) {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px dashed var(--ion-color-medium-tint);
+  opacity: 0.8;
+
+  ion-card-header {
+    background: linear-gradient(135deg, var(--ion-color-medium-tint) 0%, var(--ion-color-medium) 100%);
+
+    ion-card-title {
+      color: rgba(255, 255, 255, 0.9);
+
+      ion-icon {
+        opacity: 0.7;
+      }
+    }
+  }
+
+  ion-card-content {
+    p {
+      color: var(--ion-color-medium);
+      font-style: italic;
+      text-align: center;
+    }
+  }
+
+  &:hover {
+    opacity: 1;
+    border-color: var(--ion-color-medium);
+  }
+}
+
+// Animação shimmer
+@keyframes shimmer {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(30%, 30%) rotate(180deg);
+    opacity: 0.3;
+  }
+}
+
+// Responsividade para relatórios
+@media (min-width: 768px) {
+  .aba-relatorios {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+
+    ion-card:first-child {
+      grid-column: 1 / -1;
+    }
+
+    ion-card {
+      ion-card-header {
+        padding: 28px;
+
+        ion-card-title {
+          font-size: 24px;
+
+          ion-icon {
+            font-size: 32px;
+          }
+        }
+
+        ion-card-subtitle {
+          font-size: 16px;
+        }
+      }
+
+      ion-card-content {
+        padding: 28px;
+
+        p {
+          font-size: 16px;
+        }
+      }
+    }
+  }
+}
+
+@media (min-width: 1024px) {
+  .aba-relatorios {
+    grid-template-columns: repeat(3, 1fr);
+
+    ion-card:first-child {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+// ========================================
+// ESTILOS PARA MÉTRICAS (CARDS DE RESUMO)
+// ========================================
+
+// Container dos cards de métricas
+.aba-metricas ion-row {
+  margin-bottom: 24px;
+}
+
+// Cards de métricas - Estilo melhorado
+.aba-metricas ion-card[color] {
+  margin: 0;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  animation: slideInUp 0.4s ease-out;
+
+  &:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+
+  &:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  &:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  &:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  ion-card-content {
+    padding: 20px !important;
+    text-align: center;
+    background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover::before {
+      opacity: 1;
+      animation: shimmer 3s infinite ease-in-out;
+    }
+
+    h2 {
+      color: white;
+      margin: 8px 0;
+      font-size: 32px;
+      font-weight: 700;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      position: relative;
+      z-index: 1;
+      line-height: 1.2;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.95);
+      margin: 0;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: relative;
+      z-index: 1;
+    }
+  }
+}
+
+// Card Primary (Vermelho)
+.aba-metricas ion-card[color="primary"] {
+  ion-card-content {
+    background: linear-gradient(135deg, #dc143c 0%, #8b0000 100%);
+    box-shadow: 0 4px 16px rgba(220, 20, 60, 0.3);
+  }
+}
+
+// Card Warning (Amarelo/Laranja) - MELHORADO
+.aba-metricas ion-card[color="warning"] {
+  ion-card-content {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.35);
+
+    h2 {
+      color: white;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.95);
+    }
+  }
+}
+
+// Card Success (Verde)
+.aba-metricas ion-card[color="success"] {
+  ion-card-content {
+    background: linear-gradient(135deg, #2dd36f 0%, #28ba62 100%);
+    box-shadow: 0 4px 16px rgba(45, 211, 111, 0.3);
+  }
+}
+
+// Card Tertiary (Vermelho)
+.aba-metricas ion-card[color="tertiary"] {
+  ion-card-content {
+    background: linear-gradient(135deg, #dc143c 0%, #8b0000 100%);
+    box-shadow: 0 4px 16px rgba(220, 20, 60, 0.3);
+  }
+}
+
+// Responsividade para cards de métricas
+@media (min-width: 768px) {
+  .aba-metricas ion-card[color] {
+    ion-card-content {
+      padding: 28px !important;
+
+      h2 {
+        font-size: 36px;
+      }
+
+      p {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+@media (min-width: 1024px) {
+  .aba-metricas ion-card[color] {
+    ion-card-content {
+      padding: 32px !important;
+
+      h2 {
+        font-size: 40px;
+      }
+
+      p {
+        font-size: 15px;
+      }
+    }
+  }
+}

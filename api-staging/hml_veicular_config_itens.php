@@ -1,39 +1,19 @@
 <?php
-// Output buffering para garantir JSON limpo
-ob_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-
 // Headers CORS - DEVE VIR ANTES DE QUALQUER SAÍDA
-if (!headers_sent()) {
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Max-Age: 86400');
-    header('Content-Type: application/json; charset=utf-8');
-}
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Max-Age: 86400');
+header('Content-Type: application/json; charset=utf-8');
 
 // Responde requisições OPTIONS (preflight) IMEDIATAMENTE
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    ob_clean();
     http_response_code(200);
     exit(0);
 }
 
-try {
-    require_once 'b_veicular_config.php';
-} catch (Exception $e) {
-    ob_clean();
-    error_log("ERRO ao carregar config: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode([
-        'erro' => 'Erro ao carregar configuração',
-        'mensagem' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
+require_once 'hml_veicular_config.php';
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];
@@ -48,25 +28,19 @@ try {
             case 'categoria':
                 // Buscar itens de uma categoria específica
                 if (!isset($_GET['categoria'])) {
-                    ob_clean();
                     http_response_code(400);
-                    echo json_encode(['erro' => 'Categoria não informada'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    echo json_encode(['erro' => 'Categoria não informada']);
                     exit;
                 }
 
-                $sql = "SELECT * FROM bbb_config_itens_completo
+                $sql = "SELECT * FROM bbb_config_itens
                         WHERE categoria = :categoria
                         ORDER BY nome_item ASC";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute(['categoria' => $_GET['categoria']]);
                 $resultados = $stmt->fetchAll();
 
-                ob_clean();
-                $json = json_encode($resultados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
+                echo json_encode($resultados);
                 break;
 
             case 'habilitados':
@@ -74,13 +48,13 @@ try {
                 $categoria = isset($_GET['categoria']) ? $_GET['categoria'] : null;
 
                 if ($categoria) {
-                    $sql = "SELECT * FROM bbb_config_itens_completo
+                    $sql = "SELECT * FROM bbb_config_itens
                             WHERE habilitado = 1 AND categoria = :categoria
                             ORDER BY nome_item ASC";
                     $stmt = $pdo->prepare($sql);
                     $stmt->execute(['categoria' => $categoria]);
                 } else {
-                    $sql = "SELECT * FROM bbb_config_itens_completo
+                    $sql = "SELECT * FROM bbb_config_itens
                             WHERE habilitado = 1
                             ORDER BY categoria ASC, nome_item ASC";
                     $stmt = $pdo->prepare($sql);
@@ -88,61 +62,19 @@ try {
                 }
 
                 $resultados = $stmt->fetchAll();
-                ob_clean();
-                $json = json_encode($resultados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
-                break;
-
-            case 'por_parte':
-                // Buscar itens agrupados por parte
-                $sql = "SELECT * FROM bbb_config_itens_completo
-                        ORDER BY categoria ASC, nome_item ASC";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute();
-                $todos = $stmt->fetchAll();
-
-                // Agrupar por categoria
-                $agrupado = [
-                    'PARTE1_INTERNA' => [],
-                    'PARTE2_EQUIPAMENTOS' => [],
-                    'PARTE3_DIANTEIRA' => [],
-                    'PARTE4_TRASEIRA' => [],
-                    'PARTE5_ESPECIAL' => []
-                ];
-
-                foreach ($todos as $item) {
-                    $categoria = $item['categoria'];
-                    if (isset($agrupado[$categoria])) {
-                        $agrupado[$categoria][] = $item;
-                    }
-                }
-
-                ob_clean();
-                $json = json_encode($agrupado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
+                echo json_encode($resultados);
                 break;
 
             case 'todos':
             default:
                 // Buscar todos os itens
-                $sql = "SELECT * FROM bbb_config_itens_completo
+                $sql = "SELECT * FROM bbb_config_itens
                         ORDER BY categoria ASC, nome_item ASC";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute();
                 $resultados = $stmt->fetchAll();
 
-                ob_clean();
-                $json = json_encode($resultados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
+                echo json_encode($resultados);
                 break;
         }
 
@@ -170,7 +102,7 @@ try {
                     exit;
                 }
 
-                $sql = "UPDATE bbb_config_itens_completo
+                $sql = "UPDATE bbb_config_itens
                         SET habilitado = :habilitado
                         WHERE id = :id";
 
@@ -202,7 +134,7 @@ try {
                 $pdo->beginTransaction();
 
                 try {
-                    $sql = "UPDATE bbb_config_itens_completo
+                    $sql = "UPDATE bbb_config_itens
                             SET habilitado = :habilitado
                             WHERE id = :id";
                     $stmt = $pdo->prepare($sql);
@@ -240,15 +172,7 @@ try {
                     exit;
                 }
 
-                // Validar categoria
-                $categorias_validas = ['PARTE1_INTERNA', 'PARTE2_EQUIPAMENTOS', 'PARTE3_DIANTEIRA', 'PARTE4_TRASEIRA', 'PARTE5_ESPECIAL'];
-                if (!in_array($dados['categoria'], $categorias_validas)) {
-                    http_response_code(400);
-                    echo json_encode(['erro' => 'Categoria inválida. Use: ' . implode(', ', $categorias_validas)]);
-                    exit;
-                }
-
-                $sql = "INSERT INTO bbb_config_itens_completo (categoria, nome_item, habilitado, usuario_id, usuario_nome)
+                $sql = "INSERT INTO bbb_config_itens (categoria, nome_item, habilitado, usuario_id, usuario_nome)
                         VALUES (:categoria, :nome_item, :habilitado, :usuario_id, :usuario_nome)";
 
                 $stmt = $pdo->prepare($sql);
@@ -289,7 +213,7 @@ try {
             exit;
         }
 
-        $sql = "DELETE FROM bbb_config_itens_completo WHERE id = :id";
+        $sql = "DELETE FROM bbb_config_itens WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['id' => $dados['id']]);
 
@@ -313,22 +237,16 @@ try {
     }
 
 } catch (PDOException $e) {
-    ob_clean();
-    error_log("ERRO PDO: " . $e->getMessage());
     http_response_code(500);
-    $json = json_encode([
+    echo json_encode([
         'erro' => 'Erro no banco de dados',
         'mensagem' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    echo $json ? $json : '{"erro":"Erro ao codificar JSON de erro"}';
+    ]);
 } catch (Exception $e) {
-    ob_clean();
-    error_log("ERRO GERAL: " . $e->getMessage());
     http_response_code(500);
-    $json = json_encode([
+    echo json_encode([
         'erro' => 'Erro interno do servidor',
         'mensagem' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    echo $json ? $json : '{"erro":"Erro ao codificar JSON de erro"}';
+    ]);
 }
 ?>

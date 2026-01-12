@@ -68,6 +68,10 @@
         <ion-label>Métricas</ion-label>
         <ion-icon name="analytics"></ion-icon>
       </ion-segment-button>
+      <ion-segment-button value="relatorios">
+        <ion-label>Relatórios</ion-label>
+        <ion-icon name="document-text"></ion-icon>
+      </ion-segment-button>
       <ion-segment-button value="configuracao">
         <ion-label>Configurar Itens</ion-label>
         <ion-icon name="settings"></ion-icon>
@@ -437,7 +441,7 @@
     <!-- ========================================= -->
     <!-- ABA: MÉTRICAS -->
     <!-- ========================================= -->
-    <div *ngIf="abaSelecionada === 'metricas'">
+    <div *ngIf="abaSelecionada === 'metricas'" class="aba-metricas">
       <ion-card>
         <ion-card-header>
           <ion-card-title>
@@ -575,6 +579,66 @@
       </ion-card>
 
 
+    </div>
+
+    <!-- ========================================= -->
+    <!-- ABA: RELATÓRIOS -->
+    <!-- ========================================= -->
+    <div *ngIf="abaSelecionada === 'relatorios'" class="aba-relatorios">
+      <ion-card color="tertiary">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="document-text"></ion-icon>
+            Exportar Relatórios
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p>Gere relatórios personalizados do sistema de inspeção veicular.</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Relatório: Veículos sem Checklist -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="car-outline" color="warning"></ion-icon>
+            Veículos sem Checklist
+          </ion-card-title>
+          <ion-card-subtitle>
+            Lista de veículos cadastrados que não realizaram checklist
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <p>Este relatório identifica todos os veículos cadastrados no sistema que ainda não possuem nenhum checklist realizado.</p>
+
+          <ion-button
+            expand="block"
+            color="success"
+            (click)="exportarVeiculosSemChecklist()"
+            [disabled]="carregandoRelatorio">
+            <ion-icon slot="start" name="download"></ion-icon>
+            {{ carregandoRelatorio ? 'Gerando...' : 'Exportar para Excel' }}
+          </ion-button>
+
+          <div *ngIf="carregandoRelatorio" class="loading-container" style="margin-top: 16px;">
+            <ion-spinner name="crescent" color="success"></ion-spinner>
+            <p>Processando relatório...</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Placeholder para futuros relatórios -->
+      <ion-card>
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="add-circle-outline" color="medium"></ion-icon>
+            Mais Relatórios
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p style="color: var(--ion-color-medium);">Novos relatórios serão adicionados aqui.</p>
+        </ion-card-content>
+      </ion-card>
     </div>
 
     <!-- ========================================= -->

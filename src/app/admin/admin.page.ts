@@ -48,10 +48,13 @@ export class AdminPage implements OnInit {
   checklistsCompletosSemana = 0;
 
   // Configuração de itens - SIMPLES
-  abaSelecionada: 'historico' | 'anomalias' | 'configuracao' | 'metricas' = 'historico';
+  abaSelecionada: 'historico' | 'anomalias' | 'configuracao' | 'metricas' | 'relatorios' = 'historico';
   itensConfig: ConfigItem[] = [];
   itensConfigPorCategoria: { [key: string]: ConfigItem[] } = {};
   carregandoConfig = false;
+
+  // Relatórios
+  carregandoRelatorio = false;
 
   // Anomalias
   anomalias: any[] = [];
@@ -273,13 +276,21 @@ export class AdminPage implements OnInit {
       ? ['#2dd36f', '#eb445a']
       : this.gerarCores(labels.length);
 
-    this.dadosGrafico = labels
+    // Mapeia e ordena dados
+    let dadosOrdenados = labels
       .map((key, index) => ({
         label: key,
         value: dados[key],
         color: cores[index] || '#cccccc'
       }))
       .sort((a, b) => b.value - a.value);
+
+    // Limita ao top 10 para gráficos de usuários e veículos
+    if (this.graficoSelecionado === 'usuarios' || this.graficoSelecionado === 'veiculos') {
+      dadosOrdenados = dadosOrdenados.slice(0, 10);
+    }
+
+    this.dadosGrafico = dadosOrdenados;
   }
 
   filtrarDadosGrafico() {
@@ -333,7 +344,7 @@ export class AdminPage implements OnInit {
     });
   }
 
-  mudarAba(aba: 'historico' | 'anomalias' | 'configuracao' | 'metricas') {
+  mudarAba(aba: 'historico' | 'anomalias' | 'configuracao' | 'metricas' | 'relatorios') {
     this.abaSelecionada = aba;
     if (aba === 'configuracao') {
       // Carrega a configuração apropriada dependendo do tipo de checklist
@@ -1478,9 +1489,36 @@ export class AdminPage implements OnInit {
         },
         error: (error) => {
           console.error('Erro ao carregar anomalias:', error);
-          const mensagemErro = error.error?.erro || error.error?.message || error.message || 'Erro desconhecido';
-          this.erroAnomalias = `Erro ao carregar anomalias: ${mensagemErro}`;
+          
+          // Trata diferentes tipos de erro
+          let mensagemErro = 'Erro desconhecido ao carregar anomalias';
+          
+          if (error.message) {
+            // Erro já formatado pelo ApiService
+            mensagemErro = error.message;
+          } else if (error.error?.erro) {
+            mensagemErro = error.error.erro;
+          } else if (error.error?.message) {
+            mensagemErro = error.error.message;
+          } else if (typeof error.error === 'string') {
+            mensagemErro = error.error;
+          } else if (error.status === 0) {
+            mensagemErro = 'Erro de conexão. Verifique sua internet.';
+          } else if (error.status === 500) {
+            mensagemErro = 'Erro interno do servidor. Tente novamente mais tarde.';
+          } else if (error.status === 200 && !error.ok) {
+            mensagemErro = 'Erro ao processar resposta do servidor. A resposta não é válida.';
+          }
+          
+          this.erroAnomalias = mensagemErro;
           this.carregandoAnomalias = false;
+          
+          // Mostra toast para o usuário
+          this.presentToast(mensagemErro, 'danger');
+          
+          // Limpa anomalias em caso de erro
+          this.anomalias = [];
+          
           resolve();
         }
       });
@@ -1661,18 +1699,47 @@ export class AdminPage implements OnInit {
     const anomaliasFinalizadas$ = this.apiService.buscarAnomalias('finalizadas');
 
     // Combina as requisições
-    import('rxjs').then(rxjs => {
+    Promise.all([
+      import('rxjs'),
+      import('rxjs/operators')
+    ]).then(([rxjs, operators]) => {
       rxjs.forkJoin({
-        ativas: anomaliasAtivas$,
-        finalizadas: anomaliasFinalizadas$
+        ativas: anomaliasAtivas$.pipe(
+          operators.catchError((error) => {
+            console.error('Erro ao buscar anomalias ativas:', error);
+            // Retorna array vazio em caso de erro para não quebrar o forkJoin
+            return rxjs.of([]);
+          })
+        ),
+        finalizadas: anomaliasFinalizadas$.pipe(
+          operators.catchError((error) => {
+            console.error('Erro ao buscar anomalias finalizadas:', error);
+            // Retorna array vazio em caso de erro para não quebrar o forkJoin
+            return rxjs.of([]);
+          })
+        )
       }).subscribe({
         next: (resultado) => {
+          // Valida se os resultados são arrays válidos
+          if (!Array.isArray(resultado.ativas)) {
+            console.warn('Resposta de anomalias ativas não é um array válido:', resultado.ativas);
+            resultado.ativas = [];
+          }
+          if (!Array.isArray(resultado.finalizadas)) {
+            console.warn('Resposta de anomalias finalizadas não é um array válido:', resultado.finalizadas);
+            resultado.finalizadas = [];
+          }
+
           // Calcula total de inspeções (soma simples + completo)
           this.metricas.totalInspecoes = this.checklists.length + this.checklistsCompletos.length;
 
           // Conta anomalias ativas e finalizadas
-          this.metricas.anomaliasAtivas = resultado.ativas.reduce((total: number, veiculo: any) => total + veiculo.total_problemas, 0);
-          this.metricas.anomaliasFinalizadas = resultado.finalizadas.reduce((total: number, veiculo: any) => total + veiculo.total_problemas, 0);
+          this.metricas.anomaliasAtivas = resultado.ativas.reduce((total: number, veiculo: any) => {
+            return total + (veiculo?.total_problemas || 0);
+          }, 0);
+          this.metricas.anomaliasFinalizadas = resultado.finalizadas.reduce((total: number, veiculo: any) => {
+            return total + (veiculo?.total_problemas || 0);
+          }, 0);
 
           // Conta veículos únicos
           const placasUnicas = new Set<string>();
@@ -1709,6 +1776,7 @@ export class AdminPage implements OnInit {
 
           // Top veículos com mais problemas
           this.metricas.veiculosComMaisProblemas = resultado.ativas
+            .filter((v: any) => v && v.placa && typeof v.total_problemas === 'number')
             .sort((a: any, b: any) => b.total_problemas - a.total_problemas)
             .slice(0, 5)
             .map((v: any) => ({
@@ -1719,13 +1787,17 @@ export class AdminPage implements OnInit {
           // Categorias com mais problemas
           const problemasPorCategoria: { [key: string]: number } = {};
           resultado.ativas.forEach((veiculo: any) => {
-            veiculo.anomalias.forEach((anomalia: any) => {
-              const categoria = anomalia.categoria;
-              if (!problemasPorCategoria[categoria]) {
-                problemasPorCategoria[categoria] = 0;
-              }
-              problemasPorCategoria[categoria]++;
-            });
+            if (veiculo && Array.isArray(veiculo.anomalias)) {
+              veiculo.anomalias.forEach((anomalia: any) => {
+                if (anomalia && anomalia.categoria) {
+                  const categoria = anomalia.categoria;
+                  if (!problemasPorCategoria[categoria]) {
+                    problemasPorCategoria[categoria] = 0;
+                  }
+                  problemasPorCategoria[categoria]++;
+                }
+              });
+            }
           });
 
           this.metricas.categoriasComMaisProblemas = Object.entries(problemasPorCategoria)
@@ -1739,8 +1811,37 @@ export class AdminPage implements OnInit {
         },
         error: (error) => {
           console.error('Erro ao carregar métricas:', error);
+          
+          // Mensagem de erro mais específica
+          let mensagemErro = 'Erro ao carregar métricas';
+          
+          if (error.message) {
+            mensagemErro = error.message;
+          } else if (error.error?.erro) {
+            mensagemErro = `Erro ao carregar métricas: ${error.error.erro}`;
+          } else if (error.error?.message) {
+            mensagemErro = `Erro ao carregar métricas: ${error.error.message}`;
+          } else if (error.status === 0) {
+            mensagemErro = 'Erro de conexão ao carregar métricas. Verifique sua internet.';
+          } else if (error.status === 500) {
+            mensagemErro = 'Erro interno do servidor ao carregar métricas.';
+          }
+          
           this.carregandoMetricas = false;
-          this.mostrarToast('Erro ao carregar métricas', 'danger');
+          this.mostrarToast(mensagemErro, 'danger');
+          
+          // Reseta métricas em caso de erro
+          this.metricas = {
+            totalInspecoes: 0,
+            anomaliasAtivas: 0,
+            anomaliasFinalizadas: 0,
+            totalVeiculos: 0,
+            inspecoesHoje: 0,
+            inspecoesSemana: 0,
+            taxaAprovacao: 0,
+            veiculosComMaisProblemas: [],
+            categoriasComMaisProblemas: []
+          };
         }
       });
     });
@@ -1776,5 +1877,96 @@ export class AdminPage implements OnInit {
       'PARTE5_ESPECIAL': '#3dc2ff'
     };
     return cores[categoria] || '#666666';
+  }
+
+  // ============================================
+  // RELATÓRIOS
+  // ============================================
+
+  async exportarVeiculosSemChecklist() {
+    this.carregandoRelatorio = true;
+
+    try {
+      console.log('🔍 Buscando veículos sem checklist...');
+
+      const resultado = await this.apiService.buscarVeiculosSemChecklist().toPromise();
+
+      if (!resultado || !resultado.veiculos || resultado.veiculos.length === 0) {
+        const toast = await this.toastController.create({
+          message: 'Nenhum veículo sem checklist encontrado! Todos os veículos cadastrados já possuem checklist.',
+          duration: 3000,
+          color: 'success',
+          position: 'top'
+        });
+        await toast.present();
+        this.carregandoRelatorio = false;
+        return;
+      }
+
+      console.log(`📊 ${resultado.veiculos.length} veículos sem checklist encontrados`);
+
+      // Gerar CSV
+      const csv = this.gerarCSV(resultado.veiculos);
+
+      // Download do arquivo
+      this.downloadCSV(csv, `veiculos-sem-checklist-${new Date().toISOString().split('T')[0]}.csv`);
+
+      const toast = await this.toastController.create({
+        message: `Relatório gerado com sucesso! ${resultado.veiculos.length} veículos exportados.`,
+        duration: 3000,
+        color: 'success',
+        position: 'top'
+      });
+      await toast.present();
+
+    } catch (error) {
+      console.error('❌ Erro ao gerar relatório:', error);
+
+      const alert = await this.alertController.create({
+        header: 'Erro ao Gerar Relatório',
+        message: 'Não foi possível gerar o relatório de veículos sem checklist. Tente novamente.',
+        buttons: ['OK']
+      });
+      await alert.present();
+    } finally {
+      this.carregandoRelatorio = false;
+    }
+  }
+
+  private gerarCSV(veiculos: any[]): string {
+    // Cabeçalho
+    const header = ['Placa', 'Total de Checklists', 'Status'];
+
+    // Linhas de dados
+    const rows = veiculos.map(v => [
+      v.placa,
+      '0',
+      'Sem checklist'
+    ]);
+
+    // Combinar header + rows
+    const csvContent = [
+      header.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    // Adicionar BOM para Excel reconhecer UTF-8
+    return '\uFEFF' + csvContent;
+  }
+
+  private downloadCSV(csvContent: string, filename: string) {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+
+    if (link.download !== undefined) {
+      // Browsers que suportam HTML5 download attribute
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   }
 }

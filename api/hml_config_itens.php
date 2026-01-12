@@ -1,39 +1,33 @@
 <?php
-// Output buffering para garantir JSON limpo
-ob_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
+/**
+ * API UNIFICADA - Configuração de Itens de Checklist
+ *
+ * Substitui:
+ * - b_veicular_config_itens.php
+ * - b_checklist_completo_config_itens.php
+ *
+ * Trabalha com a tabela unificada bbb_config_itens que contém
+ * tanto itens do checklist simples quanto do completo.
+ *
+ * Versão: 4.0.0
+ * Data: 2025-12-18
+ */
 
 // Headers CORS - DEVE VIR ANTES DE QUALQUER SAÍDA
-if (!headers_sent()) {
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Max-Age: 86400');
-    header('Content-Type: application/json; charset=utf-8');
-}
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Max-Age: 86400');
+header('Content-Type: application/json; charset=utf-8');
 
 // Responde requisições OPTIONS (preflight) IMEDIATAMENTE
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    ob_clean();
     http_response_code(200);
     exit(0);
 }
 
-try {
-    require_once 'b_veicular_config.php';
-} catch (Exception $e) {
-    ob_clean();
-    error_log("ERRO ao carregar config: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode([
-        'erro' => 'Erro ao carregar configuração',
-        'mensagem' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
+require_once 'hml_veicular_config.php';
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];
@@ -43,106 +37,139 @@ try {
     // ============================================
     if ($method === 'GET') {
         $acao = isset($_GET['acao']) ? $_GET['acao'] : 'todos';
+        $tipo = isset($_GET['tipo']) ? $_GET['tipo'] : null;
+
+        // Validar tipo se fornecido
+        if ($tipo && !in_array($tipo, ['simples', 'completo'])) {
+            http_response_code(400);
+            echo json_encode(['erro' => 'Tipo inválido. Use: simples ou completo']);
+            exit;
+        }
 
         switch ($acao) {
             case 'categoria':
                 // Buscar itens de uma categoria específica
                 if (!isset($_GET['categoria'])) {
-                    ob_clean();
                     http_response_code(400);
-                    echo json_encode(['erro' => 'Categoria não informada'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    echo json_encode(['erro' => 'Categoria não informada']);
                     exit;
                 }
 
-                $sql = "SELECT * FROM bbb_config_itens_completo
-                        WHERE categoria = :categoria
-                        ORDER BY nome_item ASC";
+                $sql = "SELECT * FROM bbb_config_itens WHERE categoria = :categoria";
+                $params = ['categoria' => $_GET['categoria']];
+
+                // Filtrar por tipo se especificado
+                if ($tipo) {
+                    $sql .= " AND tipo_checklist = :tipo";
+                    $params['tipo'] = $tipo;
+                }
+
+                $sql .= " ORDER BY nome_item ASC";
+
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute(['categoria' => $_GET['categoria']]);
+                $stmt->execute($params);
                 $resultados = $stmt->fetchAll();
 
-                ob_clean();
-                $json = json_encode($resultados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
+                echo json_encode($resultados);
                 break;
 
             case 'habilitados':
                 // Buscar apenas itens habilitados
                 $categoria = isset($_GET['categoria']) ? $_GET['categoria'] : null;
 
-                if ($categoria) {
-                    $sql = "SELECT * FROM bbb_config_itens_completo
-                            WHERE habilitado = 1 AND categoria = :categoria
-                            ORDER BY nome_item ASC";
-                    $stmt = $pdo->prepare($sql);
-                    $stmt->execute(['categoria' => $categoria]);
-                } else {
-                    $sql = "SELECT * FROM bbb_config_itens_completo
-                            WHERE habilitado = 1
-                            ORDER BY categoria ASC, nome_item ASC";
-                    $stmt = $pdo->prepare($sql);
-                    $stmt->execute();
+                $sql = "SELECT * FROM bbb_config_itens WHERE habilitado = 1";
+                $params = [];
+
+                // Filtrar por tipo se especificado
+                if ($tipo) {
+                    $sql .= " AND tipo_checklist = :tipo";
+                    $params['tipo'] = $tipo;
                 }
 
-                $resultados = $stmt->fetchAll();
-                ob_clean();
-                $json = json_encode($resultados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
+                // Filtrar por categoria se especificado
+                if ($categoria) {
+                    $sql .= " AND categoria = :categoria";
+                    $params['categoria'] = $categoria;
                 }
-                echo $json;
+
+                $sql .= " ORDER BY categoria ASC, nome_item ASC";
+
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+                $resultados = $stmt->fetchAll();
+
+                echo json_encode($resultados);
                 break;
 
-            case 'por_parte':
-                // Buscar itens agrupados por parte
-                $sql = "SELECT * FROM bbb_config_itens_completo
-                        ORDER BY categoria ASC, nome_item ASC";
+            case 'por_tipo':
+                // Buscar itens agrupados por tipo de checklist
+                $sql = "SELECT * FROM bbb_config_itens ORDER BY tipo_checklist, categoria ASC, nome_item ASC";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute();
                 $todos = $stmt->fetchAll();
 
-                // Agrupar por categoria
+                // Agrupar por tipo
                 $agrupado = [
-                    'PARTE1_INTERNA' => [],
-                    'PARTE2_EQUIPAMENTOS' => [],
-                    'PARTE3_DIANTEIRA' => [],
-                    'PARTE4_TRASEIRA' => [],
-                    'PARTE5_ESPECIAL' => []
+                    'simples' => [],
+                    'completo' => []
                 ];
 
                 foreach ($todos as $item) {
-                    $categoria = $item['categoria'];
-                    if (isset($agrupado[$categoria])) {
-                        $agrupado[$categoria][] = $item;
-                    }
+                    $tipo_item = $item['tipo_checklist'];
+                    $agrupado[$tipo_item][] = $item;
                 }
 
-                ob_clean();
-                $json = json_encode($agrupado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
+                echo json_encode($agrupado);
+                break;
+
+            case 'por_categoria':
+                // Buscar itens agrupados por categoria (para checklist completo)
+                $sql = "SELECT * FROM bbb_config_itens";
+                $params = [];
+
+                if ($tipo) {
+                    $sql .= " WHERE tipo_checklist = :tipo";
+                    $params['tipo'] = $tipo;
                 }
-                echo $json;
+
+                $sql .= " ORDER BY categoria ASC, nome_item ASC";
+
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+                $todos = $stmt->fetchAll();
+
+                // Agrupar por categoria
+                $agrupado = [];
+                foreach ($todos as $item) {
+                    $cat = $item['categoria'];
+                    if (!isset($agrupado[$cat])) {
+                        $agrupado[$cat] = [];
+                    }
+                    $agrupado[$cat][] = $item;
+                }
+
+                echo json_encode($agrupado);
                 break;
 
             case 'todos':
             default:
                 // Buscar todos os itens
-                $sql = "SELECT * FROM bbb_config_itens_completo
-                        ORDER BY categoria ASC, nome_item ASC";
+                $sql = "SELECT * FROM bbb_config_itens";
+                $params = [];
+
+                // Filtrar por tipo se especificado
+                if ($tipo) {
+                    $sql .= " WHERE tipo_checklist = :tipo";
+                    $params['tipo'] = $tipo;
+                }
+
+                $sql .= " ORDER BY tipo_checklist, categoria ASC, nome_item ASC";
+
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute();
+                $stmt->execute($params);
                 $resultados = $stmt->fetchAll();
 
-                ob_clean();
-                $json = json_encode($resultados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false) {
-                    throw new Exception('Erro ao codificar JSON: ' . json_last_error_msg());
-                }
-                echo $json;
+                echo json_encode($resultados);
                 break;
         }
 
@@ -170,7 +197,7 @@ try {
                     exit;
                 }
 
-                $sql = "UPDATE bbb_config_itens_completo
+                $sql = "UPDATE bbb_config_itens
                         SET habilitado = :habilitado
                         WHERE id = :id";
 
@@ -182,7 +209,6 @@ try {
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute($params);
 
-                // Retorna sucesso mesmo se não houve mudanças (já estava no estado desejado)
                 http_response_code(200);
                 echo json_encode([
                     'sucesso' => true,
@@ -202,7 +228,7 @@ try {
                 $pdo->beginTransaction();
 
                 try {
-                    $sql = "UPDATE bbb_config_itens_completo
+                    $sql = "UPDATE bbb_config_itens
                             SET habilitado = :habilitado
                             WHERE id = :id";
                     $stmt = $pdo->prepare($sql);
@@ -234,30 +260,41 @@ try {
 
             case 'adicionar_item':
                 // Adicionar um novo item customizado
-                if (!isset($dados['categoria']) || !isset($dados['nome_item'])) {
+                if (!isset($dados['tipo_checklist']) || !isset($dados['categoria']) || !isset($dados['nome_item'])) {
                     http_response_code(400);
-                    echo json_encode(['erro' => 'Categoria e nome do item são obrigatórios']);
+                    echo json_encode(['erro' => 'Tipo de checklist, categoria e nome do item são obrigatórios']);
                     exit;
                 }
 
-                // Validar categoria
-                $categorias_validas = ['PARTE1_INTERNA', 'PARTE2_EQUIPAMENTOS', 'PARTE3_DIANTEIRA', 'PARTE4_TRASEIRA', 'PARTE5_ESPECIAL'];
+                // Validar tipo de checklist
+                if (!in_array($dados['tipo_checklist'], ['simples', 'completo'])) {
+                    http_response_code(400);
+                    echo json_encode(['erro' => 'Tipo de checklist inválido. Use: simples ou completo']);
+                    exit;
+                }
+
+                // Validar categoria baseada no tipo
+                $categorias_simples = ['MOTOR', 'ELETRICO', 'LIMPEZA', 'FERRAMENTA', 'PNEU'];
+                $categorias_completo = ['PARTE1_INTERNA', 'PARTE2_EQUIPAMENTOS', 'PARTE3_DIANTEIRA', 'PARTE4_TRASEIRA', 'PARTE5_ESPECIAL'];
+
+                $categorias_validas = $dados['tipo_checklist'] === 'simples' ? $categorias_simples : $categorias_completo;
+
                 if (!in_array($dados['categoria'], $categorias_validas)) {
                     http_response_code(400);
-                    echo json_encode(['erro' => 'Categoria inválida. Use: ' . implode(', ', $categorias_validas)]);
+                    echo json_encode(['erro' => 'Categoria inválida para o tipo ' . $dados['tipo_checklist'] . '. Use: ' . implode(', ', $categorias_validas)]);
                     exit;
                 }
 
-                $sql = "INSERT INTO bbb_config_itens_completo (categoria, nome_item, habilitado, usuario_id, usuario_nome)
-                        VALUES (:categoria, :nome_item, :habilitado, :usuario_id, :usuario_nome)";
+                $sql = "INSERT INTO bbb_config_itens (tipo_checklist, categoria, nome_item, habilitado, usuario_id)
+                        VALUES (:tipo_checklist, :categoria, :nome_item, :habilitado, :usuario_id)";
 
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([
+                    'tipo_checklist' => $dados['tipo_checklist'],
                     'categoria' => $dados['categoria'],
                     'nome_item' => $dados['nome_item'],
                     'habilitado' => isset($dados['habilitado']) ? ($dados['habilitado'] ? 1 : 0) : 1,
-                    'usuario_id' => isset($dados['usuario_id']) ? $dados['usuario_id'] : null,
-                    'usuario_nome' => isset($dados['usuario_nome']) ? $dados['usuario_nome'] : null
+                    'usuario_id' => isset($dados['usuario_id']) ? $dados['usuario_id'] : null
                 ]);
 
                 $id = $pdo->lastInsertId();
@@ -289,7 +326,7 @@ try {
             exit;
         }
 
-        $sql = "DELETE FROM bbb_config_itens_completo WHERE id = :id";
+        $sql = "DELETE FROM bbb_config_itens WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['id' => $dados['id']]);
 
@@ -313,22 +350,18 @@ try {
     }
 
 } catch (PDOException $e) {
-    ob_clean();
-    error_log("ERRO PDO: " . $e->getMessage());
+    error_log("ERRO PDO [b_config_itens.php]: " . $e->getMessage());
     http_response_code(500);
-    $json = json_encode([
+    echo json_encode([
         'erro' => 'Erro no banco de dados',
         'mensagem' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    echo $json ? $json : '{"erro":"Erro ao codificar JSON de erro"}';
+    ]);
 } catch (Exception $e) {
-    ob_clean();
-    error_log("ERRO GERAL: " . $e->getMessage());
+    error_log("ERRO GERAL [b_config_itens.php]: " . $e->getMessage());
     http_response_code(500);
-    $json = json_encode([
+    echo json_encode([
         'erro' => 'Erro interno do servidor',
         'mensagem' => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    echo $json ? $json : '{"erro":"Erro ao codificar JSON de erro"}';
+    ]);
 }
 ?>
