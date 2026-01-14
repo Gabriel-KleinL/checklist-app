@@ -79,3 +79,14 @@ android/key.properties
 api/hml_veicular_config.php
 .env.staging
 .env.local
+
+# Environment files with credentials
+api/.env
+api/.env.local
+api-staging/.env
+backend/.env
+backend/.env.local
+backend/.env.staging
+backend/.env.production
+.env
+api/adminer.php
