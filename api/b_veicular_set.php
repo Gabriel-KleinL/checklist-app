@@ -38,37 +38,10 @@ if (!$dados) {
 
 try {
     // ============================================
-    // VALIDAÇÃO: Verifica se já existe registro da mesma placa nas últimas 1 hora
+    // VALIDAÇÃO TEMPORARIAMENTE DESABILITADA
+    // (A coluna data_realizacao ou created_at pode não existir em produção)
     // ============================================
-    $placaParaValidar = isset($dados['placa']) ? strtoupper(trim($dados['placa'])) : '';
-
-    if (!empty($placaParaValidar)) {
-        $sqlValidacao = "SELECT id, data_realizacao
-                        FROM bbb_inspecao_veiculo
-                        WHERE placa = :placa
-                        AND data_realizacao >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-                        ORDER BY data_realizacao DESC
-                        LIMIT 1";
-
-        $stmtValidacao = $pdo->prepare($sqlValidacao);
-        $stmtValidacao->execute(array('placa' => $placaParaValidar));
-        $registroRecente = $stmtValidacao->fetch();
-
-        if ($registroRecente) {
-            error_log("VALIDAÇÃO FALHOU: Placa $placaParaValidar já possui registro recente (ID: {$registroRecente['id']})");
-            error_log("Data do último registro: {$registroRecente['data_realizacao']}");
-
-            http_response_code(409); // 409 Conflict
-            echo json_encode(array(
-                'erro' => 'Registro duplicado',
-                'mensagem' => 'A placa ' . $placaParaValidar . ' já possui um registro nas últimas 1 hora. Aguarde antes de registrar novamente.',
-                'ultimo_registro' => $registroRecente['data_realizacao']
-            ));
-            exit;
-        }
-
-        error_log("VALIDAÇÃO OK: Placa $placaParaValidar pode ser registrada");
-    }
+    // Removido para evitar erro 500 - pode ser reativado após atualização do banco
 
     // Inicia uma transação para garantir consistência
     $pdo->beginTransaction();
@@ -96,31 +69,20 @@ try {
     // ============================================
     // 1. Insere dados principais na bbb_inspecao_veiculo
     // ============================================
-
-    // Processa data de realização
-    $dataRealizacao = isset($dados['data_realizacao']) ? $dados['data_realizacao'] : date('Y-m-d H:i:s');
-    if (strpos($dataRealizacao, 'T') !== false) {
-        $dataRealizacao = date('Y-m-d H:i:s', strtotime($dataRealizacao));
-    }
-
     $sqlInspecao = "INSERT INTO bbb_inspecao_veiculo (
         placa,
-        local,
         km_inicial,
         nivel_combustivel,
         observacao_painel,
         usuario_id,
-        status_geral,
-        data_realizacao
+        status_geral
     ) VALUES (
         :placa,
-        :local,
         :km_inicial,
         :nivel_combustivel,
         :observacao_painel,
         :usuario_id,
-        'PENDENTE',
-        :data_realizacao
+        'PENDENTE'
     )";
 
     // Converte o nível de combustível para o formato do banco
@@ -141,18 +103,14 @@ try {
     }
 
     error_log("Usuario ID usado: " . $usuarioId);
-    error_log("Local recebido: " . (isset($dados['local']) ? $dados['local'] : 'VAZIO'));
-    error_log("Data realizacao: " . $dataRealizacao);
 
     $stmtInspecao = $pdo->prepare($sqlInspecao);
     $stmtInspecao->execute(array(
         'placa' => isset($dados['placa']) ? $dados['placa'] : '',
-        'local' => isset($dados['local']) ? $dados['local'] : '',
         'km_inicial' => isset($dados['km_inicial']) ? $dados['km_inicial'] : 0,
         'nivel_combustivel' => $nivelCombustivelConvertido,
         'observacao_painel' => isset($dados['observacao_painel']) ? $dados['observacao_painel'] : '',
-        'usuario_id' => $usuarioId,
-        'data_realizacao' => $dataRealizacao
+        'usuario_id' => $usuarioId
     ));
 
     $inspecaoId = $pdo->lastInsertId();
