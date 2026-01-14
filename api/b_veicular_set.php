@@ -71,18 +71,24 @@ try {
     // ============================================
     $sqlInspecao = "INSERT INTO bbb_inspecao_veiculo (
         placa,
+        local,
+        data_realizacao,
         km_inicial,
         nivel_combustivel,
         observacao_painel,
         usuario_id,
-        status_geral
+        status_geral,
+        tipo_veiculo_id
     ) VALUES (
         :placa,
+        :local,
+        :data_realizacao,
         :km_inicial,
         :nivel_combustivel,
         :observacao_painel,
         :usuario_id,
-        'PENDENTE'
+        'PENDENTE',
+        :tipo_veiculo_id
     )";
 
     // Converte o nível de combustível para o formato do banco
@@ -104,13 +110,30 @@ try {
 
     error_log("Usuario ID usado: " . $usuarioId);
 
+    // Prepara campos adicionais
+    $local = isset($dados['local']) ? $dados['local'] : null;
+    $dataRealizacao = isset($dados['data_realizacao']) ? $dados['data_realizacao'] : date('Y-m-d H:i:s');
+    $tipoVeiculoId = isset($dados['tipo_veiculo_id']) ? $dados['tipo_veiculo_id'] : 1; // Padrão: Carro
+
+    // Converte ISO 8601 para MySQL datetime se necessário
+    if (strpos($dataRealizacao, 'T') !== false) {
+        $dataRealizacao = date('Y-m-d H:i:s', strtotime($dataRealizacao));
+    }
+
+    error_log("Local: " . ($local ?? 'NULL'));
+    error_log("Data Realização: " . $dataRealizacao);
+    error_log("Tipo Veículo ID: " . $tipoVeiculoId);
+
     $stmtInspecao = $pdo->prepare($sqlInspecao);
     $stmtInspecao->execute(array(
         'placa' => isset($dados['placa']) ? $dados['placa'] : '',
+        'local' => $local,
+        'data_realizacao' => $dataRealizacao,
         'km_inicial' => isset($dados['km_inicial']) ? $dados['km_inicial'] : 0,
         'nivel_combustivel' => $nivelCombustivelConvertido,
         'observacao_painel' => isset($dados['observacao_painel']) ? $dados['observacao_painel'] : '',
-        'usuario_id' => $usuarioId
+        'usuario_id' => $usuarioId,
+        'tipo_veiculo_id' => $tipoVeiculoId
     ));
 
     $inspecaoId = $pdo->lastInsertId();
