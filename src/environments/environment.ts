@@ -1,11 +1,16 @@
-// This file can be replaced during build by using the `fileReplacements` array.
-// `ng build` replaces `environment.ts` with `environment.prod.ts`.
-// The list of file replacements can be found in `angular.json`.
+// AMBIENTE DE DESENVOLVIMENTO LOCAL (padrão para npm start / ionic serve)
+// Este arquivo é usado quando você roda o app SEM especificar configuração.
+//
+// Para produção, use: npm run build --configuration production
+// O Angular substitui este arquivo por environment.prod.ts no build de produção.
+//
+// Backend Node.js deve estar rodando em: http://localhost:8000
+// Para iniciar: cd backend && npm start
 
 export const environment = {
   production: false,
-  apiUrl: 'https://floripa.in9automacao.com.br',
-  filePrefix: ''
+  apiUrl: 'http://localhost:8000',
+  filePrefix: 'b_'
 };
 
 /*
