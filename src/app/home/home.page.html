@@ -59,6 +59,39 @@
       </ion-card-content>
     </ion-card>
 
+    <!-- Grade de Tipos de Veículos -->
+    <div class="tipos-veiculo-section" *ngIf="tiposVeiculo.length > 0">
+      <h2 class="section-title">
+        <ion-icon name="car-outline"></ion-icon>
+        Selecione o Tipo de Veículo
+      </h2>
+      
+      <div class="tipos-veiculo-grid">
+        <div 
+          *ngFor="let tipo of tiposVeiculo" 
+          class="tipo-veiculo-card"
+          [class.selected]="tipoVeiculoSelecionado === tipo.id"
+          [class.inactive]="!tipo.ativo"
+          (click)="selecionarTipoVeiculo(tipo.id)"
+        >
+          <div class="tipo-veiculo-icon">
+            <ion-icon [name]="tipo.icone || 'car-outline'"></ion-icon>
+          </div>
+          <h3 class="tipo-veiculo-nome">{{ tipo.nome }}</h3>
+          <p class="tipo-veiculo-descricao" *ngIf="tipo.descricao">{{ tipo.descricao }}</p>
+          <div class="tipo-veiculo-badge" *ngIf="tipoVeiculoSelecionado === tipo.id">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            Selecionado
+          </div>
+        </div>
+      </div>
+      
+      <div *ngIf="carregandoTipos" class="loading-tipos">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <p>Carregando tipos de veículos...</p>
+      </div>
+    </div>
+
     <div class="action-section">
       <ion-button
         expand="block"
