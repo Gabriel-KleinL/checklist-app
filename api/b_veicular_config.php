@@ -14,11 +14,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-$host = '187.49.226.10';
-$port = '3306';
-$dbname = 'f137049_in9aut';
-$username = 'f137049_tool';
-$password = 'In9@1234qwer';
+// Carregar variáveis de ambiente
+// Prioridade: .env.local (desenvolvimento) > .env (produção)
+$envLocalFile = __DIR__ . '/.env.local';
+$envFile = __DIR__ . '/.env';
+
+// Carregar .env.local primeiro (se existir) para desenvolvimento local
+if (file_exists($envLocalFile)) {
+    $lines = file($envLocalFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        // Ignora comentários e linhas vazias
+        if (strpos(trim($line), '#') === 0 || empty(trim($line))) {
+            continue;
+        }
+
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+            putenv("$key=$value");
+            $_ENV[$key] = $value;
+        }
+    }
+} elseif (file_exists($envFile)) {
+    // Se .env.local não existir, usar .env (produção)
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        // Ignora comentários e linhas vazias
+        if (strpos(trim($line), '#') === 0 || empty(trim($line))) {
+            continue;
+        }
+
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+            putenv("$key=$value");
+            $_ENV[$key] = $value;
+        }
+    }
+}
+
+// Configurações do banco de dados
+$host = getenv('DB_HOST') ?: '187.49.226.10';
+$port = getenv('DB_PORT') ?: '3306';
+$dbname = getenv('DB_NAME') ?: 'f137049_in9aut';
+$username = getenv('DB_USER') ?: 'f137049_tool';
+$password = getenv('DB_PASSWORD') ?: 'In9@1234qwer';
 
 try {
     $pdo = new PDO(

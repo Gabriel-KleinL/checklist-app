@@ -6,28 +6,34 @@
  * - b_veicular_config_itens.php
  * - b_checklist_completo_config_itens.php
  *
- * Trabalha com a tabela unificada bbb_config_itens que contém
+ * Trabalha com a tabela unificada checklist_config_itens que contém
  * tanto itens do checklist simples quanto do completo.
  *
  * Versão: 4.0.0
  * Data: 2025-12-18
  */
 
-// Headers CORS - DEVE VIR ANTES DE QUALQUER SAÍDA
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Max-Age: 86400');
-header('Content-Type: application/json; charset=utf-8');
+// Carrega configuração centralizada (headers CORS já configurados)
+require_once __DIR__ . '/config.php';
 
-// Responde requisições OPTIONS (preflight) IMEDIATAMENTE
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit(0);
+// ============================================
+// FUNÇÃO HELPER: Buscar itens por tipo de veículo
+// ============================================
+function buscarItensPorTipoVeiculo($pdo, $tipo_veiculo_id, $condicoes_adicionais = '', $params_adicionais = []) {
+    // Busca itens específicos do tipo + itens gerais associados
+    $sql = "SELECT DISTINCT ci.* 
+            FROM checklist_config_itens ci
+            LEFT JOIN checklist_config_itens_tipos_veiculo citv ON ci.id = citv.config_item_id
+            WHERE (ci.tipo_veiculo_id = :tipo_veiculo_id 
+                   OR (ci.tipo_veiculo_id IS NULL AND citv.tipo_veiculo_id = :tipo_veiculo_id))
+            " . ($condicoes_adicionais ? " AND " . $condicoes_adicionais : "") . "
+            ORDER BY ci.categoria ASC, ci.nome_item ASC";
+    
+    $params = array_merge(['tipo_veiculo_id' => $tipo_veiculo_id], $params_adicionais);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
-require_once 'b_veicular_config.php';
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];
@@ -38,6 +44,7 @@ try {
     if ($method === 'GET') {
         $acao = isset($_GET['acao']) ? $_GET['acao'] : 'todos';
         $tipo = isset($_GET['tipo']) ? $_GET['tipo'] : null;
+        $tipo_veiculo_id = isset($_GET['tipo_veiculo_id']) ? intval($_GET['tipo_veiculo_id']) : null;
 
         // Validar tipo se fornecido
         if ($tipo && !in_array($tipo, ['simples', 'completo'])) {
@@ -47,6 +54,35 @@ try {
         }
 
         switch ($acao) {
+            case 'por_tipo_veiculo':
+                // Buscar itens por tipo de veículo (novo endpoint)
+                if (!$tipo_veiculo_id) {
+                    http_response_code(400);
+                    echo json_encode(['erro' => 'tipo_veiculo_id não informado']);
+                    exit;
+                }
+
+                $categoria = isset($_GET['categoria']) ? $_GET['categoria'] : null;
+                $apenas_habilitados = isset($_GET['apenas_habilitados']) && $_GET['apenas_habilitados'] === 'true';
+
+                $condicoes = [];
+                $params = [];
+                
+                if ($categoria) {
+                    $condicoes[] = "ci.categoria = :categoria";
+                    $params['categoria'] = $categoria;
+                }
+                
+                if ($apenas_habilitados) {
+                    $condicoes[] = "ci.habilitado = 1";
+                }
+
+                $condicoes_str = implode(' AND ', $condicoes);
+                $resultados = buscarItensPorTipoVeiculo($pdo, $tipo_veiculo_id, $condicoes_str, $params);
+
+                echo json_encode($resultados);
+                break;
+
             case 'categoria':
                 // Buscar itens de uma categoria específica
                 if (!isset($_GET['categoria'])) {
@@ -55,7 +91,7 @@ try {
                     exit;
                 }
 
-                $sql = "SELECT * FROM bbb_config_itens WHERE categoria = :categoria";
+                $sql = "SELECT * FROM checklist_config_itens WHERE categoria = :categoria";
                 $params = ['categoria' => $_GET['categoria']];
 
                 // Filtrar por tipo se especificado
@@ -77,7 +113,7 @@ try {
                 // Buscar apenas itens habilitados
                 $categoria = isset($_GET['categoria']) ? $_GET['categoria'] : null;
 
-                $sql = "SELECT * FROM bbb_config_itens WHERE habilitado = 1";
+                $sql = "SELECT * FROM checklist_config_itens WHERE habilitado = 1";
                 $params = [];
 
                 // Filtrar por tipo se especificado
@@ -103,7 +139,7 @@ try {
 
             case 'por_tipo':
                 // Buscar itens agrupados por tipo de checklist
-                $sql = "SELECT * FROM bbb_config_itens ORDER BY tipo_checklist, categoria ASC, nome_item ASC";
+                $sql = "SELECT * FROM checklist_config_itens ORDER BY tipo_checklist, categoria ASC, nome_item ASC";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute();
                 $todos = $stmt->fetchAll();
@@ -124,7 +160,7 @@ try {
 
             case 'por_categoria':
                 // Buscar itens agrupados por categoria (para checklist completo)
-                $sql = "SELECT * FROM bbb_config_itens";
+                $sql = "SELECT * FROM checklist_config_itens";
                 $params = [];
 
                 if ($tipo) {
@@ -154,7 +190,15 @@ try {
             case 'todos':
             default:
                 // Buscar todos os itens
-                $sql = "SELECT * FROM bbb_config_itens";
+                // Se tipo_veiculo_id for fornecido, usar função helper
+                if ($tipo_veiculo_id) {
+                    $resultados = buscarItensPorTipoVeiculo($pdo, $tipo_veiculo_id);
+                    echo json_encode($resultados);
+                    break;
+                }
+
+                // Caso contrário, buscar normalmente (compatibilidade)
+                $sql = "SELECT * FROM checklist_config_itens";
                 $params = [];
 
                 // Filtrar por tipo se especificado
@@ -197,7 +241,7 @@ try {
                     exit;
                 }
 
-                $sql = "UPDATE bbb_config_itens
+                $sql = "UPDATE checklist_config_itens
                         SET habilitado = :habilitado
                         WHERE id = :id";
 
@@ -228,7 +272,7 @@ try {
                 $pdo->beginTransaction();
 
                 try {
-                    $sql = "UPDATE bbb_config_itens
+                    $sql = "UPDATE checklist_config_itens
                             SET habilitado = :habilitado
                             WHERE id = :id";
                     $stmt = $pdo->prepare($sql);
@@ -285,25 +329,149 @@ try {
                     exit;
                 }
 
-                $sql = "INSERT INTO bbb_config_itens (tipo_checklist, categoria, nome_item, habilitado, usuario_id)
-                        VALUES (:tipo_checklist, :categoria, :nome_item, :habilitado, :usuario_id)";
+                // tipo_veiculo_id é opcional (NULL = item geral)
+                $tipo_veiculo_id = isset($dados['tipo_veiculo_id']) && $dados['tipo_veiculo_id'] ? intval($dados['tipo_veiculo_id']) : null;
 
+                $pdo->beginTransaction();
+
+                try {
+                    $sql = "INSERT INTO checklist_config_itens (tipo_checklist, categoria, nome_item, habilitado, tipo_veiculo_id, usuario_id)
+                            VALUES (:tipo_checklist, :categoria, :nome_item, :habilitado, :tipo_veiculo_id, :usuario_id)";
+
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute([
+                        'tipo_checklist' => $dados['tipo_checklist'],
+                        'categoria' => $dados['categoria'],
+                        'nome_item' => $dados['nome_item'],
+                        'habilitado' => isset($dados['habilitado']) ? ($dados['habilitado'] ? 1 : 0) : 1,
+                        'tipo_veiculo_id' => $tipo_veiculo_id,
+                        'usuario_id' => isset($dados['usuario_id']) ? $dados['usuario_id'] : null
+                    ]);
+
+                    $id = $pdo->lastInsertId();
+
+                    // Se for item geral e tiver tipos associados, criar associações
+                    if (!$tipo_veiculo_id && isset($dados['tipos_veiculo_associados']) && is_array($dados['tipos_veiculo_associados']) && count($dados['tipos_veiculo_associados']) > 0) {
+                        $sqlAssociar = "INSERT INTO checklist_config_itens_tipos_veiculo (config_item_id, tipo_veiculo_id) VALUES (:config_item_id, :tipo_veiculo_id)";
+                        $stmtAssociar = $pdo->prepare($sqlAssociar);
+                        
+                        foreach ($dados['tipos_veiculo_associados'] as $tipo_id) {
+                            try {
+                                $stmtAssociar->execute([
+                                    'config_item_id' => $id,
+                                    'tipo_veiculo_id' => intval($tipo_id)
+                                ]);
+                            } catch (PDOException $e) {
+                                // Ignorar duplicatas
+                                if (strpos($e->getMessage(), 'Duplicate entry') === false) {
+                                    throw $e;
+                                }
+                            }
+                        }
+                    }
+
+                    $pdo->commit();
+
+                    http_response_code(201);
+                    echo json_encode([
+                        'sucesso' => true,
+                        'mensagem' => 'Item adicionado com sucesso',
+                        'id' => $id
+                    ]);
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    throw $e;
+                }
+                break;
+
+            case 'associar_geral':
+                // Associar item geral a tipos de veículos
+                if (!isset($dados['item_id']) || !isset($dados['tipos_veiculo_ids']) || !is_array($dados['tipos_veiculo_ids'])) {
+                    http_response_code(400);
+                    echo json_encode(['erro' => 'item_id e tipos_veiculo_ids (array) são obrigatórios']);
+                    exit;
+                }
+
+                // Verificar se item é geral (tipo_veiculo_id IS NULL)
+                $sqlCheck = "SELECT id, tipo_veiculo_id FROM checklist_config_itens WHERE id = :id LIMIT 1";
+                $stmtCheck = $pdo->prepare($sqlCheck);
+                $stmtCheck->execute(['id' => $dados['item_id']]);
+                $item = $stmtCheck->fetch();
+
+                if (!$item) {
+                    http_response_code(404);
+                    echo json_encode(['erro' => 'Item não encontrado']);
+                    exit;
+                }
+
+                if ($item['tipo_veiculo_id'] !== null) {
+                    http_response_code(400);
+                    echo json_encode(['erro' => 'Item não é geral. Apenas itens gerais podem ser associados a tipos']);
+                    exit;
+                }
+
+                $pdo->beginTransaction();
+
+                try {
+                    // Remover associações existentes
+                    $sqlDelete = "DELETE FROM checklist_config_itens_tipos_veiculo WHERE config_item_id = :item_id";
+                    $stmtDelete = $pdo->prepare($sqlDelete);
+                    $stmtDelete->execute(['item_id' => $dados['item_id']]);
+
+                    // Criar novas associações
+                    $sqlInsert = "INSERT INTO checklist_config_itens_tipos_veiculo (config_item_id, tipo_veiculo_id) VALUES (:config_item_id, :tipo_veiculo_id)";
+                    $stmtInsert = $pdo->prepare($sqlInsert);
+                    
+                    $count = 0;
+                    foreach ($dados['tipos_veiculo_ids'] as $tipo_id) {
+                        try {
+                            $stmtInsert->execute([
+                                'config_item_id' => $dados['item_id'],
+                                'tipo_veiculo_id' => intval($tipo_id)
+                            ]);
+                            $count++;
+                        } catch (PDOException $e) {
+                            // Ignorar duplicatas
+                            if (strpos($e->getMessage(), 'Duplicate entry') === false) {
+                                throw $e;
+                            }
+                        }
+                    }
+
+                    $pdo->commit();
+
+                    http_response_code(200);
+                    echo json_encode([
+                        'sucesso' => true,
+                        'mensagem' => "$count tipos de veículos associados com sucesso"
+                    ]);
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    throw $e;
+                }
+                break;
+
+            case 'desassociar_geral':
+                // Remover associação de item geral a tipos de veículos
+                if (!isset($dados['item_id']) || !isset($dados['tipos_veiculo_ids']) || !is_array($dados['tipos_veiculo_ids'])) {
+                    http_response_code(400);
+                    echo json_encode(['erro' => 'item_id e tipos_veiculo_ids (array) são obrigatórios']);
+                    exit;
+                }
+
+                $placeholders = implode(',', array_fill(0, count($dados['tipos_veiculo_ids']), '?'));
+                $sql = "DELETE FROM checklist_config_itens_tipos_veiculo 
+                        WHERE config_item_id = ? AND tipo_veiculo_id IN ($placeholders)";
+                
+                $params = array_merge([$dados['item_id']], array_map('intval', $dados['tipos_veiculo_ids']));
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute([
-                    'tipo_checklist' => $dados['tipo_checklist'],
-                    'categoria' => $dados['categoria'],
-                    'nome_item' => $dados['nome_item'],
-                    'habilitado' => isset($dados['habilitado']) ? ($dados['habilitado'] ? 1 : 0) : 1,
-                    'usuario_id' => isset($dados['usuario_id']) ? $dados['usuario_id'] : null
-                ]);
+                $stmt->execute($params);
 
-                $id = $pdo->lastInsertId();
-
-                http_response_code(201);
+                http_response_code(200);
                 echo json_encode([
                     'sucesso' => true,
-                    'mensagem' => 'Item adicionado com sucesso',
-                    'id' => $id
+                    'mensagem' => 'Associações removidas com sucesso',
+                    'linhas_afetadas' => $stmt->rowCount()
                 ]);
                 break;
 
@@ -326,7 +494,7 @@ try {
             exit;
         }
 
-        $sql = "DELETE FROM bbb_config_itens WHERE id = :id";
+        $sql = "DELETE FROM checklist_config_itens WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['id' => $dados['id']]);
 

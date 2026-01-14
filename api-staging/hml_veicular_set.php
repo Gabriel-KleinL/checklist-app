@@ -1,19 +1,7 @@
 <?php
-// Headers CORS - DEVE VIR ANTES DE QUALQUER SAÍDA
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin');
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Max-Age: 86400');
-header('Content-Type: application/json; charset=utf-8');
-
-// Responde requisições OPTIONS (preflight) IMEDIATAMENTE
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit(0);
-}
-
-require_once 'hml_veicular_config.php';
+require_once __DIR__ . '/../api/config.php';
+require_once __DIR__ . '/../api/utils/FotoUtils.php';
+require_once __DIR__ . '/../api/utils/ChecklistUtils.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -40,58 +28,28 @@ try {
     // ============================================
     // VALIDAÇÃO: Verifica se já existe registro da mesma placa nas últimas 1 hora
     // ============================================
-    $placaParaValidar = isset($dados['placa']) ? strtoupper(trim($dados['placa'])) : '';
+    $placaParaValidar = isset($dados['placa']) ? $dados['placa'] : '';
 
     if (!empty($placaParaValidar)) {
-        $sqlValidacao = "SELECT id, data_realizacao
-                        FROM bbb_inspecao_veiculo
-                        WHERE placa = :placa
-                        AND data_realizacao >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-                        ORDER BY data_realizacao DESC
-                        LIMIT 1";
-
-        $stmtValidacao = $pdo->prepare($sqlValidacao);
-        $stmtValidacao->execute(array('placa' => $placaParaValidar));
-        $registroRecente = $stmtValidacao->fetch();
+        $registroRecente = ChecklistUtils::validarRegistroDuplicado($pdo, $placaParaValidar, 'bbb_inspecao_veiculo', 60);
 
         if ($registroRecente) {
-            error_log("VALIDAÇÃO FALHOU: Placa $placaParaValidar já possui registro recente (ID: {$registroRecente['id']})");
             error_log("Data do último registro: {$registroRecente['data_realizacao']}");
 
             http_response_code(409); // 409 Conflict
             echo json_encode(array(
                 'erro' => 'Registro duplicado',
-                'mensagem' => 'A placa ' . $placaParaValidar . ' já possui um registro nas últimas 1 hora. Aguarde antes de registrar novamente.',
+                'mensagem' => 'A placa ' . ChecklistUtils::normalizarPlaca($placaParaValidar) . ' já possui um registro nas últimas 1 hora. Aguarde antes de registrar novamente.',
                 'ultimo_registro' => $registroRecente['data_realizacao']
             ));
             exit;
         }
 
-        error_log("VALIDAÇÃO OK: Placa $placaParaValidar pode ser registrada");
+        error_log("VALIDAÇÃO OK: Placa " . ChecklistUtils::normalizarPlaca($placaParaValidar) . " pode ser registrada");
     }
 
     // Inicia uma transação para garantir consistência
     $pdo->beginTransaction();
-
-    // ============================================
-    // Função auxiliar: Converte valores de combustível do app para o banco
-    // ============================================
-    function converterNivelCombustivel($valor) {
-        $mapa = array(
-            'vazio' => '0%',
-            '1/4' => '25%',
-            '1/2' => '50%',
-            '3/4' => '75%',
-            'cheio' => '100%',
-            // Aceita também os valores já no formato correto
-            '0%' => '0%',
-            '25%' => '25%',
-            '50%' => '50%',
-            '75%' => '75%',
-            '100%' => '100%'
-        );
-        return isset($mapa[$valor]) ? $mapa[$valor] : '0%';
-    }
 
     // ============================================
     // 1. Insere dados principais na bbb_inspecao_veiculo
@@ -125,7 +83,7 @@ try {
 
     // Converte o nível de combustível para o formato do banco
     $nivelCombustivelOriginal = isset($dados['nivel_combustivel']) ? $dados['nivel_combustivel'] : 'vazio';
-    $nivelCombustivelConvertido = converterNivelCombustivel($nivelCombustivelOriginal);
+    $nivelCombustivelConvertido = ChecklistUtils::converterNivelCombustivel($nivelCombustivelOriginal);
 
     error_log("Nível Combustível: $nivelCombustivelOriginal -> $nivelCombustivelConvertido");
 

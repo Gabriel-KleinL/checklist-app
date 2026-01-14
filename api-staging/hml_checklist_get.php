@@ -4,7 +4,7 @@
  *
  * Substitui:
  * - b_veicular_get.php (checklist simples)
- * - b_checklist_completo_get.php (checklist completo)
+ * - b_bbb_checklist_completo_get.php (checklist completo)
  *
  * Detecta automaticamente o tipo de checklist baseado no parâmetro 'tipo'
  * ou na ação solicitada.
@@ -356,7 +356,7 @@ try {
 
     } else if ($tipo === 'completo') {
         // ============================================
-        // CHECKLIST COMPLETO (bbb_checklist_completo)
+        // CHECKLIST COMPLETO (checklist_bbb_checklist_completo)
         // ============================================
 
         switch ($acao) {
@@ -368,7 +368,7 @@ try {
                 }
 
                 $sql = "SELECT c.*, u.nome as usuario_nome
-                        FROM bbb_checklist_completo c
+                        FROM checklist_bbb_checklist_completo c
                         LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                         WHERE c.id = :id";
 
@@ -396,7 +396,7 @@ try {
 
                 $sql = "SELECT c.id, c.placa, c.km_inicial, c.nivel_combustivel,
                                c.data_realizacao, c.created_at, u.nome as usuario_nome
-                        FROM bbb_checklist_completo c
+                        FROM checklist_bbb_checklist_completo c
                         LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                         WHERE c.placa LIKE :placa
                         ORDER BY c.data_realizacao DESC
@@ -424,7 +424,7 @@ try {
 
                 $sql = "SELECT c.id, c.placa, c.km_inicial, c.nivel_combustivel,
                                c.data_realizacao, c.created_at, u.nome as usuario_nome
-                        FROM bbb_checklist_completo c
+                        FROM checklist_bbb_checklist_completo c
                         LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                         WHERE DATE(c.data_realizacao) BETWEEN :data_inicio AND :data_fim
                         ORDER BY c.data_realizacao DESC";
@@ -454,7 +454,7 @@ try {
 
                 $sql = "SELECT c.id, c.placa, c.km_inicial, c.nivel_combustivel,
                                c.data_realizacao, c.created_at, u.nome as usuario_nome
-                        FROM bbb_checklist_completo c
+                        FROM checklist_bbb_checklist_completo c
                         LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                         WHERE c.usuario_id = :usuario_id
                         ORDER BY c.data_realizacao DESC
@@ -480,7 +480,7 @@ try {
                             COUNT(DISTINCT usuario_id) as total_usuarios,
                             DATE(MIN(data_realizacao)) as primeira_inspecao,
                             DATE(MAX(data_realizacao)) as ultima_inspecao
-                        FROM bbb_checklist_completo";
+                        FROM checklist_bbb_checklist_completo";
 
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute();
@@ -495,7 +495,7 @@ try {
 
                 $sql = "SELECT c.id, c.placa, c.km_inicial, c.nivel_combustivel,
                                c.data_realizacao, c.created_at, u.nome as usuario_nome
-                        FROM bbb_checklist_completo c
+                        FROM checklist_bbb_checklist_completo c
                         LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                         ORDER BY c.data_realizacao DESC
                         LIMIT :limite";

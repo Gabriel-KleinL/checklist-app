@@ -73,12 +73,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-// Configuração do banco (MESMA DE PRODUÇÃO)
-$host = '187.49.226.10';
-$port = '3306';
-$dbname = 'f137049_in9aut';
-$username = 'f137049_tool';
-$password = 'In9@1234qwer';
+// Carregar variáveis de ambiente do arquivo .env
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        // Ignora comentários e linhas vazias
+        if (strpos(trim($line), '#') === 0 || empty(trim($line))) {
+            continue;
+        }
+
+        if (strpos($line, '=') !== false) {
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+            putenv("$key=$value");
+            $_ENV[$key] = $value;
+        }
+    }
+}
+
+// Configuração do banco (MESMA DE PRODUÇÃO, mas do .env)
+$host = getenv('DB_HOST') ?: '187.49.226.10';
+$port = getenv('DB_PORT') ?: '3306';
+$dbname = getenv('DB_NAME') ?: 'f137049_in9aut';
+$username = getenv('DB_USER') ?: 'f137049_tool';
+$password = getenv('DB_PASSWORD') ?: 'In9@1234qwer';
 
 try {
     $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";

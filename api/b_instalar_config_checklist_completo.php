@@ -1,6 +1,6 @@
 <?php
 /**
- * Script para criar e popular tabela bbb_config_itens_completo
+ * Script para criar e popular tabela checklist_config_itens_completo
  * Execute via navegador ou linha de comando
  */
 
@@ -12,7 +12,7 @@ try {
     echo json_encode(['status' => 'iniciando', 'mensagem' => 'Criando tabela...']) . "\n";
 
     // Criar tabela
-    $sql_create = "CREATE TABLE IF NOT EXISTS bbb_config_itens_completo (
+    $sql_create = "CREATE TABLE IF NOT EXISTS checklist_config_itens_completo (
         id INT AUTO_INCREMENT PRIMARY KEY,
         categoria VARCHAR(50) NOT NULL,
         nome_item VARCHAR(100) NOT NULL,
@@ -28,13 +28,13 @@ try {
     echo json_encode(['status' => 'sucesso', 'mensagem' => 'Tabela criada/verificada']) . "\n";
 
     // Verificar se já tem dados
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM bbb_config_itens_completo");
+    $stmt = $pdo->query("SELECT COUNT(*) as total FROM checklist_config_itens_completo");
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($result['total'] > 0) {
         echo json_encode([
             'status' => 'aviso',
-            'mensagem' => 'Tabela já contém ' . $result['total'] . ' itens. Para recriar, execute: TRUNCATE TABLE bbb_config_itens_completo;'
+            'mensagem' => 'Tabela já contém ' . $result['total'] . ' itens. Para recriar, execute: TRUNCATE TABLE checklist_config_itens_completo;'
         ]) . "\n";
         exit;
     }
@@ -125,7 +125,7 @@ try {
     $pdo->beginTransaction();
 
     // Preparar SQL de inserção
-    $sql_insert = "INSERT INTO bbb_config_itens_completo (categoria, nome_item, habilitado) VALUES (?, ?, 1)";
+    $sql_insert = "INSERT INTO checklist_config_itens_completo (categoria, nome_item, habilitado) VALUES (?, ?, 1)";
     $stmt = $pdo->prepare($sql_insert);
 
     // Inserir cada item
@@ -151,7 +151,7 @@ try {
             categoria,
             COUNT(*) as total,
             SUM(CASE WHEN habilitado = 1 THEN 1 ELSE 0 END) as habilitados
-        FROM bbb_config_itens_completo
+        FROM checklist_config_itens_completo
         GROUP BY categoria
         ORDER BY categoria
     ");

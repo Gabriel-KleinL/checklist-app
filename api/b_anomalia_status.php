@@ -48,7 +48,7 @@ try {
         }
 
         // Verifica se já existe registro
-        $sqlCheck = "SELECT id, status_anomalia FROM bbb_anomalia_status
+        $sqlCheck = "SELECT id, status_anomalia FROM checklist_anomalia_status
                      WHERE placa = :placa AND categoria = :categoria AND item = :item";
         $stmtCheck = $pdo->prepare($sqlCheck);
         $stmtCheck->execute([
@@ -83,14 +83,14 @@ try {
                 $params['observacao'] = $observacao;
             }
 
-            $sqlUpdate = "UPDATE bbb_anomalia_status SET " . implode(', ', $updates) . "
+            $sqlUpdate = "UPDATE checklist_anomalia_status SET " . implode(', ', $updates) . "
                           WHERE placa = :placa AND categoria = :categoria AND item = :item";
             $stmtUpdate = $pdo->prepare($sqlUpdate);
             $stmtUpdate->execute($params);
 
         } else {
             // Cria novo registro
-            $sqlInsert = "INSERT INTO bbb_anomalia_status
+            $sqlInsert = "INSERT INTO checklist_anomalia_status
                           (placa, categoria, item, status_anomalia, data_aprovacao, usuario_aprovador_id, observacao)
                           VALUES (:placa, :categoria, :item, :status,
                                   " . ($acao === 'aprovar' ? 'NOW()' : 'NULL') . ",
@@ -125,7 +125,7 @@ try {
         $categoriaBusca = strtoupper(trim($_GET['categoria']));
         $itemBusca = trim($_GET['item']);
 
-        $sql = "SELECT * FROM bbb_anomalia_status
+        $sql = "SELECT * FROM checklist_anomalia_status
                 WHERE placa = :placa AND categoria = :categoria AND item = :item";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([

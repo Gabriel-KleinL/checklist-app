@@ -4,7 +4,7 @@
  *
  * Substitui:
  * - b_veicular_set.php (checklist simples)
- * - b_checklist_completo_set.php (checklist completo)
+ * - b_bbb_checklist_completo_set.php (checklist completo)
  *
  * Detecta automaticamente o tipo de checklist baseado no parâmetro 'tipo'
  * ou na estrutura dos dados enviados.
@@ -285,7 +285,7 @@ try {
     } else if ($tipo === 'completo') {
         // Validação de duplicado
         $placa = isset($dados['placa']) ? $dados['placa'] : '';
-        if (!validarRegistroDuplicado($pdo, $placa, 'bbb_checklist_completo')) {
+        if (!validarRegistroDuplicado($pdo, $placa, 'checklist_bbb_checklist_completo')) {
             exit;
         }
 
@@ -314,7 +314,7 @@ try {
         $parte5Json = isset($dados['parte5']) ? json_encode($dados['parte5']) : null;
 
         // Insere dados do checklist completo
-        $sqlChecklist = "INSERT INTO bbb_checklist_completo (
+        $sqlChecklist = "INSERT INTO checklist_bbb_checklist_completo (
             placa, km_inicial, nivel_combustivel, foto_painel, observacao_painel,
             usuario_id, data_realizacao,
             parte1_interna, parte2_equipamentos, parte3_dianteira, parte4_traseira, parte5_especial

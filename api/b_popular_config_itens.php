@@ -1,6 +1,6 @@
 <?php
 /**
- * Script para popular a tabela bbb_config_itens com dados iniciais
+ * Script para popular a tabela checklist_config_itens com dados iniciais
  *
  * IMPORTANTE: Execute este script apenas UMA VEZ para criar os dados iniciais
  *
@@ -15,14 +15,14 @@ require_once 'b_veicular_config.php';
 
 try {
     // Verifica se já existem dados na tabela
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM bbb_config_itens");
+    $stmt = $pdo->query("SELECT COUNT(*) as total FROM checklist_config_itens");
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($result['total'] > 0) {
         echo json_encode([
             'aviso' => 'A tabela já contém dados',
             'total_itens' => $result['total'],
-            'mensagem' => 'Se deseja recriar os dados, limpe a tabela manualmente primeiro: TRUNCATE TABLE bbb_config_itens;'
+            'mensagem' => 'Se deseja recriar os dados, limpe a tabela manualmente primeiro: TRUNCATE TABLE checklist_config_itens;'
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -65,7 +65,7 @@ try {
     ];
 
     // Prepara o SQL de inserção
-    $sql = "INSERT INTO bbb_config_itens (categoria, nome_item, habilitado, usuario_id, usuario_nome)
+    $sql = "INSERT INTO checklist_config_itens (categoria, nome_item, habilitado, usuario_id, usuario_nome)
             VALUES (:categoria, :nome_item, 1, NULL, NULL)";
 
     $stmt = $pdo->prepare($sql);
@@ -89,7 +89,7 @@ try {
             categoria,
             COUNT(*) as total_itens,
             SUM(CASE WHEN habilitado = 1 THEN 1 ELSE 0 END) as itens_habilitados
-        FROM bbb_config_itens
+        FROM checklist_config_itens
         GROUP BY categoria
         ORDER BY categoria
     ");

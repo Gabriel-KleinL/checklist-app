@@ -39,7 +39,7 @@ try {
             $sql = "SELECT
                         c.*,
                         u.nome as usuario_nome
-                    FROM bbb_checklist_completo c
+                    FROM checklist_bbb_checklist_completo c
                     LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                     WHERE c.id = :id";
 
@@ -120,7 +120,7 @@ try {
                         c.data_realizacao,
                         c.created_at,
                         u.nome as usuario_nome
-                    FROM bbb_checklist_completo c
+                    FROM checklist_bbb_checklist_completo c
                     LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                     WHERE c.placa LIKE :placa
                     ORDER BY c.data_realizacao DESC
@@ -149,7 +149,7 @@ try {
                         c.data_realizacao,
                         c.created_at,
                         u.nome as usuario_nome
-                    FROM bbb_checklist_completo c
+                    FROM checklist_bbb_checklist_completo c
                     LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                     WHERE DATE(c.data_realizacao) BETWEEN :data_inicio AND :data_fim
                     ORDER BY c.data_realizacao DESC";
@@ -180,7 +180,7 @@ try {
                         c.data_realizacao,
                         c.created_at,
                         u.nome as usuario_nome
-                    FROM bbb_checklist_completo c
+                    FROM checklist_bbb_checklist_completo c
                     LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                     WHERE c.usuario_id = :usuario_id
                     ORDER BY c.data_realizacao DESC
@@ -201,7 +201,7 @@ try {
                         COUNT(DISTINCT usuario_id) as total_usuarios,
                         DATE(MIN(data_realizacao)) as primeira_inspecao,
                         DATE(MAX(data_realizacao)) as ultima_inspecao
-                    FROM bbb_checklist_completo";
+                    FROM checklist_bbb_checklist_completo";
 
             $stmt = $pdo->prepare($sql);
             $stmt->execute();
@@ -223,7 +223,7 @@ try {
                         c.data_realizacao,
                         c.created_at,
                         u.nome as usuario_nome
-                    FROM bbb_checklist_completo c
+                    FROM checklist_bbb_checklist_completo c
                     LEFT JOIN bbb_usuario u ON c.usuario_id = u.id
                     ORDER BY c.data_realizacao DESC
                     LIMIT :limite";

@@ -4,7 +4,7 @@
  *
  * Substitui:
  * - b_veicular_config_itens.php
- * - b_checklist_completo_config_itens.php
+ * - b_bbb_checklist_completo_config_itens.php
  *
  * Trabalha com a tabela unificada bbb_config_itens que contém
  * tanto itens do checklist simples quanto do completo.

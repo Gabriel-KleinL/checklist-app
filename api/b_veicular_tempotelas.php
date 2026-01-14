@@ -29,7 +29,7 @@ try {
             exit;
         }
 
-        $sql = "INSERT INTO bbb_tempo_telas
+        $sql = "INSERT INTO checklist_tempo_telas
                 (inspecao_id, usuario_id, tela, tempo_segundos, data_hora_inicio, data_hora_fim)
                 VALUES
                 (:inspecao_id, :usuario_id, :tela, :tempo_segundos, :data_hora_inicio, :data_hora_fim)";
@@ -66,7 +66,7 @@ try {
 
         // Atualiza os registros de tempo que não têm inspecao_id, mas têm o mesmo usuario_id
         // e foram criados nos últimos 30 minutos (tempo razoável para completar um checklist)
-        $sql = "UPDATE bbb_tempo_telas
+        $sql = "UPDATE checklist_tempo_telas
                 SET inspecao_id = :inspecao_id
                 WHERE usuario_id = :usuario_id
                   AND inspecao_id IS NULL
@@ -100,7 +100,7 @@ try {
                     exit;
                 }
 
-                $sql = "SELECT * FROM bbb_tempo_telas
+                $sql = "SELECT * FROM checklist_tempo_telas
                         WHERE inspecao_id = :inspecao_id
                         ORDER BY data_hora_inicio ASC";
                 $stmt = $pdo->prepare($sql);
@@ -118,7 +118,7 @@ try {
                     exit;
                 }
 
-                $sql = "SELECT * FROM bbb_tempo_telas
+                $sql = "SELECT * FROM checklist_tempo_telas
                         WHERE usuario_id = :usuario_id
                         ORDER BY data_hora_inicio DESC
                         LIMIT 100";
@@ -138,7 +138,7 @@ try {
                             MIN(tempo_segundos) as tempo_minimo_segundos,
                             MAX(tempo_segundos) as tempo_maximo_segundos,
                             SUM(tempo_segundos) as tempo_total_segundos
-                        FROM bbb_tempo_telas
+                        FROM checklist_tempo_telas
                         GROUP BY tela
                         ORDER BY tempo_medio_segundos DESC";
                 $stmt = $pdo->prepare($sql);
@@ -153,7 +153,7 @@ try {
                 // Buscar todos os registros (com limite)
                 $limite = isset($_GET['limite']) ? intval($_GET['limite']) : 100;
 
-                $sql = "SELECT * FROM bbb_tempo_telas
+                $sql = "SELECT * FROM checklist_tempo_telas
                         ORDER BY data_hora_inicio DESC
                         LIMIT :limite";
                 $stmt = $pdo->prepare($sql);

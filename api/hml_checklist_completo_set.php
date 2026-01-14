@@ -43,7 +43,7 @@ try {
 
     if (!empty($placaParaValidar)) {
         $sqlValidacao = "SELECT id, data_realizacao
-                        FROM bbb_checklist_completo
+                        FROM checklist_bbb_checklist_completo
                         WHERE placa = :placa
                         AND data_realizacao >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
                         ORDER BY data_realizacao DESC
@@ -97,7 +97,7 @@ try {
     // ============================================
     // Insere dados do checklist completo
     // ============================================
-    $sqlChecklist = "INSERT INTO bbb_checklist_completo (
+    $sqlChecklist = "INSERT INTO checklist_bbb_checklist_completo (
         placa,
         km_inicial,
         nivel_combustivel,

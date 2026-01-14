@@ -1,7 +1,7 @@
 <?php
 /**
  * Script de diagnóstico para verificar o schema do banco de dados
- * Verifica se a coluna data_realizacao existe na tabela bbb_inspecao_veiculo
+ * Verifica se a coluna data_realizacao existe na tabela checklist_inspecao_veiculo
  */
 
 require_once 'hml_veicular_config.php';
@@ -11,7 +11,7 @@ echo "=== DIAGNÓSTICO DO SCHEMA ===\n\n";
 try {
     // 1. Verificar se coluna data_realizacao existe
     echo "1. Verificando coluna 'data_realizacao'...\n";
-    $checkSql = "SHOW COLUMNS FROM bbb_inspecao_veiculo LIKE 'data_realizacao'";
+    $checkSql = "SHOW COLUMNS FROM checklist_inspecao_veiculo LIKE 'data_realizacao'";
     $stmt = $pdo->query($checkSql);
     $column = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -27,7 +27,7 @@ try {
                         COUNT(*) as total,
                         COUNT(data_realizacao) as com_data,
                         COUNT(*) - COUNT(data_realizacao) as sem_data
-                    FROM bbb_inspecao_veiculo";
+                    FROM checklist_inspecao_veiculo";
         $stmt = $pdo->query($dataSql);
         $stats = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -49,7 +49,7 @@ try {
 
     // 3. Verificar índices
     echo "3. Verificando índices...\n";
-    $indexSql = "SHOW INDEXES FROM bbb_inspecao_veiculo WHERE Key_name = 'idx_data'";
+    $indexSql = "SHOW INDEXES FROM checklist_inspecao_veiculo WHERE Key_name = 'idx_data'";
     $stmt = $pdo->query($indexSql);
     $index = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -61,8 +61,8 @@ try {
     }
 
     // 4. Verificar estrutura completa da tabela
-    echo "4. Estrutura completa da tabela bbb_inspecao_veiculo:\n";
-    $structSql = "DESCRIBE bbb_inspecao_veiculo";
+    echo "4. Estrutura completa da tabela checklist_inspecao_veiculo:\n";
+    $structSql = "DESCRIBE checklist_inspecao_veiculo";
     $stmt = $pdo->query($structSql);
     $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -79,7 +79,7 @@ try {
     // 5. Testar a query do arquivo b_veicular_anomalias.php
     echo "5. Testando query completa (preview)...\n";
     $testSql = "SELECT i.placa, i.id, i.data_realizacao, i.km_inicial
-                FROM bbb_inspecao_veiculo i
+                FROM checklist_inspecao_veiculo i
                 LIMIT 1";
 
     try {

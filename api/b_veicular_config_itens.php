@@ -33,7 +33,7 @@ try {
                     exit;
                 }
 
-                $sql = "SELECT * FROM bbb_config_itens
+                $sql = "SELECT * FROM checklist_config_itens
                         WHERE categoria = :categoria
                         ORDER BY nome_item ASC";
                 $stmt = $pdo->prepare($sql);
@@ -48,13 +48,13 @@ try {
                 $categoria = isset($_GET['categoria']) ? $_GET['categoria'] : null;
 
                 if ($categoria) {
-                    $sql = "SELECT * FROM bbb_config_itens
+                    $sql = "SELECT * FROM checklist_config_itens
                             WHERE habilitado = 1 AND categoria = :categoria
                             ORDER BY nome_item ASC";
                     $stmt = $pdo->prepare($sql);
                     $stmt->execute(['categoria' => $categoria]);
                 } else {
-                    $sql = "SELECT * FROM bbb_config_itens
+                    $sql = "SELECT * FROM checklist_config_itens
                             WHERE habilitado = 1
                             ORDER BY categoria ASC, nome_item ASC";
                     $stmt = $pdo->prepare($sql);
@@ -68,7 +68,7 @@ try {
             case 'todos':
             default:
                 // Buscar todos os itens
-                $sql = "SELECT * FROM bbb_config_itens
+                $sql = "SELECT * FROM checklist_config_itens
                         ORDER BY categoria ASC, nome_item ASC";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute();
@@ -102,7 +102,7 @@ try {
                     exit;
                 }
 
-                $sql = "UPDATE bbb_config_itens
+                $sql = "UPDATE checklist_config_itens
                         SET habilitado = :habilitado
                         WHERE id = :id";
 
@@ -134,7 +134,7 @@ try {
                 $pdo->beginTransaction();
 
                 try {
-                    $sql = "UPDATE bbb_config_itens
+                    $sql = "UPDATE checklist_config_itens
                             SET habilitado = :habilitado
                             WHERE id = :id";
                     $stmt = $pdo->prepare($sql);
@@ -172,7 +172,7 @@ try {
                     exit;
                 }
 
-                $sql = "INSERT INTO bbb_config_itens (categoria, nome_item, habilitado, usuario_id, usuario_nome)
+                $sql = "INSERT INTO checklist_config_itens (categoria, nome_item, habilitado, usuario_id, usuario_nome)
                         VALUES (:categoria, :nome_item, :habilitado, :usuario_id, :usuario_nome)";
 
                 $stmt = $pdo->prepare($sql);
@@ -213,7 +213,7 @@ try {
             exit;
         }
 
-        $sql = "DELETE FROM bbb_config_itens WHERE id = :id";
+        $sql = "DELETE FROM checklist_config_itens WHERE id = :id";
         $stmt = $pdo->prepare($sql);
         $stmt->execute(['id' => $dados['id']]);
 

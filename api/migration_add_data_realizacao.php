@@ -1,6 +1,6 @@
 <?php
 /**
- * Migration: Adiciona campo data_realizacao na tabela bbb_inspecao_veiculo
+ * Migration: Adiciona campo data_realizacao na tabela checklist_inspecao_veiculo
  *
  * Este script:
  * 1. Verifica se a coluna data_realizacao já existe
@@ -18,7 +18,7 @@ echo "=== MIGRATION: Adicionar data_realizacao ===\n\n";
 try {
     // 1. Verificar se a coluna já existe
     echo "1. Verificando se coluna data_realizacao existe...\n";
-    $checkSql = "SHOW COLUMNS FROM bbb_inspecao_veiculo LIKE 'data_realizacao'";
+    $checkSql = "SHOW COLUMNS FROM checklist_inspecao_veiculo LIKE 'data_realizacao'";
     $stmt = $pdo->query($checkSql);
     $columnExists = $stmt->fetch();
 
@@ -28,7 +28,7 @@ try {
         // Verifica se tem valores NULL
         echo "2. Verificando registros com data NULL...\n";
         $nullCheckSql = "SELECT COUNT(*) as total_null
-                         FROM bbb_inspecao_veiculo
+                         FROM checklist_inspecao_veiculo
                          WHERE data_realizacao IS NULL";
         $stmt = $pdo->query($nullCheckSql);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -38,7 +38,7 @@ try {
             echo "   Atualizando registros NULL...\n";
 
             // Atualiza registros NULL com fallback inteligente
-            $updateSql = "UPDATE bbb_inspecao_veiculo
+            $updateSql = "UPDATE checklist_inspecao_veiculo
                          SET data_realizacao = CASE
                              WHEN created_at IS NOT NULL THEN created_at
                              WHEN updated_at IS NOT NULL THEN updated_at
@@ -57,7 +57,7 @@ try {
 
         // 2. Adiciona a coluna
         echo "2. Adicionando coluna 'data_realizacao'...\n";
-        $alterSql = "ALTER TABLE bbb_inspecao_veiculo
+        $alterSql = "ALTER TABLE checklist_inspecao_veiculo
                     ADD COLUMN data_realizacao datetime DEFAULT CURRENT_TIMESTAMP
                     AFTER placa";
         $pdo->exec($alterSql);
@@ -67,17 +67,17 @@ try {
         echo "3. Populando data_realizacao com dados existentes...\n";
 
         // Tenta usar created_at se existir, senão usa NOW()
-        $checkCreatedAtSql = "SHOW COLUMNS FROM bbb_inspecao_veiculo LIKE 'created_at'";
+        $checkCreatedAtSql = "SHOW COLUMNS FROM checklist_inspecao_veiculo LIKE 'created_at'";
         $stmt = $pdo->query($checkCreatedAtSql);
         $hasCreatedAt = $stmt->fetch();
 
         if ($hasCreatedAt) {
             echo "   - Usando campo 'created_at' como base...\n";
-            $updateSql = "UPDATE bbb_inspecao_veiculo
+            $updateSql = "UPDATE checklist_inspecao_veiculo
                          SET data_realizacao = COALESCE(created_at, NOW())";
         } else {
             echo "   - Campo 'created_at' não existe. Usando NOW()...\n";
-            $updateSql = "UPDATE bbb_inspecao_veiculo
+            $updateSql = "UPDATE checklist_inspecao_veiculo
                          SET data_realizacao = NOW()";
         }
 
@@ -87,7 +87,7 @@ try {
 
     // 4. Verificar/criar índice
     echo "4. Verificando índice idx_data...\n";
-    $indexCheckSql = "SHOW INDEXES FROM bbb_inspecao_veiculo WHERE Key_name = 'idx_data'";
+    $indexCheckSql = "SHOW INDEXES FROM checklist_inspecao_veiculo WHERE Key_name = 'idx_data'";
     $stmt = $pdo->query($indexCheckSql);
     $indexExists = $stmt->fetch();
 
@@ -96,7 +96,7 @@ try {
     } else {
         echo "   - Criando índice idx_data para melhor performance...\n";
         try {
-            $indexSql = "CREATE INDEX idx_data ON bbb_inspecao_veiculo(data_realizacao)";
+            $indexSql = "CREATE INDEX idx_data ON checklist_inspecao_veiculo(data_realizacao)";
             $pdo->exec($indexSql);
             echo "   ✓ Índice criado com sucesso.\n\n";
         } catch (PDOException $e) {
@@ -117,7 +117,7 @@ try {
                     COUNT(*) - COUNT(data_realizacao) as sem_data,
                     MIN(data_realizacao) as data_mais_antiga,
                     MAX(data_realizacao) as data_mais_recente
-                  FROM bbb_inspecao_veiculo";
+                  FROM checklist_inspecao_veiculo";
     $stmt = $pdo->query($verifySql);
     $stats = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -142,7 +142,7 @@ try {
     // 6. Teste da query do b_veicular_anomalias.php
     echo "6. Testando query que estava falhando...\n";
     $testSql = "SELECT i.placa, i.id, i.data_realizacao, i.km_inicial
-                FROM bbb_inspecao_veiculo i
+                FROM checklist_inspecao_veiculo i
                 LIMIT 1";
 
     try {

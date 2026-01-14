@@ -4,7 +4,7 @@
  *
  * Substitui:
  * - b_veicular_set.php (checklist simples)
- * - b_checklist_completo_set.php (checklist completo)
+ * - b_bbb_checklist_completo_set.php (checklist completo)
  *
  * Detecta automaticamente o tipo de checklist baseado no parâmetro 'tipo'
  * ou na estrutura dos dados enviados.
@@ -169,6 +169,22 @@ try {
         // Obtém usuario_id
         $usuarioId = obterUsuarioId($pdo, $dados);
 
+        // Obtém tipo_veiculo_id (obrigatório, padrão 1 - Carro para compatibilidade)
+        $tipoVeiculoId = isset($dados['tipo_veiculo_id']) && $dados['tipo_veiculo_id'] ? intval($dados['tipo_veiculo_id']) : 1;
+        
+        // Valida se tipo de veículo existe
+        $sqlCheckTipo = "SELECT id FROM bbb_tipos_veiculo WHERE id = :tipo_id AND ativo = 1 LIMIT 1";
+        $stmtCheckTipo = $pdo->prepare($sqlCheckTipo);
+        $stmtCheckTipo->execute(['tipo_id' => $tipoVeiculoId]);
+        $tipoExiste = $stmtCheckTipo->fetch();
+        
+        if (!$tipoExiste) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode(['erro' => 'Tipo de veículo inválido ou inativo']);
+            exit;
+        }
+
         // Processa data de realização
         $dataRealizacao = isset($dados['data_realizacao']) ? $dados['data_realizacao'] : date('Y-m-d H:i:s');
         if (strpos($dataRealizacao, 'T') !== false) {
@@ -177,9 +193,9 @@ try {
 
         // Insere dados principais
         $sqlInspecao = "INSERT INTO bbb_inspecao_veiculo (
-            placa, local, km_inicial, nivel_combustivel, observacao_painel, usuario_id, status_geral, data_realizacao
+            placa, local, km_inicial, nivel_combustivel, observacao_painel, usuario_id, status_geral, data_realizacao, tipo_veiculo_id
         ) VALUES (
-            :placa, :local, :km_inicial, :nivel_combustivel, :observacao_painel, :usuario_id, 'PENDENTE', :data_realizacao
+            :placa, :local, :km_inicial, :nivel_combustivel, :observacao_painel, :usuario_id, 'PENDENTE', :data_realizacao, :tipo_veiculo_id
         )";
 
         $stmtInspecao = $pdo->prepare($sqlInspecao);
@@ -190,7 +206,8 @@ try {
             'nivel_combustivel' => $nivelCombustivelConvertido,
             'observacao_painel' => isset($dados['observacao_painel']) ? $dados['observacao_painel'] : '',
             'usuario_id' => $usuarioId,
-            'data_realizacao' => $dataRealizacao
+            'data_realizacao' => $dataRealizacao,
+            'tipo_veiculo_id' => $tipoVeiculoId
         ]);
 
         $inspecaoId = $pdo->lastInsertId();
@@ -285,7 +302,7 @@ try {
     } else if ($tipo === 'completo') {
         // Validação de duplicado
         $placa = isset($dados['placa']) ? $dados['placa'] : '';
-        if (!validarRegistroDuplicado($pdo, $placa, 'bbb_checklist_completo')) {
+        if (!validarRegistroDuplicado($pdo, $placa, 'checklist_bbb_checklist_completo')) {
             exit;
         }
 
@@ -299,6 +316,22 @@ try {
 
         // Obtém usuario_id
         $usuarioId = obterUsuarioId($pdo, $dados);
+
+        // Obtém tipo_veiculo_id (obrigatório, padrão 1 - Carro para compatibilidade)
+        $tipoVeiculoId = isset($dados['tipo_veiculo_id']) && $dados['tipo_veiculo_id'] ? intval($dados['tipo_veiculo_id']) : 1;
+        
+        // Valida se tipo de veículo existe
+        $sqlCheckTipo = "SELECT id FROM bbb_tipos_veiculo WHERE id = :tipo_id AND ativo = 1 LIMIT 1";
+        $stmtCheckTipo = $pdo->prepare($sqlCheckTipo);
+        $stmtCheckTipo->execute(['tipo_id' => $tipoVeiculoId]);
+        $tipoExiste = $stmtCheckTipo->fetch();
+        
+        if (!$tipoExiste) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode(['erro' => 'Tipo de veículo inválido ou inativo']);
+            exit;
+        }
 
         // Processa data de realização
         $dataRealizacao = isset($dados['data_realizacao']) ? $dados['data_realizacao'] : date('Y-m-d H:i:s');
@@ -314,19 +347,20 @@ try {
         $parte5Json = isset($dados['parte5']) ? json_encode($dados['parte5']) : null;
 
         // Insere dados do checklist completo
-        $sqlChecklist = "INSERT INTO bbb_checklist_completo (
+        $sqlChecklist = "INSERT INTO checklist_bbb_checklist_completo (
             placa, km_inicial, nivel_combustivel, foto_painel, observacao_painel,
-            usuario_id, data_realizacao,
+            usuario_id, data_realizacao, tipo_veiculo_id,
             parte1_interna, parte2_equipamentos, parte3_dianteira, parte4_traseira, parte5_especial
         ) VALUES (
             :placa, :km_inicial, :nivel_combustivel, :foto_painel, :observacao_painel,
-            :usuario_id, :data_realizacao,
+            :usuario_id, :data_realizacao, :tipo_veiculo_id,
             :parte1_interna, :parte2_equipamentos, :parte3_dianteira, :parte4_traseira, :parte5_especial
         )";
 
         $stmtChecklist = $pdo->prepare($sqlChecklist);
         $stmtChecklist->execute([
             'placa' => isset($dados['placa']) ? strtoupper(trim($dados['placa'])) : '',
+            'tipo_veiculo_id' => $tipoVeiculoId,
             'km_inicial' => isset($dados['km_inicial']) ? $dados['km_inicial'] : 0,
             'nivel_combustivel' => $nivelCombustivelConvertido,
             'foto_painel' => isset($dados['foto_painel']) ? $dados['foto_painel'] : null,
