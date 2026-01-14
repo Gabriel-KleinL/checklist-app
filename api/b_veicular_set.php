@@ -120,7 +120,7 @@ try {
         $dataRealizacao = date('Y-m-d H:i:s', strtotime($dataRealizacao));
     }
 
-    error_log("Local: " . ($local ?? 'NULL'));
+    error_log("Local: " . ($local !== null ? $local : 'NULL'));
     error_log("Data Realização: " . $dataRealizacao);
     error_log("Tipo Veículo ID: " . $tipoVeiculoId);
 
