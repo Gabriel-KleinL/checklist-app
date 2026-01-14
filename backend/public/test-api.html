@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de API - Checklist Backend</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .endpoint {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .method {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.85em;
+            text-transform: uppercase;
+        }
+        .method.get { background: #28a745; color: white; }
+        .method.post { background: #007bff; color: white; }
+        .endpoint-path {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            color: #333;
+            font-size: 0.95em;
+        }
+        button {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .response pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste de API - Checklist Backend</h1>
+        
+        <div class="card info">
+            <strong>ℹ️ Informações:</strong>
+            <p>Backend Node.js rodando em <code>http://localhost:8000</code></p>
+            <p>Use os botões abaixo para testar os endpoints disponíveis.</p>
+        </div>
+
+        <div class="card">
+            <h2>Endpoints Disponíveis</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/health</span>
+                <button onclick="testEndpoint('GET', '/health')">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/b_tipos_veiculo.php?acao=todos</span>
+                <button onclick="testEndpoint('GET', '/b_tipos_veiculo.php?acao=todos')">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/b_veicular_get.php?acao=todos&limite=5</span>
+                <button onclick="testEndpoint('GET', '/b_veicular_get.php?acao=todos&limite=5')">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/b_config_itens.php?acao=todos</span>
+                <button onclick="testEndpoint('GET', '/b_config_itens.php?acao=todos')">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/b_veicular_anomalias.php?tipo=ativas</span>
+                <button onclick="testEndpoint('GET', '/b_veicular_anomalias.php?tipo=ativas')">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/b_veicular_auth.php (login)</span>
+                <button onclick="testAuth()">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/b_veicular_tempotelas.php?acao=estatisticas</span>
+                <button onclick="testEndpoint('GET', '/b_veicular_tempotelas.php?acao=estatisticas')">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/b_checklist_get.php?tipo=simples&acao=todos</span>
+                <button onclick="testEndpoint('GET', '/b_checklist_get.php?tipo=simples&acao=todos&limite=3')">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/b_checklist_get.php?tipo=completo&acao=todos</span>
+                <button onclick="testEndpoint('GET', '/b_checklist_get.php?tipo=completo&acao=todos&limite=3')">Testar</button>
+            </div>
+
+            <div id="response-container" style="display: none;">
+                <div class="response">
+                    <div id="status"></div>
+                    <pre id="response-content"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        async function testEndpoint(method, path) {
+            const container = document.getElementById('response-container');
+            const statusDiv = document.getElementById('status');
+            const contentDiv = document.getElementById('response-content');
+            
+            container.style.display = 'block';
+            statusDiv.innerHTML = '<span class="loading"></span> Carregando...';
+            contentDiv.textContent = '';
+
+            try {
+                const url = `${API_BASE}${path}`;
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+
+                const startTime = Date.now();
+                const response = await fetch(url, options);
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+
+                const data = await response.json();
+                
+                const statusClass = response.ok ? 'success' : 'error';
+                statusDiv.innerHTML = `<span class="status ${statusClass}">${response.status} ${response.statusText}</span> <span style="color: #666; font-size: 0.9em;">(${duration}ms)</span>`;
+                
+                contentDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                statusDiv.innerHTML = `<span class="status error">Erro</span>`;
+                contentDiv.textContent = `Erro: ${error.message}`;
+            }
+        }
+
+        async function testAuth() {
+            const container = document.getElementById('response-container');
+            const statusDiv = document.getElementById('status');
+            const contentDiv = document.getElementById('response-content');
+            
+            container.style.display = 'block';
+            statusDiv.innerHTML = '<span class="loading"></span> Testando login...';
+            contentDiv.textContent = '';
+
+            try {
+                const url = `${API_BASE}/b_veicular_auth.php`;
+                const body = {
+                    acao: 'login',
+                    nome: 'teste',
+                    senha: 'teste123'
+                };
+
+                const startTime = Date.now();
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+
+                const data = await response.json();
+                
+                const statusClass = response.ok ? 'success' : 'error';
+                statusDiv.innerHTML = `<span class="status ${statusClass}">${response.status} ${response.statusText}</span> <span style="color: #666; font-size: 0.9em;">(${duration}ms)</span>`;
+                
+                contentDiv.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                statusDiv.innerHTML = `<span class="status error">Erro</span>`;
+                contentDiv.textContent = `Erro: ${error.message}`;
+            }
+        }
+
+        // Testa o health check ao carregar a página
+        window.addEventListener('load', () => {
+            testEndpoint('GET', '/health');
+        });
+    </script>
+</body>
+</html>
