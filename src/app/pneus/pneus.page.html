@@ -26,37 +26,71 @@
         <ion-card-title>
           <ion-icon name="ellipse" color="primary"></ion-icon>
           {{ pneu.nome }}
+          <span *ngIf="pneu.obrigatorio === false" style="font-size: 0.6em; color: var(--ion-color-medium); margin-left: 8px;">(Opcional)</span>
         </ion-card-title>
       </ion-card-header>
 
       <ion-card-content>
-        <!-- Seleção Bom/Ruim -->
+        <!-- Seleção dinâmica baseada no tipo_resposta -->
         <div class="item-label">Condição do Pneu</div>
-        <ion-segment
-          [(ngModel)]="pneu.valor"
-          class="segment-pneu"
-          (ionChange)="salvarLocalmente()"
-        >
-          <ion-segment-button value="bom">
-            <ion-label>Bom</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="ruim">
-            <ion-label>Ruim</ion-label>
-          </ion-segment-button>
-        </ion-segment>
 
-        <!-- Campo de Pressão -->
+        <div [ngSwitch]="pneu.tipo_resposta">
+          <!-- Conforme / Não Conforme -->
+          <ion-segment *ngSwitchCase="'conforme_nao_conforme'" [(ngModel)]="pneu.valor" class="segment-pneu segment-conforme" (ionChange)="onValorChange(pneu)">
+            <ion-segment-button value="conforme">
+              <ion-label>Conforme</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="nao_conforme">
+              <ion-label>Não Conforme</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <!-- Texto -->
+          <ion-item *ngSwitchCase="'texto'" color="dark" lines="none" class="input-item">
+            <ion-input [(ngModel)]="pneu.valor" (ionBlur)="salvarLocalmente()" placeholder="Digite..." color="light"></ion-input>
+          </ion-item>
+
+          <!-- Número -->
+          <ion-item *ngSwitchCase="'numero'" color="dark" lines="none" class="input-item">
+            <ion-input [(ngModel)]="pneu.valor" (ionBlur)="salvarLocalmente()" type="number" placeholder="0" color="light"></ion-input>
+          </ion-item>
+
+          <!-- Lista de opções -->
+          <ion-segment *ngSwitchCase="'lista_opcoes'" [(ngModel)]="pneu.valor" class="segment-pneu segment-opcoes" scrollable="true" (ionChange)="onValorChange(pneu)">
+            <ion-segment-button *ngFor="let opcao of pneu.opcoes_resposta" [value]="opcao">
+              <ion-label>{{ opcao }}</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <!-- Apenas foto -->
+          <div *ngSwitchCase="'apenas_foto'" class="apenas-foto-label">
+            <ion-icon name="camera" color="primary"></ion-icon>
+            <span>Tire a foto abaixo</span>
+          </div>
+
+          <!-- Default: Conforme / Não Conforme -->
+          <ion-segment *ngSwitchDefault [(ngModel)]="pneu.valor" class="segment-pneu segment-conforme" (ionChange)="onValorChange(pneu)">
+            <ion-segment-button value="conforme">
+              <ion-label>Conforme</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="nao_conforme">
+              <ion-label>Não Conforme</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+
+        <!-- Campo de Pressão (Opcional) -->
         <div class="pressure-section" style="margin: 20px 0;">
           <ion-item>
             <ion-label position="stacked">
               <ion-icon name="speedometer" color="primary"></ion-icon>
-              Pressão (PSI)
+              Pressão (PSI) <span style="color: var(--ion-color-medium); font-size: 0.8em;">(Opcional)</span>
             </ion-label>
             <ion-input
               type="number"
               [value]="pneu.pressao"
               (ionChange)="atualizarPressao(i, $event)"
-              placeholder="Ex: 32"
+              placeholder="Ex: 32 (opcional)"
               min="0"
               step="0.1"
             ></ion-input>
@@ -64,10 +98,10 @@
         </div>
 
         <!-- Seção de Foto -->
-        <div class="photo-section">
+        <div class="photo-section" *ngIf="mostrarFoto(pneu)">
           <div class="photo-label">
             <ion-icon name="camera" color="primary"></ion-icon>
-            <span>Foto do Pneu {{ pneu.valor === 'ruim' ? '(Obrigatória)' : '(Opcional)' }}</span>
+            <span>Foto do Pneu {{ precisaFoto(pneu) ? '(Obrigatória)' : '(Opcional)' }}</span>
           </div>
 
           <!-- Botão de tirar foto -->
@@ -99,19 +133,19 @@
             <ion-icon name="camera-outline"></ion-icon>
             <p>Nenhuma foto</p>
           </div>
+        </div>
 
-          <!-- Campo de descrição quando pneu for ruim -->
-          <div *ngIf="pneu.valor === 'ruim'" style="margin-top: 15px;">
-            <ion-item color="dark" lines="none" class="description-item">
-              <ion-textarea
-                [(ngModel)]="pneu.descricao"
-                (ionChange)="salvarLocalmente()"
-                placeholder="Descreva o problema do pneu (ex: desgaste irregular, corte, furação, etc)..."
-                rows="3"
-                color="light"
-              ></ion-textarea>
-            </ion-item>
-          </div>
+        <!-- Campo de descrição quando não conforme -->
+        <div *ngIf="pneu.valor === 'nao_conforme'" style="margin-top: 15px;">
+          <ion-item color="dark" lines="none" class="description-item">
+            <ion-textarea
+              [(ngModel)]="pneu.descricao"
+              (ionChange)="salvarLocalmente()"
+              placeholder="Descreva o problema do pneu (ex: desgaste irregular, corte, furação, etc)..."
+              rows="3"
+              color="light"
+            ></ion-textarea>
+          </ion-item>
         </div>
       </ion-card-content>
     </ion-card>

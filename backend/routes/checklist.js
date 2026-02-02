@@ -1,6 +1,66 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const FotoUtils = require('../utils/FotoUtils');
+
+/**
+ * Handler para veicular.get (reutilizado)
+ */
+async function veicularGetHandler(req, res) {
+  const acao = req.query.acao || 'todos';
+  try {
+    const connection = await db.pool.getConnection();
+    switch (acao) {
+      case 'id':
+        if (!req.query.id) return res.status(400).json({ erro: 'ID não informado' });
+        const [inspecao] = await connection.query(
+          `SELECT i.*, u.nome as usuario_nome
+           FROM ${db.table('inspecao_veiculo')} i
+           LEFT JOIN ${db.table('usuario')} u ON i.usuario_id = u.id
+           WHERE i.id = ?`,
+          [req.query.id]
+        );
+        if (inspecao.length === 0) {
+          connection.release();
+          return res.status(404).json({ erro: 'Inspeção não encontrada' });
+        }
+        const [fotos] = await connection.query(
+          `SELECT * FROM ${db.table('inspecao_foto')} WHERE inspecao_id = ?`,
+          [req.query.id]
+        );
+        const [itens] = await connection.query(
+          `SELECT * FROM ${db.table('inspecao_item')} WHERE inspecao_id = ?`,
+          [req.query.id]
+        );
+        connection.release();
+        const fotosComUrl = fotos.map(foto => ({
+          ...foto,
+          foto: FotoUtils.getUrl(foto.foto)
+        }));
+        const itensComUrl = itens.map(item => ({
+          ...item,
+          foto: FotoUtils.getUrl(item.foto),
+          foto_caneta: FotoUtils.getUrl(item.foto_caneta)
+        }));
+        res.json({ ...inspecao[0], fotos: fotosComUrl, itens: itensComUrl });
+        break;
+      case 'placa':
+        if (!req.query.placa) return res.status(400).json({ erro: 'Placa não informada' });
+        const [inspecoesPorPlaca] = await connection.query(`SELECT i.*, u.nome as usuario_nome FROM ${db.table('inspecao_veiculo')} i LEFT JOIN ${db.table('usuario')} u ON i.usuario_id = u.id WHERE i.placa LIKE ? ORDER BY i.data_realizacao DESC LIMIT 100`, [`%${req.query.placa}%`]);
+        connection.release();
+        res.json(inspecoesPorPlaca);
+        break;
+      default:
+        const limite = parseInt(req.query.limite) || 100;
+        const [todasInspecoes] = await connection.query(`SELECT i.*, u.nome as usuario_nome FROM ${db.table('inspecao_veiculo')} i LEFT JOIN ${db.table('usuario')} u ON i.usuario_id = u.id ORDER BY i.data_realizacao DESC LIMIT ?`, [limite]);
+        connection.release();
+        res.json(todasInspecoes);
+    }
+  } catch (error) {
+    console.error('ERRO:', error.message);
+    res.status(500).json({ erro: 'Erro ao buscar inspeções', detalhes: error.message });
+  }
+}
 
 /**
  * GET /b_checklist_get.php (unificado - suporta tipo=simples ou tipo=completo)
@@ -15,9 +75,8 @@ async function get(req, res) {
     }
 
     if (tipo === 'simples') {
-      // Redireciona para veicular.get
-      const veicular = require('./veicular');
-      return veicular.get(req, res);
+      // Redireciona para veicular.get - chama diretamente o handler
+      return veicularGetHandler(req, res);
     } else {
       // Usa getCompleto
       return getCompleto(req, res);
@@ -46,9 +105,15 @@ async function set(req, res) {
     const tipo = detectarTipoChecklist(dados);
 
     if (tipo === 'simples') {
-      // Redireciona para veicular.set
-      const veicular = require('./veicular');
-      return veicular.set(req, res);
+      // Redireciona para veicular.set usando o router
+      const veicularRouter = require('./veicular');
+      const tempReq = Object.create(req);
+      tempReq.url = '/set';
+      tempReq.path = '/set';
+      tempReq.method = 'POST';
+      tempReq.body = req.body;
+      tempReq.query = req.query;
+      return veicularRouter.handle(tempReq, res, () => {});
     } else {
       // Usa setCompleto
       return setCompleto(req, res);
@@ -89,6 +154,18 @@ function detectarTipoChecklist(dados) {
  * GET /b_checklist_completo_get.php
  */
 async function getCompleto(req, res) {
+  // Faz parse seguro de JSON, aceita string ou objeto já parseado
+  function safeParseJson(value) {
+    if (!value) return {};
+    if (typeof value === 'object') return value;
+    if (typeof value !== 'string') return {};
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      return {};
+    }
+  }
+
   try {
     const acao = req.query.acao || 'todos';
 
@@ -100,8 +177,8 @@ async function getCompleto(req, res) {
 
         const resultado = await db.queryOne(
           `SELECT c.*, u.nome as usuario_nome
-           FROM checklist_checklist_completo c
-           LEFT JOIN checklist_usuario u ON c.usuario_id = u.id
+           FROM ${db.table('completo')} c
+           LEFT JOIN ${db.table('usuario')} u ON c.usuario_id = u.id
            WHERE c.id = ?`,
           [req.query.id]
         );
@@ -110,12 +187,12 @@ async function getCompleto(req, res) {
           return res.status(404).json({ erro: 'Checklist não encontrado' });
         }
 
-        // Decodifica campos JSON
-        resultado.parte1 = resultado.parte1_interna ? JSON.parse(resultado.parte1_interna) : {};
-        resultado.parte2 = resultado.parte2_externa ? JSON.parse(resultado.parte2_externa) : {};
-        resultado.parte3 = resultado.parte3_acessorios ? JSON.parse(resultado.parte3_acessorios) : {};
-        resultado.parte4 = resultado.parte4_lataria ? JSON.parse(resultado.parte4_lataria) : {};
-        resultado.parte5 = resultado.parte5_especial ? JSON.parse(resultado.parte5_especial) : {};
+        // Decodifica campos JSON com fallback seguro
+        resultado.parte1 = safeParseJson(resultado.parte1_interna);
+        resultado.parte2 = safeParseJson(resultado.parte2_externa);
+        resultado.parte3 = safeParseJson(resultado.parte3_acessorios);
+        resultado.parte4 = safeParseJson(resultado.parte4_lataria);
+        resultado.parte5 = safeParseJson(resultado.parte5_especial);
 
         delete resultado.parte1_interna;
         delete resultado.parte2_externa;
@@ -132,11 +209,10 @@ async function getCompleto(req, res) {
 
         const todos = await db.query(
           `SELECT c.*, u.nome as usuario_nome
-           FROM checklist_checklist_completo c
-           LEFT JOIN checklist_usuario u ON c.usuario_id = u.id
+           FROM ${db.table('completo')} c
+           LEFT JOIN ${db.table('usuario')} u ON c.usuario_id = u.id
            ORDER BY c.data_realizacao DESC
-           LIMIT ?`,
-          [limite]
+           LIMIT ${limite}`
         );
 
         res.json(todos);
@@ -149,8 +225,8 @@ async function getCompleto(req, res) {
 
         const checklists = await db.query(
           `SELECT c.*, u.nome as usuario_nome
-           FROM checklist_checklist_completo c
-           LEFT JOIN checklist_usuario u ON c.usuario_id = u.id
+           FROM ${db.table('completo')} c
+           LEFT JOIN ${db.table('usuario')} u ON c.usuario_id = u.id
            WHERE c.placa = ?
            ORDER BY c.data_realizacao DESC`,
           [req.query.placa]
@@ -166,8 +242,8 @@ async function getCompleto(req, res) {
 
         const checklistsPeriodo = await db.query(
           `SELECT c.*, u.nome as usuario_nome
-           FROM checklist_checklist_completo c
-           LEFT JOIN checklist_usuario u ON c.usuario_id = u.id
+           FROM ${db.table('completo')} c
+           LEFT JOIN ${db.table('usuario')} u ON c.usuario_id = u.id
            WHERE c.data_realizacao BETWEEN ? AND ?
            ORDER BY c.data_realizacao DESC`,
           [req.query.data_inicio, req.query.data_fim]
@@ -206,7 +282,7 @@ async function setCompleto(req, res) {
     if (placaParaValidar) {
       const [registroRecente] = await connection.execute(
         `SELECT id, data_realizacao
-         FROM checklist_checklist_completo
+         FROM ${db.table('completo')}
          WHERE placa = ?
          AND data_realizacao >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
          ORDER BY data_realizacao DESC
@@ -271,7 +347,7 @@ async function setCompleto(req, res) {
 
     // Insere checklist completo
     const [result] = await connection.execute(
-      `INSERT INTO checklist_checklist_completo 
+      `INSERT INTO ${db.table('completo')} 
        (placa, km_inicial, nivel_combustivel, foto_painel, observacao_painel,
         parte1_interna, parte2_externa, parte3_acessorios, parte4_lataria, parte5_especial,
         usuario_id, data_realizacao, tipo_veiculo_id, status)

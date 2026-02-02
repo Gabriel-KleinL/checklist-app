@@ -15,6 +15,7 @@ export type NivelCombustivel = '0%' | '25%' | '50%' | '75%' | '100%';
 export interface ChecklistSimples {
   id?: number;
   placa: string;
+  tipo_veiculo_id?: number;
   local?: string;
   km_inicial?: number | null;
   nivel_combustivel: NivelCombustivel;
@@ -34,11 +35,15 @@ export interface ChecklistSimples {
   foto_lateral_esquerda?: string;
 }
 
-export interface ChecklistDetalhado extends ChecklistSimples {
+export interface ChecklistDetalhado extends Omit<ChecklistSimples, 'fotos' | 'itens_inspecao' | 'itens_pneus'> {
   foto_painel?: string;
-  itens: ItemInspecao[];
-  fotos: FotoVeiculo[];
-  pneus: PneuInspecao[];
+  itens?: ItemInspecao[] | { [categoria: string]: ItemInspecao[] };
+  fotos?: FotoVeiculo[] | { [tipo: string]: string };
+  pneus?: PneuInspecao[];
+  usuario?: {
+    id?: number;
+    nome?: string;
+  } | null;
 }
 
 // ============================================
@@ -58,30 +63,46 @@ export interface ItemInspecao {
 
 export interface ItemMotor {
   nome: string;
-  valor: StatusItem | null;
+  valor: string | null;
   foto?: string;
   descricao?: string;
+  tipo_resposta?: string;
+  opcoes_resposta?: string[];
+  tem_foto?: boolean;
+  obrigatorio?: boolean;
 }
 
 export interface ItemEletrico {
   nome: string;
-  valor: StatusItem | null;
+  valor: string | null;
   foto?: string;
   descricao?: string;
+  tipo_resposta?: string;
+  opcoes_resposta?: string[];
+  tem_foto?: boolean;
+  obrigatorio?: boolean;
 }
 
 export interface ItemLimpeza {
   nome: string;
-  valor: StatusLimpeza | null;
+  valor: string | null;
   foto?: string;
   descricao?: string;
+  tipo_resposta?: string;
+  opcoes_resposta?: string[];
+  tem_foto?: boolean;
+  obrigatorio?: boolean;
 }
 
 export interface ItemFerramenta {
   nome: string;
-  valor: StatusFerramenta | null;
+  valor: string | null;
   foto?: string;
   descricao?: string;
+  tipo_resposta?: string;
+  opcoes_resposta?: string[];
+  tem_foto?: boolean;
+  obrigatorio?: boolean;
 }
 
 // ============================================
@@ -125,6 +146,20 @@ export interface FotoVeiculo {
 }
 
 // ============================================
+// TIPOS DE VEÍCULOS
+// ============================================
+
+export interface TipoVeiculo {
+  id: number;
+  nome: string;
+  descricao?: string;
+  ativo: boolean;
+  icone?: string;
+  data_criacao?: string;
+  usuario_id?: number;
+}
+
+// ============================================
 // CONFIGURAÇÃO DE ITENS
 // ============================================
 
@@ -136,6 +171,10 @@ export interface ConfigItem {
   categoria: CategoriaItem;
   nome_item: string;
   habilitado: boolean;
+  tem_foto?: boolean;
+  obrigatorio?: boolean;
+  tipo_veiculo_id?: number | null; // null = item geral (associado via tabela de relacionamento)
+  tipos_veiculo_associados?: number[]; // IDs dos tipos para itens gerais
   usuario_id?: number;
   usuario_nome?: string;
   data_criacao?: string;
@@ -146,6 +185,8 @@ export interface ConfigItemCompleto {
   categoria: CategoriaItemCompleto;
   nome_item: string;
   habilitado: boolean;
+  tipo_veiculo_id?: number | null; // null = item geral (associado via tabela de relacionamento)
+  tipos_veiculo_associados?: number[]; // IDs dos tipos para itens gerais
   usuario_id?: number;
   usuario_nome?: string;
   data_criacao?: string;
@@ -238,6 +279,7 @@ export interface ApiErrorResponse {
 export interface ChecklistCompleto {
   id?: number;
   placa: string;
+  tipo_veiculo_id?: number;
   local?: string;
   km_inicial?: number | null;
   nivel_combustivel: NivelCombustivel;

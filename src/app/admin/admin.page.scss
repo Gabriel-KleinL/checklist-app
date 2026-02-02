@@ -7,15 +7,24 @@
 // Estat�sticas
 .stats-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: stretch;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 
   .stat-card {
     margin: 0;
     text-align: center;
     animation: slideInUp 0.4s ease-out;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 
     &:hover {
       transform: translateY(-4px) scale(1.02);
@@ -35,12 +44,18 @@
     }
 
     ion-card-content {
-      padding: 16px 8px;
+      padding: 24px 16px;
       background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-      border-radius: 8px;
-      border: 1px solid #3a3a3a;
+      border-radius: 12px;
+      border: 2px solid #3a3a3a;
       position: relative;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+      flex: 1;
 
       &::before {
         content: '';
@@ -60,43 +75,80 @@
       }
 
       ion-icon {
-        font-size: 32px;
-        margin-bottom: 8px;
+        font-size: 36px;
+        margin-bottom: 12px;
         animation: pulse 2s infinite ease-in-out;
         filter: drop-shadow(0 2px 8px rgba(var(--ion-color-primary-rgb), 0.5));
+        display: block;
+        flex-shrink: 0;
       }
 
       h2 {
-        margin: 8px 0 4px 0;
-        font-size: 24px;
-        font-weight: bold;
+        margin: 0 0 8px 0;
+        font-size: 28px;
+        font-weight: 800;
         color: #ffffff;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         transition: all 0.3s ease;
+        line-height: 1.2;
+        display: block;
+        flex-shrink: 0;
       }
 
       p {
         margin: 0;
-        font-size: 12px;
+        font-size: 13px;
         color: #c9c9c9;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 1px;
+        font-weight: 500;
+        display: block;
+        flex-shrink: 0;
       }
     }
   }
 }
 
-// Filtros
-ion-card {
+// Filtros - Seletor específico para garantir prioridade
+ion-card:has(.filtros-container) {
   margin-bottom: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
   ion-card-header {
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+
     ion-card-title {
       font-size: 18px;
       font-weight: 600;
+      text-align: center;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      display: block;
     }
   }
+
+  ion-card-content {
+    padding-top: 20px;
+  }
+
+  // Garante que não seja afetado pelos estilos gerais de ion-card
+  &:not(:has(ion-card-header ion-card-title ion-icon)) {
+    ion-card-header ion-card-title {
+      display: block;
+      text-align: center;
+    }
+  }
+}
+
+// Estilos gerais para cards (mantém compatibilidade)
+ion-card {
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
   ion-searchbar {
     padding: 0 0 8px 0;
@@ -108,7 +160,98 @@ ion-card {
   }
 
   .clear-filters-btn {
-    margin-top: 12px;
+    margin-top: 16px;
+  }
+
+  .filtros-container {
+    display: flex;
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+
+      .filtro-box {
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 16px 0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+    }
+  }
+
+  .filtro-box {
+    flex: 1;
+    min-width: 200px;
+    padding: 0 20px;
+    text-align: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+
+    &:last-child {
+      border-right: none;
+    }
+
+    .filtro-titulo {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+
+    ion-searchbar {
+      --background: var(--ion-item-background, #1e1e1e);
+      --border-radius: 8px;
+      --box-shadow: none;
+      padding: 0;
+      height: 42px;
+      border: none !important;
+
+      ::ng-deep .searchbar-input-container {
+        border: 1px solid #ffffff !important;
+        border-radius: 8px !important;
+        background: var(--ion-item-background, #1e1e1e) !important;
+        padding: 0 !important;
+      }
+
+      ::ng-deep .searchbar-input {
+        border: none !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+      }
+
+      ::ng-deep .native-input {
+        border: none !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+      }
+    }
+
+    .data-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      input[type="date"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ffffff;
+        border-radius: 8px;
+        background: var(--ion-item-background, #1e1e1e);
+        color: var(--ion-text-color, #fff);
+        font-size: 14px;
+        outline: none;
+
+        &::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+        }
+      }
+    }
   }
 }
 
@@ -169,34 +312,81 @@ ion-list {
     margin-bottom: 8px;
 
     ion-item {
-      --background: white;
+      --background: #fff;
       --border-radius: 8px;
+      --min-height: 60px;
+      --padding-start: 0;
+      --padding-end: 16px;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 
-      ion-label {
-        h2 {
-          color: var(--ion-color-dark);
-          font-size: 18px;
-          margin-bottom: 4px;
+      .checklist-row {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 12px 16px;
+        color: #000;
+        font-size: 15px;
+        font-weight: 500;
+
+        > div {
+          flex: 1;
+          padding: 0 8px;
         }
 
-        p {
-          color: var(--ion-color-medium);
-          font-size: 13px;
-          margin: 2px 0;
+        .col-icone {
+          flex: 0 0 60px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 0;
 
-          &.data-texto {
-            font-size: 12px;
-            font-style: italic;
-            color: var(--ion-color-medium-shade);
+          ion-icon {
+            font-size: 28px;
           }
         }
+
+        .col-placa {
+          font-weight: 700;
+          font-size: 16px;
+        }
+
+        .col-local {
+        }
+
+        .col-inspetor {
+        }
+
+        .col-data {
+          text-align: right;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    ion-item-sliding ion-item .checklist-row {
+      flex-wrap: wrap;
+
+      .col-icone {
+        width: 50px;
       }
 
-      ion-badge {
-        font-size: 11px;
-        padding: 4px 8px;
+      .col-placa {
+        width: calc(100% - 50px);
+      }
+
+      .col-local,
+      .col-inspetor,
+      .col-data {
+        width: 100%;
+        padding-left: 50px;
+        font-size: 13px;
+        margin-top: 4px;
+      }
+
+      .col-data {
+        text-align: left;
       }
     }
   }
@@ -763,10 +953,10 @@ ion-segment {
   }
 }
 
-// Botão de Adicionar Novo Item
+// Botão de Adicionar Novo Item - Vermelho
 ion-button[color="success"] {
   --border-radius: 12px;
-  --box-shadow: 0 4px 12px rgba(var(--ion-color-success-rgb), 0.3);
+  --box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
   margin: 0 0 20px 0;
   height: 48px;
   font-weight: 600;
@@ -774,8 +964,8 @@ ion-button[color="success"] {
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
 
-  &:hover:not([disabled]) {
-    --box-shadow: 0 6px 16px rgba(var(--ion-color-success-rgb), 0.4);
+      &:hover:not([disabled]) {
+        --box-shadow: 0 6px 16px rgba(var(--ion-color-primary-rgb), 0.4);
     transform: translateY(-2px);
   }
 
@@ -837,11 +1027,11 @@ ion-card {
     padding: 0;
   }
 
-  // Card de aviso (warning)
+  // Card de aviso (warning) - Cinza
   &[color="warning"] {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
-    border: 2px solid #ffc107;
-    border-left: 6px solid #ffc107;
+    background: linear-gradient(135deg, #404040 0%, #2a2a2a 100%);
+    border: 2px solid #808080;
+    border-left: 6px solid #808080;
 
     ion-card-content {
       padding: 16px 20px;
@@ -849,11 +1039,11 @@ ion-card {
       align-items: center;
       gap: 12px;
       font-weight: 600;
-      color: #856404;
+      color: #ffffff;
 
       ion-icon {
         font-size: 28px;
-        color: #ffc107;
+        color: #ffffff;
         flex-shrink: 0;
       }
     }
@@ -1704,264 +1894,6 @@ ion-card[color="danger"] {
 // ESTILOS PARA RELATÓRIOS
 // ========================================
 
-// Cards de relatórios - Estilo geral melhorado
-.aba-relatorios ion-card {
-  margin: 0 0 20px 0;
-  border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: white;
-  animation: slideInUp 0.5s ease-out;
-  border: none;
-
-  &:nth-child(1) {
-    animation-delay: 0.1s;
-  }
-
-  &:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-
-  &:nth-child(3) {
-    animation-delay: 0.3s;
-  }
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
-  }
-
-  ion-card-header {
-    padding: 24px;
-    background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
-    border-bottom: none;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -20%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
-      animation: shimmer 3s infinite ease-in-out;
-    }
-
-    ion-card-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      position: relative;
-      z-index: 1;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-
-      ion-icon {
-        font-size: 28px;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-        animation: pulse 2s infinite ease-in-out;
-      }
-    }
-
-    ion-card-subtitle {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.9);
-      margin-top: 8px;
-      font-weight: 500;
-      position: relative;
-      z-index: 1;
-    }
-  }
-
-  ion-card-content {
-    padding: 24px;
-    background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
-
-    p {
-      color: var(--ion-color-dark);
-      font-size: 15px;
-      line-height: 1.6;
-      margin: 0 0 20px 0;
-    }
-
-    ion-button {
-      --border-radius: 12px;
-      --box-shadow: 0 4px 16px rgba(var(--ion-color-success-rgb), 0.3);
-      height: 52px;
-      font-weight: 700;
-      font-size: 16px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin: 0;
-      transition: all 0.3s ease;
-
-      &:hover:not([disabled]) {
-        --box-shadow: 0 6px 20px rgba(var(--ion-color-success-rgb), 0.4);
-        transform: translateY(-2px);
-      }
-
-      &:active:not([disabled]) {
-        transform: translateY(0);
-      }
-
-      ion-icon {
-        font-size: 24px;
-      }
-    }
-
-    .loading-container {
-      margin-top: 16px;
-      padding: 24px;
-      background: rgba(var(--ion-color-light-rgb), 0.5);
-      border-radius: 12px;
-      border: 2px dashed var(--ion-color-medium-tint);
-
-      ion-spinner {
-        width: 40px;
-        height: 40px;
-      }
-
-      p {
-        margin-top: 12px;
-        color: var(--ion-color-primary);
-        font-weight: 600;
-      }
-    }
-  }
-}
-
-// Card terciário (Exportar Relatórios)
-.aba-relatorios ion-card[color="tertiary"] {
-  background: linear-gradient(135deg, var(--ion-color-tertiary) 0%, var(--ion-color-tertiary-shade) 100%);
-  box-shadow: 0 8px 24px rgba(var(--ion-color-tertiary-rgb), 0.25);
-
-  ion-card-header {
-    background: linear-gradient(135deg, var(--ion-color-tertiary) 0%, var(--ion-color-tertiary-shade) 100%);
-  }
-}
-
-// Card principal de relatório (Veículos sem Checklist)
-.aba-relatorios ion-card:not([color]):nth-child(2) {
-  background: white;
-  border: 2px solid var(--ion-color-light-shade);
-
-  ion-card-header {
-    background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
-  }
-
-  ion-card-content {
-    p:first-of-type {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      padding: 16px;
-      border-radius: 12px;
-      border-left: 4px solid var(--ion-color-primary);
-      margin-bottom: 24px;
-      font-size: 14px;
-      color: var(--ion-color-dark);
-      line-height: 1.7;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-  }
-}
-
-// Card placeholder (Mais Relatórios)
-.aba-relatorios ion-card:not([color]):nth-child(3) {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border: 2px dashed var(--ion-color-medium-tint);
-  opacity: 0.8;
-
-  ion-card-header {
-    background: linear-gradient(135deg, var(--ion-color-medium-tint) 0%, var(--ion-color-medium) 100%);
-
-    ion-card-title {
-      color: rgba(255, 255, 255, 0.9);
-
-      ion-icon {
-        opacity: 0.7;
-      }
-    }
-  }
-
-  ion-card-content {
-    p {
-      color: var(--ion-color-medium);
-      font-style: italic;
-      text-align: center;
-    }
-  }
-
-  &:hover {
-    opacity: 1;
-    border-color: var(--ion-color-medium);
-  }
-}
-
-// Animação shimmer
-@keyframes shimmer {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg);
-    opacity: 0;
-  }
-  50% {
-    transform: translate(30%, 30%) rotate(180deg);
-    opacity: 0.3;
-  }
-}
-
-// Responsividade para relatórios
-@media (min-width: 768px) {
-  .aba-relatorios {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-
-    ion-card:first-child {
-      grid-column: 1 / -1;
-    }
-
-    ion-card {
-      ion-card-header {
-        padding: 28px;
-
-        ion-card-title {
-          font-size: 24px;
-
-          ion-icon {
-            font-size: 32px;
-          }
-        }
-
-        ion-card-subtitle {
-          font-size: 16px;
-        }
-      }
-
-      ion-card-content {
-        padding: 28px;
-
-        p {
-          font-size: 16px;
-        }
-      }
-    }
-  }
-}
-
-@media (min-width: 1024px) {
-  .aba-relatorios {
-    grid-template-columns: repeat(3, 1fr);
-
-    ion-card:first-child {
-      grid-column: 1 / -1;
-    }
-  }
-}
-
 // ========================================
 // ESTILOS PARA MÉTRICAS (CARDS DE RESUMO)
 // ========================================
@@ -2058,29 +1990,29 @@ ion-card[color="danger"] {
   }
 }
 
-// Card Warning (Amarelo/Laranja) - MELHORADO
-.aba-metricas ion-card[color="warning"] {
-  ion-card-content {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.35);
+  // Card Warning (Cinza escuro)
+  .aba-metricas ion-card[color="warning"] {
+    ion-card-content {
+      background: linear-gradient(135deg, #404040 0%, #2a2a2a 100%);
+      box-shadow: 0 4px 16px rgba(64, 64, 64, 0.35);
 
-    h2 {
-      color: white;
-    }
+      h2 {
+        color: white;
+      }
 
-    p {
-      color: rgba(255, 255, 255, 0.95);
+      p {
+        color: rgba(255, 255, 255, 0.95);
+      }
     }
   }
-}
 
-// Card Success (Verde)
-.aba-metricas ion-card[color="success"] {
-  ion-card-content {
-    background: linear-gradient(135deg, #2dd36f 0%, #28ba62 100%);
-    box-shadow: 0 4px 16px rgba(45, 211, 111, 0.3);
+  // Card Success (Cinza médio)
+  .aba-metricas ion-card[color="success"] {
+    ion-card-content {
+      background: linear-gradient(135deg, #808080 0%, #606060 100%);
+      box-shadow: 0 4px 16px rgba(128, 128, 128, 0.3);
+    }
   }
-}
 
 // Card Tertiary (Vermelho)
 .aba-metricas ion-card[color="tertiary"] {
@@ -2120,5 +2052,2260 @@ ion-card[color="danger"] {
         font-size: 15px;
       }
     }
+  }
+}
+
+// Grid de Tipos de Veículos
+.tipos-veiculo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.tipo-veiculo-card {
+  margin: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &.tipo-inativo {
+    opacity: 0.5;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  &:hover:not(.tipo-inativo) {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  ion-card-content {
+    h2 {
+      font-size: 1em;
+
+      @media (min-width: 768px) {
+        font-size: 1.1em;
+      }
+    }
+  }
+}
+
+// Árvore de Herança - Container Principal
+.arvore-container {
+  animation: fadeIn 0.5s ease-out;
+  padding: 0;
+}
+
+.arvore-header-card {
+  margin: 0 0 32px 0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #eb445a 0%, #c73650 100%);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: visible;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  ion-card-header {
+    padding: 28px 32px;
+    position: relative;
+    z-index: 1;
+
+    ion-card-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 1.5em;
+      font-weight: 800;
+      color: white;
+      text-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+
+      ion-icon {
+        font-size: 1.8em;
+        filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+      }
+    }
+
+    ion-card-subtitle {
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 1.05em;
+      margin-top: 12px;
+      font-weight: 400;
+      line-height: 1.5;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  ion-card-content {
+    padding: 0 32px 28px 32px;
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.arvore-botao-card {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  ion-card-content {
+    padding: 20px;
+  }
+}
+
+.arvore-botao {
+  --border-radius: 14px;
+  --box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0.8px;
+  height: 56px;
+  font-size: 1.1em;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+
+  &:hover {
+    --box-shadow: 0 8px 28px rgba(var(--ion-color-primary-rgb), 0.4);
+    transform: translateY(-3px) scale(1.02);
+    background: linear-gradient(135deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(1);
+  }
+
+  ion-icon {
+    font-size: 1.4em;
+    margin-right: 8px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+}
+
+// Árvore de Herança - Grupos
+.arvore-grupo {
+  margin-bottom: 20px;
+  animation: slideInUp 0.4s ease-out;
+  animation-fill-mode: both;
+
+  @for $i from 1 through 10 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.08}s;
+    }
+  }
+
+  > ion-card {
+    margin: 0;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+      border-color: rgba(255, 255, 255, 0.3);
+
+      &::after {
+        opacity: 1;
+      }
+    }
+
+    &:active {
+      transform: translateY(-3px) scale(1.01);
+    }
+
+    ion-card-header {
+      padding: 20px 24px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+        transition: left 0.6s ease;
+      }
+
+      &:hover::before {
+        left: 100%;
+      }
+
+      ion-card-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 1.2em;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        color: white;
+
+        > span {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+
+          ion-icon {
+            font-size: 1.6em;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+          }
+        }
+
+        ion-icon:last-child {
+          font-size: 1.3em;
+          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          opacity: 0.95;
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+      }
+    }
+  }
+
+  // Rotação do ícone quando expandido
+  &:has(.arvore-conteudo) > ion-card ion-card-header ion-card-title ion-icon:last-child {
+    transform: rotate(90deg);
+  }
+}
+
+.arvore-conteudo {
+  margin-left: 24px;
+  margin-top: 12px;
+  padding-left: 24px;
+  border-left: 3px solid rgba(var(--ion-color-primary-rgb), 0.2);
+  animation: slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(
+      to bottom,
+      var(--ion-color-primary),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+}
+
+.arvore-secao {
+  margin-bottom: 24px;
+  animation: fadeInScale 0.4s ease-out;
+
+  ion-card {
+    margin: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+
+    &:hover {
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+      transform: translateX(8px) translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    ion-card-header {
+      padding: 20px 24px;
+      background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        rgba(255, 255, 255, 0.08) 100%);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      backdrop-filter: blur(10px);
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, 
+          transparent, 
+          rgba(255, 255, 255, 0.5), 
+          transparent);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+
+      &:hover::after {
+        opacity: 1;
+      }
+
+      ion-card-title {
+        font-size: 1.15em;
+        font-weight: 800;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+
+        ion-icon {
+          font-size: 1.5em;
+          filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+        }
+      }
+
+      ion-card-subtitle {
+        font-size: 0.95em;
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 8px;
+        font-weight: 400;
+        line-height: 1.5;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+    }
+
+    ion-card-content {
+      padding: 20px 24px;
+      background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.08) 0%, 
+        rgba(255, 255, 255, 0.03) 100%);
+      backdrop-filter: blur(5px);
+    }
+  }
+
+  // Estilo específico para Itens Gerais
+  &:has(ion-card-header ion-card-title:has(ion-icon[name="globe-outline"])) {
+    ion-card {
+      border-left: 5px solid var(--ion-color-primary);
+      box-shadow: 0 3px 14px rgba(var(--ion-color-primary-rgb), 0.2);
+
+      ion-card-header {
+        background: linear-gradient(135deg, 
+          rgba(var(--ion-color-primary-rgb), 0.1) 0%, 
+          rgba(var(--ion-color-light-rgb), 0.7) 100%);
+      }
+    }
+  }
+
+  // Estilo específico para Itens Específicos
+  &:has(ion-card-header ion-card-title:has(ion-icon[name="car-sport-outline"])) {
+    ion-card {
+      border-left: 5px solid var(--ion-color-secondary);
+      box-shadow: 0 3px 14px rgba(var(--ion-color-secondary-rgb), 0.2);
+
+      ion-card-header {
+        background: linear-gradient(135deg, 
+          rgba(var(--ion-color-secondary-rgb), 0.1) 0%, 
+          rgba(var(--ion-color-light-rgb), 0.7) 100%);
+      }
+    }
+  }
+}
+
+.arvore-item {
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --inner-padding-end: 14px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: white;
+  border: 1.5px solid rgba(var(--ion-color-light-rgb), 0.6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, var(--ion-color-primary), var(--ion-color-primary-shade));
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 0 2px 2px 0;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(90deg, 
+      rgba(var(--ion-color-primary-rgb), 0.08) 0%, 
+      transparent 20%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    background: linear-gradient(90deg, 
+      rgba(var(--ion-color-primary-rgb), 0.08) 0%, 
+      white 15%);
+    transform: translateX(8px) translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border-color: rgba(var(--ion-color-primary-rgb), 0.4);
+
+    &::before {
+      transform: scaleY(1);
+    }
+
+    &::after {
+      opacity: 1;
+    }
+  }
+
+  ion-icon[slot="start"] {
+    font-size: 1.5em;
+    margin-right: 14px;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15));
+    transition: transform 0.3s ease;
+    z-index: 1;
+    position: relative;
+  }
+
+  &:hover ion-icon[slot="start"] {
+    transform: scale(1.1);
+  }
+
+  ion-label {
+    z-index: 1;
+    position: relative;
+
+    h3 {
+      font-size: 1em;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--ion-color-dark);
+      letter-spacing: 0.3px;
+      line-height: 1.4;
+    }
+
+    p {
+      margin-top: 8px;
+      font-size: 0.9em;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--ion-color-medium);
+      line-height: 1.5;
+
+      ion-icon {
+        font-size: 1.1em;
+        margin-right: 6px;
+        color: var(--ion-color-medium);
+        vertical-align: middle;
+      }
+
+      ion-chip {
+        font-size: 0.82em;
+        height: 28px;
+        margin: 0;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 14px;
+        letter-spacing: 0.2px;
+
+        &:hover {
+          transform: translateY(-3px) scale(1.05);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+        }
+
+        ion-icon {
+          font-size: 0.95em;
+          margin-right: 6px;
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+
+  ion-badge {
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    letter-spacing: 0.3px;
+    z-index: 1;
+    position: relative;
+  }
+}
+
+// Animações
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Responsividade
+@media (min-width: 768px) {
+  .arvore-conteudo {
+    margin-left: 32px;
+    padding-left: 32px;
+  }
+
+  .arvore-item {
+    --padding-start: 16px;
+    --padding-end: 16px;
+  }
+}
+
+// Efeito de loading suave
+.arvore-grupo:empty::after {
+  content: 'Carregando...';
+  display: block;
+  text-align: center;
+  padding: 20px;
+  color: var(--ion-color-medium);
+  font-style: italic;
+}
+
+// Estilos customizados para Alerts (Modal de Adicionar Item)
+.alert-wrapper {
+  border-radius: 20px !important;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.alert-head {
+  padding: 28px 24px 20px 24px !important;
+  background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%) !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15) !important;
+  position: relative !important;
+  overflow: hidden !important;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  }
+
+  .alert-title {
+    font-size: 1.5em !important;
+    font-weight: 800 !important;
+    color: white !important;
+    text-align: center !important;
+    letter-spacing: 0.8px !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+    margin: 0 !important;
+    text-transform: uppercase !important;
+  }
+}
+
+.alert-message {
+  padding: 20px 24px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 1em !important;
+  line-height: 1.6 !important;
+  text-align: center !important;
+  background: transparent !important;
+
+  &:empty {
+    padding: 0 !important;
+    display: none !important;
+  }
+}
+
+// Estilos para radio group (fora do input-group)
+.alert-radio-group {
+  padding: 24px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  margin: 0 !important;
+
+  .alert-radio-button {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+    &:hover {
+      transform: translateX(4px) !important;
+    }
+
+    .alert-button-inner {
+      padding: 0 !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      min-height: 60px !important;
+      padding: 18px 20px !important;
+      border-radius: 14px !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+      border: 2px solid rgba(255, 255, 255, 0.15) !important;
+      position: relative !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--ion-color-primary);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+
+        &::before {
+          transform: scaleX(1);
+        }
+      }
+    }
+
+    .alert-radio-icon {
+      width: 26px !important;
+      height: 26px !important;
+      border-width: 2.5px !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      background: rgba(255, 255, 255, 0.05) !important;
+      border-radius: 50% !important;
+      transition: all 0.3s ease !important;
+      flex-shrink: 0 !important;
+      margin-right: 16px !important;
+      position: relative !important;
+    }
+
+    .alert-radio-inner {
+      width: 14px !important;
+      height: 14px !important;
+      background-color: var(--ion-color-primary) !important;
+      border-radius: 50% !important;
+      transform: scale(0);
+      transition: transform 0.2s ease !important;
+      position: absolute !important;
+      top: 50% !important;
+      left: 50% !important;
+      margin-top: -7px !important;
+      margin-left: -7px !important;
+    }
+
+    .alert-radio-label {
+      flex: 1 !important;
+      color: #ffffff !important;
+      font-size: 1.1em !important;
+      font-weight: 500 !important;
+      text-align: left !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      line-height: 1.4 !important;
+    }
+
+    &[aria-checked="true"] {
+      .alert-button-inner {
+        background: rgba(var(--ion-color-primary-rgb), 0.25) !important;
+        border-color: var(--ion-color-primary) !important;
+        box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3) !important;
+
+        &::before {
+          transform: scaleX(1);
+        }
+      }
+
+      .alert-radio-icon {
+        border-color: var(--ion-color-primary) !important;
+        background: rgba(var(--ion-color-primary-rgb), 0.15) !important;
+        box-shadow: 0 0 0 4px rgba(var(--ion-color-primary-rgb), 0.2) !important;
+      }
+
+      .alert-radio-inner {
+        transform: scale(1) !important;
+      }
+
+      .alert-radio-label {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+      }
+    }
+
+    &:focus,
+    &.ion-focusable {
+      outline: none !important;
+
+      .alert-button-inner {
+        box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.3) !important;
+      }
+    }
+  }
+}
+
+.alert-input-group {
+  padding: 24px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+
+  .alert-input-wrapper {
+    margin-bottom: 0 !important;
+    width: 100% !important;
+
+    &:last-child {
+      margin-bottom: 0 !important;
+    }
+
+    .alert-input {
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 2px solid rgba(255, 255, 255, 0.2) !important;
+      border-radius: 12px !important;
+      padding: 16px 18px !important;
+      color: white !important;
+      font-size: 1.05em !important;
+      transition: all 0.3s ease !important;
+      width: 100% !important;
+      font-weight: 500 !important;
+
+      &:focus {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border-color: var(--ion-color-primary) !important;
+        box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.2) !important;
+        outline: none !important;
+      }
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+        font-weight: 400 !important;
+      }
+    }
+  }
+
+  // Estilos para CHECKBOXES dentro do input-group
+  .alert-checkbox-label {
+    padding: 18px 20px !important;
+    margin: 0 !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 2px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    font-size: 1.1em !important;
+    font-weight: 600 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    min-height: 60px !important;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--ion-color-primary);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12) !important;
+      border-color: rgba(255, 255, 255, 0.25) !important;
+      transform: translateX(6px) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+
+      &::before {
+        transform: scaleX(1);
+      }
+    }
+
+    // Label do checkbox
+    span {
+      color: #ffffff !important;
+      font-size: 1.05em !important;
+      font-weight: 600 !important;
+      flex: 1 !important;
+      text-align: left !important;
+    }
+  }
+
+  .alert-checkbox-icon {
+    width: 28px !important;
+    height: 28px !important;
+    border-width: 3px !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    &::after {
+      content: '✓';
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.2s ease;
+    }
+  }
+
+  .alert-checkbox-inner {
+    display: none !important;
+  }
+
+  // Estado CHECKED do checkbox
+  [aria-checked="true"] {
+    .alert-checkbox-label {
+      background: rgba(var(--ion-color-primary-rgb), 0.25) !important;
+      border-color: var(--ion-color-primary) !important;
+      color: white !important;
+      font-weight: 700 !important;
+      box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.15) !important;
+    }
+
+    .alert-checkbox-icon {
+      background: var(--ion-color-primary) !important;
+      border-color: var(--ion-color-primary) !important;
+      box-shadow: 0 0 12px rgba(var(--ion-color-primary-rgb), 0.6) !important;
+
+      &::after {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  }
+
+  .alert-input-wrapper {
+    // Estilos para radio buttons - Melhorado
+    .alert-radio-group {
+      padding: 8px 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 12px !important;
+
+      .alert-radio-wrapper {
+        margin: 0 !important;
+      }
+
+      .alert-radio-label {
+        padding: 18px 20px !important;
+        margin: 0 !important;
+        border-radius: 14px !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 2px solid rgba(255, 255, 255, 0.15) !important;
+        color: #ffffff !important;
+        font-size: 1.05em !important;
+        font-weight: 500 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        position: relative !important;
+        overflow: hidden !important;
+
+        &::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background: var(--ion-color-primary);
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform 0.3s ease;
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.12) !important;
+          border-color: rgba(255, 255, 255, 0.25) !important;
+          transform: translateX(6px) !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+
+          &::before {
+            transform: scaleX(1);
+          }
+        }
+      }
+
+      .alert-radio-icon {
+        width: 24px !important;
+        height: 24px !important;
+        border-width: 2px !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 50% !important;
+        transition: all 0.3s ease !important;
+        flex-shrink: 0 !important;
+      }
+
+      .alert-radio-inner {
+        width: 12px !important;
+        height: 12px !important;
+        background-color: var(--ion-color-primary) !important;
+        border-radius: 50% !important;
+        transform: scale(0);
+        transition: transform 0.2s ease !important;
+      }
+
+      .alert-radio-checked {
+        .alert-radio-label {
+          background: rgba(var(--ion-color-primary-rgb), 0.25) !important;
+          border-color: var(--ion-color-primary) !important;
+          color: #ffffff !important;
+          font-weight: 700 !important;
+          box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3) !important;
+
+          &::before {
+            transform: scaleX(1);
+          }
+        }
+
+        .alert-radio-icon {
+          border-color: var(--ion-color-primary) !important;
+          background: rgba(var(--ion-color-primary-rgb), 0.15) !important;
+          box-shadow: 0 0 0 4px rgba(var(--ion-color-primary-rgb), 0.2) !important;
+        }
+
+        .alert-radio-inner {
+          transform: scale(1) !important;
+        }
+      }
+    }
+
+    // Estilos para checkboxes
+    .alert-checkbox-group {
+      .alert-checkbox-label {
+        padding: 12px 16px !important;
+        margin: 8px 0 !important;
+        border-radius: 10px !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 2px solid rgba(255, 255, 255, 0.1) !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-size: 1em !important;
+        transition: all 0.3s ease !important;
+        cursor: pointer !important;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1) !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
+          transform: translateX(4px) !important;
+        }
+      }
+
+      .alert-checkbox-icon {
+        border-color: var(--ion-color-primary) !important;
+        background: rgba(var(--ion-color-primary-rgb), 0.1) !important;
+      }
+
+      .alert-checkbox-checked .alert-checkbox-label {
+        background: rgba(var(--ion-color-primary-rgb), 0.2) !important;
+        border-color: var(--ion-color-primary) !important;
+        color: white !important;
+        font-weight: 600 !important;
+      }
+    }
+  }
+}
+
+.alert-button-group {
+  padding: 20px 24px 24px 24px !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+
+  .alert-button {
+    margin: 0 !important;
+    border-radius: 12px !important;
+    padding: 0 !important;
+    font-size: 1.05em !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    border: 2px solid transparent !important;
+    flex: 1 !important;
+    min-width: 120px !important;
+    height: 52px !important;
+    position: relative !important;
+    overflow: hidden !important;
+
+    .alert-button-inner {
+      width: 100% !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 0 24px !important;
+      margin: 0 !important;
+      border-radius: 12px !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    &:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    &:active {
+      transform: translateY(0) !important;
+    }
+
+    // Botão Cancelar
+    &.alert-button-role-cancel,
+    &[role="cancel"] {
+      .alert-button-inner {
+        background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%) !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        border: 2px solid rgba(255, 255, 255, 0.15) !important;
+      }
+
+      &:hover .alert-button-inner {
+        background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%) !important;
+        color: rgba(255, 255, 255, 1) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+      }
+    }
+
+    // Botão de ação (Próximo, Adicionar, etc)
+    &:not(.alert-button-role-cancel):not([role="cancel"]) {
+      .alert-button-inner {
+        background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%) !important;
+        color: white !important;
+        border: 2px solid var(--ion-color-primary) !important;
+      }
+
+      &:hover .alert-button-inner {
+        background: linear-gradient(135deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%) !important;
+        box-shadow: 0 6px 20px rgba(var(--ion-color-primary-rgb), 0.4) !important;
+      }
+    }
+  }
+}
+
+// Animação de entrada do alert
+.alert-wrapper {
+  animation: alertSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+@keyframes alertSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// Overlay do alert
+.alert-backdrop {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+// Melhorias para o botão de adicionar item
+.arvore-header-card {
+  ion-card-content {
+    padding: 20px 24px !important;
+
+    ion-button {
+      --border-radius: 12px;
+      --box-shadow: 0 4px 16px rgba(var(--ion-color-success-rgb), 0.3);
+      height: 50px;
+      font-size: 1.05em;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        --box-shadow: 0 6px 24px rgba(var(--ion-color-primary-rgb), 0.5);
+        transform: translateY(-2px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      ion-icon {
+        font-size: 1.3em;
+        margin-right: 8px;
+      }
+    }
+  }
+}
+
+// ============================================
+// DRAG AND DROP STYLES
+// ============================================
+
+.drag-item {
+  cursor: move !important;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+    z-index: 1000;
+  }
+
+  &:hover:not(.dragging) {
+    background: rgba(var(--ion-color-primary-rgb), 0.05) !important;
+    transform: translateX(4px);
+  }
+
+  .drag-handle {
+    cursor: grab;
+    color: var(--ion-color-medium);
+    font-size: 1.3em;
+    transition: all 0.2s ease;
+
+    &:active {
+      cursor: grabbing;
+      color: var(--ion-color-primary);
+      transform: scale(1.2);
+    }
+  }
+
+  &:hover .drag-handle {
+    color: var(--ion-color-primary);
+  }
+}
+
+.arvore-secao {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 100px;
+
+  &.drop-zone-active {
+    background: rgba(var(--ion-color-primary-rgb), 0.1) !important;
+    border: 2px dashed var(--ion-color-primary) !important;
+    border-radius: 12px !important;
+    transform: scale(1.02);
+
+    &::before {
+      content: 'Solte aqui para mover';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--ion-color-primary);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1.1em;
+      z-index: 10;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  }
+
+  ion-card {
+    transition: all 0.3s ease;
+  }
+
+  &.drop-zone-active ion-card {
+    border: 2px solid var(--ion-color-primary) !important;
+    box-shadow: 0 0 20px rgba(var(--ion-color-primary-rgb), 0.4) !important;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+// Estilo para chip clicável de tipo de veículo
+ion-chip {
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  ion-icon[name="create-outline"] {
+    font-size: 0.9em;
+    margin-left: 4px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+  }
+
+  &:hover ion-icon[name="create-outline"] {
+    opacity: 1;
+  }
+}
+
+// Feedback visual durante drag
+.arvore-conteudo {
+  .arvore-secao {
+    &.drop-zone-active {
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(var(--ion-color-primary-rgb), 0.1) 0%,
+          rgba(var(--ion-color-primary-rgb), 0.05) 100%
+        );
+        border-radius: 12px;
+        pointer-events: none;
+        z-index: 1;
+      }
+    }
+  }
+}
+
+// Melhorias visuais para itens durante drag
+.arvore-item {
+  &.dragging {
+    background: linear-gradient(135deg, rgba(var(--ion-color-primary-rgb), 0.2) 0%, rgba(var(--ion-color-primary-rgb), 0.1) 100%) !important;
+    border-color: var(--ion-color-primary) !important;
+    box-shadow: 0 8px 24px rgba(var(--ion-color-primary-rgb), 0.3) !important;
+  }
+}
+
+// Zona de drop quando categoria está colapsada
+.drop-zone-categoria {
+  min-height: 60px;
+  margin: 8px 0;
+  border-radius: 12px;
+  border: 2px dashed transparent;
+  transition: all 0.3s ease;
+  position: relative;
+
+  &.drop-zone-active {
+    border-color: var(--ion-color-primary);
+    background: rgba(var(--ion-color-primary-rgb), 0.1);
+
+    &::before {
+      content: 'Solte aqui para mover para esta categoria';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--ion-color-primary);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95em;
+      z-index: 10;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+  }
+}
+
+// ============================================
+// CAMPOS DA INSPEÇÃO INICIAL - HERO BUTTON
+// ============================================
+
+.campos-inspecao-hero {
+  margin: 16px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+  box-shadow: 0 4px 20px rgba(var(--ion-color-primary-rgb), 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(var(--ion-color-primary-rgb), 0.4);
+
+    .hero-arrow {
+      transform: translateX(4px);
+    }
+
+    .hero-icon ion-icon {
+      transform: scale(1.1) rotate(5deg);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  .hero-background {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+
+    .hero-pattern {
+      position: absolute;
+      inset: -50%;
+      background: radial-gradient(circle at 30% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 40%);
+      animation: patternMove 8s ease-in-out infinite;
+    }
+  }
+
+  .hero-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 20px 24px;
+    gap: 16px;
+  }
+
+  .hero-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    ion-icon {
+      font-size: 28px;
+      color: white;
+      transition: transform 0.3s ease;
+    }
+  }
+
+  .hero-text {
+    flex: 1;
+
+    h3 {
+      margin: 0 0 4px 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      ion-icon {
+        font-size: 14px;
+      }
+    }
+  }
+
+  .hero-badge {
+    background: white;
+    color: var(--ion-color-primary);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .hero-arrow {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.7);
+    transition: transform 0.3s ease;
+  }
+}
+
+@keyframes patternMove {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(10px, -10px); }
+}
+
+// ============================================
+// MODAL CAMPOS - HEADER
+// ============================================
+
+.modal-campos-header {
+  ion-toolbar {
+    --background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+    --color: white;
+    padding: 8px 0;
+  }
+
+  .modal-header-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 16px;
+  }
+
+  .modal-header-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ion-icon {
+      font-size: 24px;
+      color: white;
+    }
+  }
+
+  .modal-header-text {
+    ion-title {
+      padding: 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 4px 0 0 0;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
+
+  .close-btn {
+    --color: white;
+    --background: rgba(255, 255, 255, 0.1);
+    --border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin-right: 8px;
+
+    ion-icon {
+      font-size: 24px;
+    }
+  }
+}
+
+// ============================================
+// MODAL CAMPOS - CONTENT
+// ============================================
+
+.modal-campos-content {
+  --background: #f5f7fa;
+  padding: 16px;
+
+  .add-campo-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+    border-radius: 14px;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(var(--ion-color-primary-rgb), 0.3);
+    margin-bottom: 20px;
+
+    ion-icon {
+      font-size: 24px;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(var(--ion-color-primary-rgb), 0.4);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+// ============================================
+// GRID DE CARDS DE CAMPOS
+// ============================================
+
+.campos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.campo-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    border-color: rgba(var(--ion-color-primary-rgb), 0.3);
+  }
+
+  &.campo-desabilitado {
+    opacity: 0.6;
+    background: #f8f9fa;
+
+    .campo-card-body h4 {
+      color: #999;
+    }
+  }
+
+  &.campo-editando {
+    border-color: var(--ion-color-primary);
+    box-shadow: 0 4px 20px rgba(var(--ion-color-primary-rgb), 0.3);
+    transform: scale(1.02);
+  }
+
+  .campo-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #eee;
+
+    .campo-ordem {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .campo-status {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fee2e2;
+
+      ion-icon {
+        font-size: 20px;
+        color: #ef4444;
+      }
+
+      &.ativo {
+        background: #dcfce7;
+
+        ion-icon {
+          color: #22c55e;
+        }
+      }
+    }
+  }
+
+  .campo-card-body {
+    padding: 16px;
+
+    .campo-label {
+      margin: 0 0 12px 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #333;
+      line-height: 1.3;
+    }
+
+    .campo-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: var(--ion-color-dark);
+
+        ion-icon {
+          font-size: 18px;
+          flex-shrink: 0;
+        }
+
+        span {
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  .campo-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #fafafa;
+    border-top: 1px solid #eee;
+
+    ion-toggle {
+      --background: #808080;
+      --background-checked: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+      --handle-background: white;
+      --handle-background-checked: white;
+    }
+
+    .campo-actions {
+      display: flex;
+      gap: 8px;
+
+      .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        ion-icon {
+          font-size: 18px;
+        }
+
+        &.edit {
+          background: rgba(128, 128, 128, 0.1);
+          color: #808080;
+
+          &:hover {
+            background: #808080;
+            color: white;
+          }
+        }
+
+        &.delete {
+          background: rgba(var(--ion-color-primary-rgb), 0.1);
+          color: var(--ion-color-primary);
+
+          &:hover {
+            background: var(--ion-color-primary);
+            color: white;
+          }
+        }
+      }
+    }
+  }
+
+  // Modo de Edição Inline
+  .campo-edit-mode {
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 2px solid var(--ion-color-primary);
+    border-radius: 16px;
+
+    .campo-edit-header {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(var(--ion-color-primary-rgb), 0.2);
+
+      h4 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--ion-color-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    .campo-edit-body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .edit-field {
+        label {
+          display: block;
+          margin-bottom: 8px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #333;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .edit-input {
+          --background: white;
+          --border-color: #ddd;
+          --border-width: 2px;
+          --border-style: solid;
+          --border-radius: 12px;
+          --padding-start: 16px;
+          --padding-end: 16px;
+          --padding-top: 12px;
+          --padding-bottom: 12px;
+          --color: #333;
+          border: 2px solid #ddd;
+          border-radius: 12px;
+          transition: all 0.3s ease;
+
+          &:focus-within {
+            border-color: var(--ion-color-primary);
+            box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.1);
+          }
+        }
+
+        .edit-select {
+          --background: white;
+          --border-color: #ddd;
+          --border-width: 2px;
+          --border-style: solid;
+          --border-radius: 12px;
+          --padding-start: 16px;
+          --padding-end: 16px;
+          --padding-top: 12px;
+          --padding-bottom: 12px;
+          border: 2px solid #ddd;
+          border-radius: 12px;
+          transition: all 0.3s ease;
+
+          &:focus-within {
+            border-color: var(--ion-color-primary);
+            box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.1);
+          }
+        }
+
+        // Botões de seleção de tipo de campo
+        .tipo-campo-options {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 8px;
+
+          .tipo-campo-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            background: white;
+            color: #555;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            ion-icon {
+              font-size: 18px;
+            }
+
+            &:hover {
+              border-color: var(--ion-color-primary);
+              color: var(--ion-color-primary);
+              background: rgba(var(--ion-color-primary-rgb), 0.05);
+            }
+
+            &.selected {
+              border-color: var(--ion-color-primary);
+              background: var(--ion-color-primary);
+              color: white;
+
+              ion-icon {
+                color: white;
+              }
+            }
+          }
+        }
+
+        &.checkbox-field {
+          margin-top: 8px;
+
+          ion-item {
+            --background: transparent;
+            --padding-start: 0;
+            --padding-end: 0;
+            --inner-padding-end: 0;
+            border-radius: 12px;
+            background: white;
+            border: 2px solid #ddd;
+            padding: 12px 16px;
+            transition: all 0.3s ease;
+
+            &:hover {
+              border-color: var(--ion-color-primary);
+            }
+
+            ion-label {
+              font-weight: 500;
+              color: #333;
+            }
+
+            ion-toggle {
+              --background: #ddd;
+              --background-checked: var(--ion-color-primary);
+              --handle-background: white;
+              --handle-background-checked: white;
+            }
+          }
+        }
+      }
+    }
+
+    .campo-edit-footer {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      justify-content: flex-end;
+
+      ion-button {
+        --border-radius: 12px;
+        --padding-start: 24px;
+        --padding-end: 24px;
+        --padding-top: 14px;
+        --padding-bottom: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-width: 120px;
+      }
+    }
+  }
+
+  // Modo Visualização
+  .campo-view-mode {
+    // Estilos já existentes aplicados ao card
+  }
+}
+
+// ============================================
+// TEMPO DE TELAS
+// ============================================
+
+.tempos-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+
+  .tempo-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+
+    ion-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .tempo-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .tempo-nome {
+        font-size: 14px;
+        font-weight: 600;
+        color: #ffffff;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .tempo-valor {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--ion-color-primary);
+      }
+    }
+  }
+}
+
+.tempo-total {
+  padding: 16px;
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  border-radius: 8px;
+  border-top: 2px solid var(--ion-color-primary);
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-top: 16px;
+
+  strong {
+    color: var(--ion-color-primary);
+  }
+}
+
+// ============================================
+// ESTADO VAZIO - CAMPOS
+// ============================================
+
+.empty-state-campos {
+  text-align: center;
+  padding: 60px 20px;
+
+  .empty-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(var(--ion-color-primary-rgb), 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px auto;
+
+    ion-icon {
+      font-size: 48px;
+      color: var(--ion-color-primary);
+    }
+  }
+
+  h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #333;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #666;
+  }
+}
+
+// Formulário inline para adicionar novo item
+.form-novo-item-card {
+  --background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 16px;
+
+  ion-card-header {
+    padding: 16px 16px 8px;
+    background: linear-gradient(135deg, #1a1a1a, #222);
+
+    ion-card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+
+      ion-icon {
+        color: #2dd36f;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  ion-card-content {
+    padding: 8px 16px 20px;
+  }
+}
+
+.form-step {
+  margin-bottom: 20px;
+}
+
+.form-step-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.form-step-options {
+  display: flex;
+  gap: 10px;
+
+  ion-button {
+    --border-radius: 10px;
+    flex: 1;
+    font-weight: 600;
+  }
+}
+
+.form-step-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  ion-chip {
+    --background: #252525;
+    --color: #ccc;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    ion-icon {
+      color: inherit;
+    }
+
+    &:hover {
+      --background: #333;
+    }
+  }
+}
+
+.form-input-dark {
+  --background: #111;
+  --color: #fff;
+  --placeholder-color: #666;
+  --border-radius: 10px;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  font-size: 16px;
+  margin-top: 4px;
+}
+
+.form-step-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #111;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.form-toggle-item {
+  --background: transparent;
+  --color: #e0e0e0;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --min-height: 48px;
+  font-size: 15px;
+
+  ion-icon {
+    font-size: 20px;
+    margin-right: 10px;
+  }
+}
+
+// Item sendo editado
+.item-editando {
+  --background: #222 !important;
+}
+
+// Formulário de edição inline abaixo do item
+.edit-item-inline {
+  background: #111;
+  border-top: 1px solid #2a2a2a;
+  border-bottom: 1px solid #2a2a2a;
+  padding: 16px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 800px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+}
+
+.form-opcoes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-opcao-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #222;
+  border-radius: 10px;
+  padding: 8px 8px 8px 16px;
+  color: #e0e0e0;
+  font-size: 15px;
+}
+
+.form-opcao-adicionar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  ion-input {
+    flex: 1;
+  }
+
+  ion-button {
+    --border-radius: 10px;
+    height: 42px;
+    width: 42px;
+    flex-shrink: 0;
+  }
+}
+
+.form-step-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+
+  ion-button {
+    flex: 1;
+    --border-radius: 12px;
+    font-weight: 600;
+    height: 46px;
   }
 }

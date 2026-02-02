@@ -68,13 +68,13 @@
         <ion-label>Métricas</ion-label>
         <ion-icon name="analytics"></ion-icon>
       </ion-segment-button>
-      <ion-segment-button value="relatorios">
-        <ion-label>Relatórios</ion-label>
-        <ion-icon name="document-text"></ion-icon>
-      </ion-segment-button>
       <ion-segment-button value="configuracao">
-        <ion-label>Configurar Itens</ion-label>
-        <ion-icon name="settings"></ion-icon>
+        <ion-label>Itens por Veículo</ion-label>
+        <ion-icon name="car-sport"></ion-icon>
+      </ion-segment-button>
+      <ion-segment-button value="pneus">
+        <ion-label>Pneus</ion-label>
+        <ion-icon name="ellipse-outline"></ion-icon>
       </ion-segment-button>
     </ion-segment>
 
@@ -82,19 +82,10 @@
     <!-- ABA: HISTÓRICO -->
     <!-- ========================================= -->
     <div *ngIf="abaSelecionada === 'historico'">
-      <!-- Estatísticas - Checklist Simples -->
-      <div class="stats-container animate-in-left" *ngIf="tipoChecklistSelecionado === 'simples'">
+      <!-- Estatísticas -->
+      <div class="stats-container animate-in-left">
         <ion-card class="stat-card">
           <ion-card-content>
-            <ion-icon name="document-text" color="primary"></ion-icon>
-            <h2>{{ totalChecklists }}</h2>
-            <p>Total</p>
-          </ion-card-content>
-        </ion-card>
-
-        <ion-card class="stat-card">
-          <ion-card-content>
-            <ion-icon name="today" color="success"></ion-icon>
             <h2>{{ checklistsHoje }}</h2>
             <p>Hoje</p>
           </ion-card-content>
@@ -102,36 +93,15 @@
 
         <ion-card class="stat-card">
           <ion-card-content>
-            <ion-icon name="calendar" color="warning"></ion-icon>
             <h2>{{ checklistsSemana }}</h2>
-            <p>7 Dias</p>
+            <p>Semana</p>
           </ion-card-content>
         </ion-card>
-      </div>
 
-      <!-- Estatísticas - Checklist Completo -->
-      <div class="stats-container animate-in-right" *ngIf="tipoChecklistSelecionado === 'completo'">
         <ion-card class="stat-card">
           <ion-card-content>
-            <ion-icon name="document-text" color="primary"></ion-icon>
-            <h2>{{ totalChecklistsCompletos }}</h2>
+            <h2>{{ totalChecklists }}</h2>
             <p>Total</p>
-          </ion-card-content>
-        </ion-card>
-
-        <ion-card class="stat-card">
-          <ion-card-content>
-            <ion-icon name="today" color="success"></ion-icon>
-            <h2>{{ checklistsCompletosHoje }}</h2>
-            <p>Hoje</p>
-          </ion-card-content>
-        </ion-card>
-
-        <ion-card class="stat-card">
-          <ion-card-content>
-            <ion-icon name="calendar" color="warning"></ion-icon>
-            <h2>{{ checklistsCompletosSemana }}</h2>
-            <p>7 Dias</p>
           </ion-card-content>
         </ion-card>
       </div>
@@ -142,20 +112,30 @@
           <ion-card-title>Filtros</ion-card-title>
         </ion-card-header>
         <ion-card-content>
-          <!-- Busca por Placa -->
-          <ion-searchbar placeholder="Buscar por placa" [(ngModel)]="filtroPlaca" (ionInput)="buscarPorPlaca($event)"
-            debounce="500"></ion-searchbar>
+          <div class="filtros-container">
+            <!-- Por Placa -->
+            <div class="filtro-box">
+              <span class="filtro-titulo">Por Placa</span>
+              <ion-searchbar placeholder="Buscar placa..." [(ngModel)]="filtroPlaca" (ionInput)="buscarPorPlaca($event)"
+                debounce="500"></ion-searchbar>
+            </div>
 
-          <!-- Filtro de Data -->
-          <ion-item>
-            <ion-label position="stacked">Data Inicial</ion-label>
-            <ion-input type="date" [(ngModel)]="filtroDataInicio" (ionChange)="aplicarFiltros()"></ion-input>
-          </ion-item>
+            <!-- Por Data -->
+            <div class="filtro-box">
+              <span class="filtro-titulo">Por Data</span>
+              <div class="data-inputs">
+                <input type="date" [(ngModel)]="filtroDataInicio" (change)="aplicarFiltros()" placeholder="Data Inicial">
+                <input type="date" [(ngModel)]="filtroDataFim" (change)="aplicarFiltros()" placeholder="Data Final">
+              </div>
+            </div>
 
-          <ion-item>
-            <ion-label position="stacked">Data Final</ion-label>
-            <ion-input type="date" [(ngModel)]="filtroDataFim" (ionChange)="aplicarFiltros()"></ion-input>
-          </ion-item>
+            <!-- Por Local -->
+            <div class="filtro-box">
+              <span class="filtro-titulo">Por Local</span>
+              <ion-searchbar placeholder="Buscar local..." [(ngModel)]="filtroLocal" (ionInput)="buscarPorLocal($event)"
+                debounce="500"></ion-searchbar>
+            </div>
+          </div>
 
           <ion-button expand="block" fill="outline" color="medium" (click)="limparFiltros()" class="clear-filters-btn">
             <ion-icon slot="start" name="close-circle"></ion-icon>
@@ -218,15 +198,15 @@
         *ngIf="!carregando && tipoChecklistSelecionado === 'simples' && checklistsFiltrados.length > 0">
         <ion-item-sliding *ngFor="let checklist of checklistsFiltrados">
           <ion-item button (click)="verDetalhes(checklist)">
-            <ion-icon name="car-sport" slot="start" color="primary"></ion-icon>
-            <ion-label>
-              <h2><strong>{{ checklist.placa }}</strong><span *ngIf="checklist.local"> - {{ checklist.local }}</span></h2>
-              <p>KM: {{ checklist.km_inicial }} | Combustível: {{ checklist.nivel_combustivel }}</p>
-              <p *ngIf="checklist.usuario_nome"><ion-icon name="person"></ion-icon> Inspetor: {{ checklist.usuario_nome
-                }}</p>
-              <p class="data-texto">{{ formatarData(checklist.data_realizacao) }}</p>
-            </ion-label>
-            <ion-badge slot="end" color="primary">ID: {{ checklist.id }}</ion-badge>
+            <div class="checklist-row">
+              <div class="col-icone">
+                <ion-icon name="car-sport" color="primary"></ion-icon>
+              </div>
+              <div class="col-placa">{{ checklist.placa }}</div>
+              <div class="col-local">{{ checklist.local || '-' }}</div>
+              <div class="col-inspetor">{{ checklist.usuario_nome || '-' }}</div>
+              <div class="col-data">{{ formatarData(checklist.data_realizacao) }}</div>
+            </div>
           </ion-item>
 
           <ion-item-options side="end">
@@ -242,15 +222,15 @@
         *ngIf="!carregando && tipoChecklistSelecionado === 'completo' && checklistsCompletosFiltrados.length > 0">
         <ion-item-sliding *ngFor="let checklist of checklistsCompletosFiltrados">
           <ion-item button (click)="verDetalhesCompleto(checklist)">
-            <ion-icon name="clipboard" slot="start" color="success"></ion-icon>
-            <ion-label>
-              <h2><strong>{{ checklist.placa }}</strong><span *ngIf="checklist.local"> - {{ checklist.local }}</span></h2>
-              <p>KM: {{ checklist.km_inicial }} | Combustível: {{ checklist.nivel_combustivel }}</p>
-              <p *ngIf="checklist.usuario_nome"><ion-icon name="person"></ion-icon> Inspetor: {{ checklist.usuario_nome
-                }}</p>
-              <p class="data-texto">{{ formatarData(checklist.data_realizacao) }}</p>
-            </ion-label>
-            <ion-badge slot="end" color="success">ID: {{ checklist.id }}</ion-badge>
+            <div class="checklist-row">
+              <div class="col-icone">
+                <ion-icon name="clipboard" color="success"></ion-icon>
+              </div>
+              <div class="col-placa">{{ checklist.placa }}</div>
+              <div class="col-local">{{ checklist.local || '-' }}</div>
+              <div class="col-inspetor">{{ checklist.usuario_nome || '-' }}</div>
+              <div class="col-data">{{ formatarData(checklist.data_realizacao) }}</div>
+            </div>
           </ion-item>
 
           <ion-item-options side="end">
@@ -285,6 +265,14 @@
         </ion-segment-button>
       </ion-segment>
 
+      <!-- Busca por Placa -->
+      <ion-searchbar
+        placeholder="Buscar por placa..."
+        [(ngModel)]="filtroPlacaAnomalia"
+        (ionInput)="filtrarAnomalias()"
+        debounce="300">
+      </ion-searchbar>
+
       <!-- Loading -->
       <div *ngIf="carregandoAnomalias" class="loading-container">
         <ion-spinner name="crescent" color="danger"></ion-spinner>
@@ -300,15 +288,15 @@
       </ion-card>
 
       <!-- Lista vazia -->
-      <div *ngIf="!carregandoAnomalias && !erroAnomalias && anomalias.length === 0" class="empty-state animate-in">
+      <div *ngIf="!carregandoAnomalias && !erroAnomalias && anomaliasFiltradas.length === 0" class="empty-state animate-in">
         <ion-icon name="checkmark-circle-outline" color="success"></ion-icon>
         <h3>Nenhuma anomalia encontrada</h3>
-        <p>Todos os veículos estão em bom estado!</p>
+        <p>{{ filtroPlacaAnomalia ? 'Nenhum resultado para esta busca' : 'Todos os veículos estão em bom estado!' }}</p>
       </div>
 
       <!-- Lista de Anomalias por Placa -->
-      <div *ngIf="!carregandoAnomalias && anomalias.length > 0">
-        <ion-card *ngFor="let veiculo of anomalias" class="anomalia-card">
+      <div *ngIf="!carregandoAnomalias && anomaliasFiltradas.length > 0">
+        <ion-card *ngFor="let veiculo of anomaliasFiltradas" class="anomalia-card">
           <ion-card-header [style.background]="'linear-gradient(135deg, #eb445a 0%, #c1365d 100%)'">
             <ion-card-title style="color: white; display: flex; align-items: center; justify-content: space-between;">
               <span>
@@ -456,42 +444,37 @@
 
       <!-- Resumo Geral -->
       <ion-row>
-        <ion-col size="6" size-md="3">
+        <ion-col size="12" size-md="4">
           <ion-card color="primary">
             <ion-card-content style="text-align: center; padding: 16px;">
-              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ totalChecklists }}</h2>
-              <p style="color: white; margin: 0; font-size: 0.8em;">Checklists</p>
+              <ion-icon name="people" style="font-size: 32px; color: white; margin-bottom: 8px;"></ion-icon>
+              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ metricas.totalUsuarios }}</h2>
+              <p style="color: white; margin: 0; font-size: 0.9em;">Usuários</p>
             </ion-card-content>
           </ion-card>
         </ion-col>
-        <ion-col size="6" size-md="3">
-          <ion-card color="warning">
-            <ion-card-content style="text-align: center; padding: 16px;">
-              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ anomalias.length }}</h2>
-              <p style="color: white; margin: 0; font-size: 0.8em;">Veíc. c/ Prob.</p>
-            </ion-card-content>
-          </ion-card>
-        </ion-col>
-        <ion-col size="6" size-md="3">
+        <ion-col size="12" size-md="4">
           <ion-card color="success">
             <ion-card-content style="text-align: center; padding: 16px;">
-              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ checklistsHoje }}</h2>
-              <p style="color: white; margin: 0; font-size: 0.8em;">Hoje</p>
+              <ion-icon name="car-sport" style="font-size: 32px; color: white; margin-bottom: 8px;"></ion-icon>
+              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ metricas.totalVeiculos }}</h2>
+              <p style="color: white; margin: 0; font-size: 0.9em;">Veículos</p>
             </ion-card-content>
           </ion-card>
         </ion-col>
-        <ion-col size="6" size-md="3">
+        <ion-col size="12" size-md="4">
           <ion-card color="tertiary">
             <ion-card-content style="text-align: center; padding: 16px;">
-              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ checklistsSemana }}</h2>
-              <p style="color: white; margin: 0; font-size: 0.8em;">Semana</p>
+              <ion-icon name="location" style="font-size: 32px; color: white; margin-bottom: 8px;"></ion-icon>
+              <h2 style="color: white; margin: 8px 0; font-size: 24px;">{{ metricas.totalLocais }}</h2>
+              <p style="color: white; margin: 0; font-size: 0.9em;">Locais</p>
             </ion-card-content>
           </ion-card>
         </ion-col>
       </ion-row>
 
       <!-- Seletor de Gráficos -->
-      <ion-segment [(ngModel)]="graficoSelecionado" (ionChange)="mudarGrafico($event)" scrollable mode="md"
+      <ion-segment [(ngModel)]="graficoSelecionado" (ionChange)="mudarGrafico($event)" mode="md"
         class="chart-segment">
         <ion-segment-button value="usuarios">
           <ion-label>Usuários</ion-label>
@@ -501,15 +484,6 @@
         </ion-segment-button>
         <ion-segment-button value="locais">
           <ion-label>Locais</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="veiculos_anomalias">
-          <ion-label>Veic. c/ Prob.</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="tipos_anomalias">
-          <ion-label>Tipos</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="status_anomalias">
-          <ion-label>Status</ion-label>
         </ion-segment-button>
       </ion-segment>
 
@@ -582,183 +556,833 @@
     </div>
 
     <!-- ========================================= -->
-    <!-- ABA: RELATÓRIOS -->
+    <!-- ABA: ITENS POR TIPO DE VEÍCULO -->
     <!-- ========================================= -->
-    <div *ngIf="abaSelecionada === 'relatorios'" class="aba-relatorios">
-      <ion-card color="tertiary">
-        <ion-card-header>
-          <ion-card-title>
-            <ion-icon name="document-text"></ion-icon>
-            Exportar Relatórios
-          </ion-card-title>
-        </ion-card-header>
+    <div *ngIf="abaSelecionada === 'configuracao'">
+      <ion-card color="primary">
         <ion-card-content>
-          <p>Gere relatórios personalizados do sistema de inspeção veicular.</p>
+          <ion-icon name="car-sport"></ion-icon>
+          Visualize os itens de inspeção configurados para cada tipo de veículo
         </ion-card-content>
       </ion-card>
 
-      <!-- Relatório: Veículos sem Checklist -->
-      <ion-card>
+      <!-- Botão para Campos da Inspeção Inicial (Global) -->
+      <div class="campos-inspecao-hero" (click)="abrirModalCamposInspecaoInicial()">
+        <div class="hero-background">
+          <div class="hero-pattern"></div>
+        </div>
+        <div class="hero-content">
+          <div class="hero-icon">
+            <ion-icon name="document-text-outline"></ion-icon>
+          </div>
+          <div class="hero-text">
+            <h3>Campos da Inspeção Inicial</h3>
+            <p><ion-icon name="git-branch-outline"></ion-icon> Configuração base para todos os veículos</p>
+          </div>
+          <div class="hero-badge" *ngIf="camposInspecao.length > 0">
+            <span>{{ camposInspecao.length }}</span>
+          </div>
+          <ion-icon name="chevron-forward-outline" class="hero-arrow"></ion-icon>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="carregandoTiposVeiculo" class="loading-container">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <p>Carregando tipos de veículos...</p>
+      </div>
+
+      <!-- Cards de Tipos de Veículos -->
+      <div *ngIf="!carregandoTiposVeiculo" class="tipos-veiculo-grid">
+        <ion-card *ngFor="let tipo of tiposVeiculo"
+                  [color]="tipoVeiculoSelecionadoConfig === tipo.id ? 'primary' : (tipo.ativo ? 'light' : '')"
+                  (click)="tipo.ativo && selecionarTipoVeiculoConfig(tipo.id)"
+                  class="tipo-veiculo-card"
+                  [class.tipo-inativo]="!tipo.ativo"
+                  [button]="tipo.ativo">
+          <ion-card-content style="text-align: center; padding: 16px;">
+            <ion-icon [name]="tipo.icone || 'car-outline'"
+                      style="font-size: 48px; margin-bottom: 8px;"
+                      [color]="tipoVeiculoSelecionadoConfig === tipo.id ? 'light' : (tipo.ativo ? 'primary' : 'medium')"></ion-icon>
+            <h2 style="margin: 8px 0; font-weight: bold;"
+                [style.color]="tipoVeiculoSelecionadoConfig === tipo.id ? 'white' : (tipo.ativo ? 'inherit' : 'var(--ion-color-medium)')">
+              {{ tipo.nome }}
+            </h2>
+            <ion-badge [color]="tipo.ativo ? 'success' : 'medium'">
+              {{ tipo.ativo ? 'Ativo' : 'Inativo' }}
+            </ion-badge>
+            <p style="margin-top: 8px; font-size: 0.9em;"
+               [style.color]="tipoVeiculoSelecionadoConfig === tipo.id ? 'rgba(255,255,255,0.8)' : 'var(--ion-color-medium)'">
+              <span *ngIf="tipo.ativo && itensPorTipoVeiculo[tipo.id]">
+                {{ getItensHabilitadosTipo(tipo.id) }} / {{ getTotalItensTipo(tipo.id) }} itens
+              </span>
+              <span *ngIf="tipo.ativo && !itensPorTipoVeiculo[tipo.id]">
+                Clique para ver itens
+              </span>
+            </p>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Loading itens do tipo selecionado -->
+      <div *ngIf="carregandoItensPorTipo" class="loading-container" style="margin-top: 20px;">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <p>Carregando itens...</p>
+      </div>
+
+      <!-- Itens do Tipo de Veículo Selecionado -->
+      <div *ngIf="tipoVeiculoSelecionadoConfig && itensPorTipoVeiculo[tipoVeiculoSelecionadoConfig] && !carregandoItensPorTipo">
+        <ion-card color="tertiary" style="margin-top: 20px;">
+          <ion-card-header>
+            <ion-card-title>
+              <ion-icon [name]="getIconeTipoVeiculoSelecionado()"></ion-icon>
+              Itens de {{ getNomeTipoVeiculoSelecionado() }}
+            </ion-card-title>
+            <ion-card-subtitle>
+              {{ getItensHabilitadosTipo(tipoVeiculoSelecionadoConfig) }} itens habilitados de {{ getTotalItensTipo(tipoVeiculoSelecionadoConfig) }} total
+            </ion-card-subtitle>
+          </ion-card-header>
+        </ion-card>
+
+        <!-- Itens agrupados por categoria -->
+        <ng-container *ngFor="let categoria of categorias">
+          <ion-card *ngIf="getItensPorCategoria(tipoVeiculoSelecionadoConfig!)[categoria.key] as itensCategoria">
+            <ion-card-header *ngIf="itensCategoria.length > 0"
+              [style.background]="'linear-gradient(135deg, ' + categoria.color + ' 0%, ' + categoria.color + 'dd 100%)'">
+              <ion-card-title style="color: white;">
+                <ion-icon [name]="categoria.icon"></ion-icon>
+                {{ categoria.label }}
+                <ion-badge color="light">
+                  {{ itensCategoria.length }}
+                </ion-badge>
+              </ion-card-title>
+            </ion-card-header>
+            <ion-card-content *ngIf="itensCategoria.length > 0">
+              <ion-list>
+                <ng-container *ngFor="let item of itensCategoria">
+                  <ion-item button (click)="abrirEdicaoItem(item)" [class.item-editando]="editandoItemId === item.id">
+                    <ion-icon [name]="item.habilitado ? 'checkmark-circle' : 'close-circle'"
+                              slot="start"
+                              [color]="item.habilitado ? 'success' : 'danger'"></ion-icon>
+                    <ion-label>
+                      <h3>{{ item.nome_item }}</h3>
+                      <p>
+                        <ion-badge *ngIf="item.tipo_veiculo_id" color="tertiary" style="font-size: 0.7em; margin-right: 4px;">Específico</ion-badge>
+                        <ion-badge [color]="item.tipo_resposta === 'conforme_nao_conforme' ? 'success' : item.tipo_resposta === 'texto' ? 'primary' : item.tipo_resposta === 'numero' ? 'tertiary' : item.tipo_resposta === 'apenas_foto' ? 'secondary' : 'warning'"
+                                   style="font-size: 0.7em; margin-right: 4px;">
+                          {{ item.tipo_resposta === 'conforme_nao_conforme' ? 'C/NC' : item.tipo_resposta === 'texto' ? 'Texto' : item.tipo_resposta === 'numero' ? 'Número' : item.tipo_resposta === 'lista_opcoes' ? 'Lista' : item.tipo_resposta === 'apenas_foto' ? 'Foto' : 'C/NC' }}
+                        </ion-badge>
+                        <ion-badge *ngIf="item.tem_foto" color="primary" style="font-size: 0.7em; margin-right: 4px;">Foto</ion-badge>
+                        <ion-badge *ngIf="item.obrigatorio" color="warning" style="font-size: 0.7em;">Obrigatório</ion-badge>
+                      </p>
+                    </ion-label>
+                    <ion-icon name="chevron-down-outline" slot="end" color="medium"
+                              [style.transform]="editandoItemId === item.id ? 'rotate(180deg)' : 'none'"
+                              style="transition: transform 0.2s; font-size: 18px;"></ion-icon>
+                  </ion-item>
+
+                  <!-- Formulário de edição inline -->
+                  <div class="edit-item-inline" *ngIf="editandoItemId === item.id">
+                    <div class="form-step">
+                      <label class="form-step-label">Nome do item</label>
+                      <ion-input [(ngModel)]="editItemNome"
+                                 placeholder="Nome do item"
+                                 fill="outline"
+                                 class="form-input-dark">
+                      </ion-input>
+                    </div>
+
+                    <div class="form-step">
+                      <label class="form-step-label">Tipo de resposta</label>
+                      <div class="form-step-chips">
+                        <ion-chip [color]="editItemTipoResposta === 'conforme_nao_conforme' ? 'success' : 'medium'"
+                                  [outline]="editItemTipoResposta !== 'conforme_nao_conforme'"
+                                  (click)="editItemTipoResposta = 'conforme_nao_conforme'">
+                          <ion-icon name="checkmark-done-outline"></ion-icon>
+                          <ion-label>Conforme / Não conforme</ion-label>
+                        </ion-chip>
+                        <ion-chip [color]="editItemTipoResposta === 'texto' ? 'primary' : 'medium'"
+                                  [outline]="editItemTipoResposta !== 'texto'"
+                                  (click)="editItemTipoResposta = 'texto'">
+                          <ion-icon name="text-outline"></ion-icon>
+                          <ion-label>Texto</ion-label>
+                        </ion-chip>
+                        <ion-chip [color]="editItemTipoResposta === 'numero' ? 'tertiary' : 'medium'"
+                                  [outline]="editItemTipoResposta !== 'numero'"
+                                  (click)="editItemTipoResposta = 'numero'">
+                          <ion-icon name="calculator-outline"></ion-icon>
+                          <ion-label>Número</ion-label>
+                        </ion-chip>
+                        <ion-chip [color]="editItemTipoResposta === 'lista_opcoes' ? 'warning' : 'medium'"
+                                  [outline]="editItemTipoResposta !== 'lista_opcoes'"
+                                  (click)="editItemTipoResposta = 'lista_opcoes'">
+                          <ion-icon name="list-outline"></ion-icon>
+                          <ion-label>Lista de opções</ion-label>
+                        </ion-chip>
+                        <ion-chip [color]="editItemTipoResposta === 'apenas_foto' ? 'secondary' : 'medium'"
+                                  [outline]="editItemTipoResposta !== 'apenas_foto'"
+                                  (click)="editItemTipoResposta = 'apenas_foto'">
+                          <ion-icon name="camera-outline"></ion-icon>
+                          <ion-label>Apenas foto</ion-label>
+                        </ion-chip>
+                      </div>
+                    </div>
+
+                    <div class="form-step" *ngIf="editItemTipoResposta === 'lista_opcoes'">
+                      <label class="form-step-label">Opções da lista</label>
+                      <div class="form-opcoes-lista">
+                        <div class="form-opcao-item" *ngFor="let opcao of editItemOpcoesResposta; let i = index">
+                          <span>{{ opcao }}</span>
+                          <ion-button fill="clear" color="danger" size="small" (click)="removerOpcaoRespostaEdit(i)">
+                            <ion-icon name="close-circle" slot="icon-only"></ion-icon>
+                          </ion-button>
+                        </div>
+                        <div class="form-opcao-adicionar">
+                          <ion-input [(ngModel)]="editItemNovaOpcao"
+                                     placeholder="Digite uma opção"
+                                     fill="outline"
+                                     class="form-input-dark"
+                                     (keyup.enter)="adicionarOpcaoRespostaEdit()">
+                          </ion-input>
+                          <ion-button fill="solid" color="primary" size="small" (click)="adicionarOpcaoRespostaEdit()" [disabled]="!editItemNovaOpcao.trim()">
+                            <ion-icon name="add" slot="icon-only"></ion-icon>
+                          </ion-button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-step">
+                      <label class="form-step-label">Opções</label>
+                      <div class="form-step-toggles">
+                        <ion-item lines="none" class="form-toggle-item">
+                          <ion-icon name="power-outline" slot="start" color="success"></ion-icon>
+                          <ion-label>Habilitado</ion-label>
+                          <ion-toggle [(ngModel)]="editItemHabilitado" slot="end" color="success"></ion-toggle>
+                        </ion-item>
+                        <ion-item lines="none" class="form-toggle-item" *ngIf="editItemTipoResposta !== 'apenas_foto'">
+                          <ion-icon name="camera-outline" slot="start" color="primary"></ion-icon>
+                          <ion-label>Tem foto</ion-label>
+                          <ion-toggle [(ngModel)]="editItemTemFoto" slot="end" color="primary"></ion-toggle>
+                        </ion-item>
+                        <ion-item lines="none" class="form-toggle-item">
+                          <ion-icon name="alert-circle-outline" slot="start" color="warning"></ion-icon>
+                          <ion-label>Obrigatório</ion-label>
+                          <ion-toggle [(ngModel)]="editItemObrigatorio" slot="end" color="warning"></ion-toggle>
+                        </ion-item>
+                      </div>
+                    </div>
+
+                    <div class="form-step-actions">
+                      <ion-button fill="outline" color="medium" (click)="fecharEdicaoItem()">
+                        Cancelar
+                      </ion-button>
+                      <ion-button color="primary" (click)="salvarEdicaoItem()" [disabled]="!editItemNome.trim()">
+                        <ion-icon name="save-outline" slot="start"></ion-icon>
+                        Salvar
+                      </ion-button>
+                    </div>
+                  </div>
+                </ng-container>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+        </ng-container>
+
+        <!-- Mensagem se não houver itens -->
+        <ion-card *ngIf="getTotalItensTipo(tipoVeiculoSelecionadoConfig) === 0" color="warning">
+          <ion-card-content>
+            <ion-icon name="alert-circle"></ion-icon>
+            Nenhum item configurado para este tipo de veículo
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Mensagem para selecionar um tipo -->
+      <ion-card *ngIf="!tipoVeiculoSelecionadoConfig && !carregandoTiposVeiculo" color="medium" style="margin-top: 20px;">
+        <ion-card-content style="text-align: center;">
+          <ion-icon name="hand-left-outline" style="font-size: 48px; margin-bottom: 16px;"></ion-icon>
+          <h3>Selecione um tipo de veículo</h3>
+          <p>Clique em um dos tipos acima para visualizar seus itens de inspeção</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Botão Adicionar Novo Item -->
+      <ion-button expand="block" color="success" style="margin-top: 20px;" (click)="mostrarFormNovoItem = !mostrarFormNovoItem" *ngIf="!mostrarFormNovoItem">
+        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+        Adicionar Novo Item
+      </ion-button>
+
+      <!-- Formulário inline para novo item -->
+      <ion-card *ngIf="mostrarFormNovoItem" class="form-novo-item-card" style="margin-top: 20px;">
         <ion-card-header>
-          <ion-card-title>
-            <ion-icon name="car-outline" color="warning"></ion-icon>
-            Veículos sem Checklist
+          <ion-card-title style="display: flex; align-items: center; justify-content: space-between;">
+            <span>
+              <ion-icon name="add-circle-outline" style="margin-right: 8px;"></ion-icon>
+              Novo Item
+            </span>
+            <ion-button fill="clear" color="medium" size="small" (click)="cancelarFormNovoItem()">
+              <ion-icon name="close" slot="icon-only"></ion-icon>
+            </ion-button>
           </ion-card-title>
-          <ion-card-subtitle>
-            Lista de veículos cadastrados que não realizaram checklist
-          </ion-card-subtitle>
         </ion-card-header>
+
         <ion-card-content>
-          <p>Este relatório identifica todos os veículos cadastrados no sistema que ainda não possuem nenhum checklist realizado.</p>
+          <!-- Step 1: Tipo do item -->
+          <div class="form-step">
+            <label class="form-step-label">Tipo do item</label>
+            <div class="form-step-options">
+              <ion-button [fill]="novoItemTipo === 'geral' ? 'solid' : 'outline'" color="primary" size="small" (click)="novoItemTipo = 'geral'; novoItemTipoVeiculoId = null">
+                <ion-icon name="globe-outline" slot="start"></ion-icon>
+                Geral
+              </ion-button>
+              <ion-button [fill]="novoItemTipo === 'especifico' ? 'solid' : 'outline'" color="primary" size="small" (click)="novoItemTipo = 'especifico'">
+                <ion-icon name="car-outline" slot="start"></ion-icon>
+                Específico
+              </ion-button>
+            </div>
+          </div>
 
-          <ion-button
-            expand="block"
-            color="success"
-            (click)="exportarVeiculosSemChecklist()"
-            [disabled]="carregandoRelatorio">
-            <ion-icon slot="start" name="download"></ion-icon>
-            {{ carregandoRelatorio ? 'Gerando...' : 'Exportar para Excel' }}
-          </ion-button>
+          <!-- Step 2: Categoria -->
+          <div class="form-step">
+            <label class="form-step-label">Categoria</label>
+            <div class="form-step-chips">
+              <ion-chip *ngFor="let cat of categorias"
+                        [color]="novoItemCategoria === cat.key ? 'primary' : 'medium'"
+                        [outline]="novoItemCategoria !== cat.key"
+                        (click)="novoItemCategoria = cat.key">
+                <ion-icon [name]="cat.icon"></ion-icon>
+                <ion-label>{{ cat.label }}</ion-label>
+              </ion-chip>
+            </div>
+          </div>
 
-          <div *ngIf="carregandoRelatorio" class="loading-container" style="margin-top: 16px;">
-            <ion-spinner name="crescent" color="success"></ion-spinner>
-            <p>Processando relatório...</p>
+          <!-- Step 3: Tipo de veículo (se específico) -->
+          <div class="form-step" *ngIf="novoItemTipo === 'especifico'">
+            <label class="form-step-label">Tipo de Veículo</label>
+            <div class="form-step-chips">
+              <ion-chip *ngFor="let tipo of tiposVeiculo"
+                        [color]="novoItemTipoVeiculoId === tipo.id ? 'tertiary' : 'medium'"
+                        [outline]="novoItemTipoVeiculoId !== tipo.id"
+                        (click)="novoItemTipoVeiculoId = tipo.id">
+                <ion-icon [name]="tipo.icone || 'car-outline'"></ion-icon>
+                <ion-label>{{ tipo.nome }}</ion-label>
+              </ion-chip>
+            </div>
+          </div>
+
+          <!-- Step 3b: Tipos associados (se geral) -->
+          <div class="form-step" *ngIf="novoItemTipo === 'geral'">
+            <label class="form-step-label">Tipos de veículo associados</label>
+            <div class="form-step-chips">
+              <ion-chip *ngFor="let tipo of tiposVeiculo"
+                        [color]="novoItemTiposAssociados.includes(tipo.id) ? 'tertiary' : 'medium'"
+                        [outline]="!novoItemTiposAssociados.includes(tipo.id)"
+                        (click)="toggleTipoAssociado(tipo.id)">
+                <ion-icon [name]="tipo.icone || 'car-outline'"></ion-icon>
+                <ion-label>{{ tipo.nome }}</ion-label>
+                <ion-icon name="checkmark" *ngIf="novoItemTiposAssociados.includes(tipo.id)"></ion-icon>
+              </ion-chip>
+            </div>
+          </div>
+
+          <!-- Step 4: Nome do item -->
+          <div class="form-step">
+            <label class="form-step-label">Nome do item</label>
+            <ion-input [(ngModel)]="novoItemNome"
+                       placeholder="Ex: Verificar nível do óleo"
+                       fill="outline"
+                       class="form-input-dark">
+            </ion-input>
+          </div>
+
+          <!-- Step 5: Tipo de resposta -->
+          <div class="form-step">
+            <label class="form-step-label">Tipo de resposta</label>
+            <div class="form-step-chips">
+              <ion-chip [color]="novoItemTipoResposta === 'conforme_nao_conforme' ? 'success' : 'medium'"
+                        [outline]="novoItemTipoResposta !== 'conforme_nao_conforme'"
+                        (click)="novoItemTipoResposta = 'conforme_nao_conforme'">
+                <ion-icon name="checkmark-done-outline"></ion-icon>
+                <ion-label>Conforme / Não conforme</ion-label>
+              </ion-chip>
+              <ion-chip [color]="novoItemTipoResposta === 'texto' ? 'primary' : 'medium'"
+                        [outline]="novoItemTipoResposta !== 'texto'"
+                        (click)="novoItemTipoResposta = 'texto'">
+                <ion-icon name="text-outline"></ion-icon>
+                <ion-label>Texto</ion-label>
+              </ion-chip>
+              <ion-chip [color]="novoItemTipoResposta === 'numero' ? 'tertiary' : 'medium'"
+                        [outline]="novoItemTipoResposta !== 'numero'"
+                        (click)="novoItemTipoResposta = 'numero'">
+                <ion-icon name="calculator-outline"></ion-icon>
+                <ion-label>Número</ion-label>
+              </ion-chip>
+              <ion-chip [color]="novoItemTipoResposta === 'lista_opcoes' ? 'warning' : 'medium'"
+                        [outline]="novoItemTipoResposta !== 'lista_opcoes'"
+                        (click)="novoItemTipoResposta = 'lista_opcoes'">
+                <ion-icon name="list-outline"></ion-icon>
+                <ion-label>Lista de opções</ion-label>
+              </ion-chip>
+              <ion-chip [color]="novoItemTipoResposta === 'apenas_foto' ? 'secondary' : 'medium'"
+                        [outline]="novoItemTipoResposta !== 'apenas_foto'"
+                        (click)="novoItemTipoResposta = 'apenas_foto'">
+                <ion-icon name="camera-outline"></ion-icon>
+                <ion-label>Apenas foto</ion-label>
+              </ion-chip>
+            </div>
+          </div>
+
+          <!-- Step 5b: Opções da lista (se tipo = lista_opcoes) -->
+          <div class="form-step" *ngIf="novoItemTipoResposta === 'lista_opcoes'">
+            <label class="form-step-label">Opções da lista</label>
+            <div class="form-opcoes-lista">
+              <div class="form-opcao-item" *ngFor="let opcao of novoItemOpcoesResposta; let i = index">
+                <span>{{ opcao }}</span>
+                <ion-button fill="clear" color="danger" size="small" (click)="removerOpcaoResposta(i)">
+                  <ion-icon name="close-circle" slot="icon-only"></ion-icon>
+                </ion-button>
+              </div>
+              <div class="form-opcao-adicionar">
+                <ion-input [(ngModel)]="novoItemNovaOpcao"
+                           placeholder="Digite uma opção"
+                           fill="outline"
+                           class="form-input-dark"
+                           (keyup.enter)="adicionarOpcaoResposta()">
+                </ion-input>
+                <ion-button fill="solid" color="primary" size="small" (click)="adicionarOpcaoResposta()" [disabled]="!novoItemNovaOpcao.trim()">
+                  <ion-icon name="add" slot="icon-only"></ion-icon>
+                </ion-button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 6: Opções -->
+          <div class="form-step">
+            <label class="form-step-label">Opções</label>
+            <div class="form-step-toggles">
+              <ion-item lines="none" class="form-toggle-item" *ngIf="novoItemTipoResposta !== 'apenas_foto'">
+                <ion-icon name="camera-outline" slot="start" color="primary"></ion-icon>
+                <ion-label>Tem foto</ion-label>
+                <ion-toggle [(ngModel)]="novoItemTemFoto" slot="end" color="primary"></ion-toggle>
+              </ion-item>
+              <ion-item lines="none" class="form-toggle-item">
+                <ion-icon name="alert-circle-outline" slot="start" color="warning"></ion-icon>
+                <ion-label>Obrigatório</ion-label>
+                <ion-toggle [(ngModel)]="novoItemObrigatorio" slot="end" color="warning"></ion-toggle>
+              </ion-item>
+            </div>
+          </div>
+
+          <!-- Botões de ação -->
+          <div class="form-step-actions">
+            <ion-button fill="outline" color="medium" (click)="cancelarFormNovoItem()">
+              Cancelar
+            </ion-button>
+            <ion-button color="success" (click)="salvarNovoItem()"
+                        [disabled]="!novoItemNome || !novoItemCategoria || (novoItemTipo === 'especifico' && !novoItemTipoVeiculoId) || (novoItemTipo === 'geral' && novoItemTiposAssociados.length === 0)">
+              <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+              Adicionar Item
+            </ion-button>
           </div>
         </ion-card-content>
       </ion-card>
 
-      <!-- Placeholder para futuros relatórios -->
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title>
-            <ion-icon name="add-circle-outline" color="medium"></ion-icon>
-            Mais Relatórios
-          </ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <p style="color: var(--ion-color-medium);">Novos relatórios serão adicionados aqui.</p>
-        </ion-card-content>
-      </ion-card>
     </div>
 
     <!-- ========================================= -->
-    <!-- ABA: CONFIGURAÇÃO DE ITENS -->
+    <!-- ABA: PNEUS -->
     <!-- ========================================= -->
-    <div *ngIf="abaSelecionada === 'configuracao'">
-      <ion-card color="warning">
+    <div *ngIf="abaSelecionada === 'pneus'">
+      <ion-card color="primary">
         <ion-card-content>
-          <ion-icon name="information-circle" color="dark"></ion-icon>
-          Configure quais itens devem aparecer na inspeção veicular
+          <ion-icon name="ellipse-outline"></ion-icon>
+          Configure os pneus de inspeção para cada tipo de veículo
         </ion-card-content>
       </ion-card>
-
-      <!-- Botão para Adicionar Novo Item -->
-      <ion-button expand="block" color="success" (click)="adicionarNovoItem()" [disabled]="carregandoConfig">
-        <ion-icon slot="start" name="add-circle"></ion-icon>
-        Adicionar Novo Item
-      </ion-button>
 
       <!-- Loading -->
-      <div *ngIf="carregandoConfig" class="loading-container">
+      <div *ngIf="carregandoTiposVeiculo" class="loading-container">
         <ion-spinner name="crescent" color="primary"></ion-spinner>
-        <p>Carregando configurações...</p>
+        <p>Carregando tipos de veículos...</p>
       </div>
 
-      <!-- Configuração por Categoria - SIMPLES -->
-      <div *ngIf="!carregandoConfig && tipoChecklistSelecionado === 'simples'">
-        <ion-card *ngFor="let categoria of categorias">
-          <ion-card-header
-            [style.background]="'linear-gradient(135deg, ' + categoria.color + ' 0%, ' + categoria.color + 'dd 100%)'">
-            <ion-card-title>
-              <ion-icon [name]="categoria.icon"></ion-icon>
-              {{ categoria.label }}
-              <ion-badge>
-                {{ itensConfigPorCategoria[categoria.key]?.length || 0 }}
-              </ion-badge>
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-list>
-              <ion-item-sliding *ngFor="let item of itensConfigPorCategoria[categoria.key]">
-                <ion-item>
-                  <ion-label>
-                    <h3>{{ item.nome_item }}</h3>
-                    <p *ngIf="item.usuario_nome" class="usuario-info">
-                      <ion-icon name="person-outline"></ion-icon>
-                      Adicionado por: {{ item.usuario_nome }}
-                    </p>
-                  </ion-label>
-                  <ion-toggle slot="end" [checked]="item.habilitado" (ionChange)="toggleItem(item)"
-                    [color]="item.habilitado ? 'success' : 'danger'"></ion-toggle>
-                </ion-item>
-
-                <!-- Opção de deslizar para remover -->
-                <ion-item-options side="end">
-                  <ion-item-option color="danger" (click)="removerItem(item)">
-                    <ion-icon slot="icon-only" name="trash"></ion-icon>
-                  </ion-item-option>
-                </ion-item-options>
-              </ion-item-sliding>
-            </ion-list>
-
-            <!-- Mensagem se não houver itens -->
-            <div *ngIf="!itensConfigPorCategoria[categoria.key] || itensConfigPorCategoria[categoria.key].length === 0"
-              class="empty-state-small">
-              <ion-icon [name]="categoria.icon"></ion-icon>
-              <p>Nenhum item cadastrado nesta categoria</p>
-            </div>
+      <!-- Cards de Tipos de Veículos -->
+      <div *ngIf="!carregandoTiposVeiculo" class="tipos-veiculo-grid">
+        <ion-card *ngFor="let tipo of tiposVeiculo"
+                  [color]="tipoVeiculoSelecionadoPneus === tipo.id ? 'primary' : (tipo.ativo ? 'light' : '')"
+                  (click)="tipo.ativo && selecionarTipoVeiculoPneus(tipo.id)"
+                  class="tipo-veiculo-card"
+                  [class.tipo-inativo]="!tipo.ativo"
+                  [button]="tipo.ativo">
+          <ion-card-content style="text-align: center; padding: 16px;">
+            <ion-icon [name]="tipo.icone || 'car-outline'"
+                      style="font-size: 48px; margin-bottom: 8px;"
+                      [color]="tipoVeiculoSelecionadoPneus === tipo.id ? 'light' : (tipo.ativo ? 'primary' : 'medium')"></ion-icon>
+            <h2 style="margin: 8px 0; font-weight: bold;"
+                [style.color]="tipoVeiculoSelecionadoPneus === tipo.id ? 'white' : (tipo.ativo ? 'inherit' : 'var(--ion-color-medium)')">
+              {{ tipo.nome }}
+            </h2>
+            <ion-badge [color]="tipo.ativo ? 'success' : 'medium'">
+              {{ tipo.ativo ? 'Ativo' : 'Inativo' }}
+            </ion-badge>
+            <p style="margin-top: 8px; font-size: 0.9em;"
+               [style.color]="tipoVeiculoSelecionadoPneus === tipo.id ? 'rgba(255,255,255,0.8)' : 'var(--ion-color-medium)'">
+              <span *ngIf="tipo.ativo && itensPneusPorTipo[tipo.id]">
+                {{ getPneusHabilitadosTipo(tipo.id) }} / {{ getTotalPneusTipo(tipo.id) }} pneus
+              </span>
+              <span *ngIf="tipo.ativo && !itensPneusPorTipo[tipo.id]">
+                Clique para ver pneus
+              </span>
+            </p>
           </ion-card-content>
         </ion-card>
       </div>
 
-      <!-- Configuração por Categoria - COMPLETO -->
-      <div *ngIf="!carregandoConfig && tipoChecklistSelecionado === 'completo'">
-        <ion-card *ngFor="let categoria of categoriasCompleto">
-          <ion-card-header
-            [style.background]="'linear-gradient(135deg, ' + categoria.color + ' 0%, ' + categoria.color + 'dd 100%)'">
+      <!-- Loading itens pneus -->
+      <div *ngIf="carregandoItensPneus" class="loading-container" style="margin-top: 20px;">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <p>Carregando pneus...</p>
+      </div>
+
+      <!-- Lista de Pneus do Tipo Selecionado -->
+      <div *ngIf="tipoVeiculoSelecionadoPneus && itensPneusPorTipo[tipoVeiculoSelecionadoPneus] && !carregandoItensPneus">
+        <ion-card color="tertiary" style="margin-top: 20px;">
+          <ion-card-header>
             <ion-card-title>
-              <ion-icon [name]="categoria.icon"></ion-icon>
-              {{ categoria.label }}
-              <ion-badge>
-                {{ itensConfigCompletoPorCategoria[categoria.key]?.length || 0 }}
-              </ion-badge>
+              <ion-icon [name]="getIconeTipoVeiculoPneus()"></ion-icon>
+              Pneus de {{ getNomeTipoVeiculoPneus() }}
+            </ion-card-title>
+            <ion-card-subtitle>
+              {{ getPneusHabilitadosTipo(tipoVeiculoSelecionadoPneus) }} pneus habilitados de {{ getTotalPneusTipo(tipoVeiculoSelecionadoPneus) }} total
+            </ion-card-subtitle>
+          </ion-card-header>
+        </ion-card>
+
+        <ion-card *ngIf="getItensPneus().length > 0">
+          <ion-card-header style="background: linear-gradient(135deg, #666 0%, #444 100%);">
+            <ion-card-title style="color: white;">
+              <ion-icon name="ellipse-outline"></ion-icon>
+              Pneus
+              <ion-badge color="light">{{ getItensPneus().length }}</ion-badge>
             </ion-card-title>
           </ion-card-header>
           <ion-card-content>
             <ion-list>
-              <ion-item-sliding *ngFor="let item of itensConfigCompletoPorCategoria[categoria.key]">
-                <ion-item>
+              <ng-container *ngFor="let item of getItensPneus()">
+                <ion-item button (click)="abrirEdicaoItem(item)" [class.item-editando]="editandoItemId === item.id">
+                  <ion-icon [name]="item.habilitado ? 'checkmark-circle' : 'close-circle'"
+                            slot="start"
+                            [color]="item.habilitado ? 'success' : 'danger'"></ion-icon>
                   <ion-label>
                     <h3>{{ item.nome_item }}</h3>
-                    <p *ngIf="item.usuario_nome" class="usuario-info">
-                      <ion-icon name="person-outline"></ion-icon>
-                      Adicionado por: {{ item.usuario_nome }}
+                    <p>
+                      <ion-badge *ngIf="item.tipo_veiculo_id" color="tertiary" style="font-size: 0.7em; margin-right: 4px;">Específico</ion-badge>
+                      <ion-badge [color]="item.tipo_resposta === 'conforme_nao_conforme' ? 'success' : item.tipo_resposta === 'texto' ? 'primary' : item.tipo_resposta === 'numero' ? 'tertiary' : 'warning'"
+                                 style="font-size: 0.7em; margin-right: 4px;">
+                        {{ item.tipo_resposta === 'conforme_nao_conforme' ? 'C/NC' : item.tipo_resposta === 'texto' ? 'Texto' : item.tipo_resposta === 'numero' ? 'Número' : item.tipo_resposta === 'lista_opcoes' ? 'Lista' : 'C/NC' }}
+                      </ion-badge>
+                      <ion-badge *ngIf="item.tem_foto" color="primary" style="font-size: 0.7em; margin-right: 4px;">Foto</ion-badge>
+                      <ion-badge *ngIf="item.obrigatorio" color="warning" style="font-size: 0.7em;">Obrigatório</ion-badge>
                     </p>
                   </ion-label>
-                  <ion-toggle slot="end" [checked]="item.habilitado" (ionChange)="toggleItemCompleto(item)"
-                    [color]="item.habilitado ? 'success' : 'danger'"></ion-toggle>
+                  <ion-icon name="chevron-down-outline" slot="end" color="medium"
+                            [style.transform]="editandoItemId === item.id ? 'rotate(180deg)' : 'none'"
+                            style="transition: transform 0.2s; font-size: 18px;"></ion-icon>
                 </ion-item>
 
-                <!-- Opção de deslizar para remover -->
-                <ion-item-options side="end">
-                  <ion-item-option color="danger" (click)="removerItem(item)">
-                    <ion-icon slot="icon-only" name="trash"></ion-icon>
-                  </ion-item-option>
-                </ion-item-options>
-              </ion-item-sliding>
-            </ion-list>
+                <!-- Formulário de edição inline -->
+                <div class="edit-item-inline" *ngIf="editandoItemId === item.id">
+                  <div class="form-step">
+                    <label class="form-step-label">Nome do pneu</label>
+                    <ion-input [(ngModel)]="editItemNome"
+                               placeholder="Nome do pneu"
+                               fill="outline"
+                               class="form-input-dark">
+                    </ion-input>
+                  </div>
 
-            <!-- Mensagem se não houver itens -->
-            <div
-              *ngIf="!itensConfigCompletoPorCategoria[categoria.key] || itensConfigCompletoPorCategoria[categoria.key].length === 0"
-              class="empty-state-small">
-              <ion-icon [name]="categoria.icon"></ion-icon>
-              <p>Nenhum item cadastrado nesta categoria</p>
-            </div>
+                  <div class="form-step">
+                    <label class="form-step-label">Tipo de resposta</label>
+                    <div class="form-step-chips">
+                      <ion-chip [color]="editItemTipoResposta === 'conforme_nao_conforme' ? 'success' : 'medium'"
+                                [outline]="editItemTipoResposta !== 'conforme_nao_conforme'"
+                                (click)="editItemTipoResposta = 'conforme_nao_conforme'">
+                        <ion-icon name="checkmark-done-outline"></ion-icon>
+                        <ion-label>Conforme / Não conforme</ion-label>
+                      </ion-chip>
+                      <ion-chip [color]="editItemTipoResposta === 'texto' ? 'primary' : 'medium'"
+                                [outline]="editItemTipoResposta !== 'texto'"
+                                (click)="editItemTipoResposta = 'texto'">
+                        <ion-icon name="text-outline"></ion-icon>
+                        <ion-label>Texto</ion-label>
+                      </ion-chip>
+                      <ion-chip [color]="editItemTipoResposta === 'numero' ? 'tertiary' : 'medium'"
+                                [outline]="editItemTipoResposta !== 'numero'"
+                                (click)="editItemTipoResposta = 'numero'">
+                        <ion-icon name="calculator-outline"></ion-icon>
+                        <ion-label>Número</ion-label>
+                      </ion-chip>
+                      <ion-chip [color]="editItemTipoResposta === 'lista_opcoes' ? 'warning' : 'medium'"
+                                [outline]="editItemTipoResposta !== 'lista_opcoes'"
+                                (click)="editItemTipoResposta = 'lista_opcoes'">
+                        <ion-icon name="list-outline"></ion-icon>
+                        <ion-label>Lista de opções</ion-label>
+                      </ion-chip>
+                      <ion-chip [color]="editItemTipoResposta === 'apenas_foto' ? 'secondary' : 'medium'"
+                                [outline]="editItemTipoResposta !== 'apenas_foto'"
+                                (click)="editItemTipoResposta = 'apenas_foto'">
+                        <ion-icon name="camera-outline"></ion-icon>
+                        <ion-label>Apenas foto</ion-label>
+                      </ion-chip>
+                    </div>
+                  </div>
+
+                  <div class="form-step" *ngIf="editItemTipoResposta === 'lista_opcoes'">
+                    <label class="form-step-label">Opções da lista</label>
+                    <div class="form-opcoes-lista">
+                      <div class="form-opcao-item" *ngFor="let opcao of editItemOpcoesResposta; let i = index">
+                        <span>{{ opcao }}</span>
+                        <ion-button fill="clear" color="danger" size="small" (click)="removerOpcaoRespostaEdit(i)">
+                          <ion-icon name="close-circle" slot="icon-only"></ion-icon>
+                        </ion-button>
+                      </div>
+                      <div class="form-opcao-adicionar">
+                        <ion-input [(ngModel)]="editItemNovaOpcao"
+                                   placeholder="Digite uma opção"
+                                   fill="outline"
+                                   class="form-input-dark"
+                                   (keyup.enter)="adicionarOpcaoRespostaEdit()">
+                        </ion-input>
+                        <ion-button fill="solid" color="primary" size="small" (click)="adicionarOpcaoRespostaEdit()" [disabled]="!editItemNovaOpcao.trim()">
+                          <ion-icon name="add" slot="icon-only"></ion-icon>
+                        </ion-button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-step">
+                    <label class="form-step-label">Opções</label>
+                    <div class="form-step-toggles">
+                      <ion-item lines="none" class="form-toggle-item">
+                        <ion-icon name="power-outline" slot="start" color="success"></ion-icon>
+                        <ion-label>Habilitado</ion-label>
+                        <ion-toggle [(ngModel)]="editItemHabilitado" slot="end" color="success"></ion-toggle>
+                      </ion-item>
+                      <ion-item lines="none" class="form-toggle-item" *ngIf="editItemTipoResposta !== 'apenas_foto'">
+                        <ion-icon name="camera-outline" slot="start" color="primary"></ion-icon>
+                        <ion-label>Tem foto</ion-label>
+                        <ion-toggle [(ngModel)]="editItemTemFoto" slot="end" color="primary"></ion-toggle>
+                      </ion-item>
+                      <ion-item lines="none" class="form-toggle-item">
+                        <ion-icon name="alert-circle-outline" slot="start" color="warning"></ion-icon>
+                        <ion-label>Obrigatório</ion-label>
+                        <ion-toggle [(ngModel)]="editItemObrigatorio" slot="end" color="warning"></ion-toggle>
+                      </ion-item>
+                    </div>
+                  </div>
+
+                  <div class="form-step-actions">
+                    <ion-button fill="outline" color="medium" (click)="fecharEdicaoItem()">
+                      Cancelar
+                    </ion-button>
+                    <ion-button color="primary" (click)="salvarEdicaoItemPneu()" [disabled]="!editItemNome.trim()">
+                      <ion-icon name="save-outline" slot="start"></ion-icon>
+                      Salvar
+                    </ion-button>
+                  </div>
+                </div>
+              </ng-container>
+            </ion-list>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Mensagem se não houver pneus -->
+        <ion-card *ngIf="getItensPneus().length === 0" color="warning">
+          <ion-card-content>
+            <ion-icon name="alert-circle"></ion-icon>
+            Nenhum pneu configurado para este tipo de veículo
           </ion-card-content>
         </ion-card>
       </div>
+
+      <!-- Mensagem para selecionar um tipo -->
+      <ion-card *ngIf="!tipoVeiculoSelecionadoPneus && !carregandoTiposVeiculo" color="medium" style="margin-top: 20px;">
+        <ion-card-content style="text-align: center;">
+          <ion-icon name="hand-left-outline" style="font-size: 48px; margin-bottom: 16px;"></ion-icon>
+          <h3>Selecione um tipo de veículo</h3>
+          <p>Clique em um dos tipos acima para visualizar os pneus configurados</p>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Botão Adicionar Novo Pneu -->
+      <ion-button expand="block" color="success" style="margin-top: 20px;" (click)="mostrarFormNovoItemPneu = !mostrarFormNovoItemPneu" *ngIf="!mostrarFormNovoItemPneu">
+        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+        Adicionar Novo Pneu
+      </ion-button>
+
+      <!-- Formulário inline para novo pneu -->
+      <ion-card *ngIf="mostrarFormNovoItemPneu" class="form-novo-item-card" style="margin-top: 20px;">
+        <ion-card-header>
+          <ion-card-title style="display: flex; align-items: center; justify-content: space-between;">
+            <span>
+              <ion-icon name="add-circle-outline" style="margin-right: 8px;"></ion-icon>
+              Novo Pneu
+            </span>
+            <ion-button fill="clear" color="medium" size="small" (click)="cancelarFormNovoItemPneu()">
+              <ion-icon name="close" slot="icon-only"></ion-icon>
+            </ion-button>
+          </ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>
+          <!-- Step 1: Tipo do item -->
+          <div class="form-step">
+            <label class="form-step-label">Tipo do pneu</label>
+            <div class="form-step-options">
+              <ion-button [fill]="novoItemPneuTipo === 'geral' ? 'solid' : 'outline'" color="primary" size="small" (click)="novoItemPneuTipo = 'geral'; novoItemPneuTipoVeiculoId = null">
+                <ion-icon name="globe-outline" slot="start"></ion-icon>
+                Geral
+              </ion-button>
+              <ion-button [fill]="novoItemPneuTipo === 'especifico' ? 'solid' : 'outline'" color="primary" size="small" (click)="novoItemPneuTipo = 'especifico'">
+                <ion-icon name="car-outline" slot="start"></ion-icon>
+                Específico
+              </ion-button>
+            </div>
+          </div>
+
+          <!-- Step 2: Tipo de veículo (se específico) -->
+          <div class="form-step" *ngIf="novoItemPneuTipo === 'especifico'">
+            <label class="form-step-label">Tipo de Veículo</label>
+            <div class="form-step-chips">
+              <ion-chip *ngFor="let tipo of tiposVeiculo"
+                        [color]="novoItemPneuTipoVeiculoId === tipo.id ? 'tertiary' : 'medium'"
+                        [outline]="novoItemPneuTipoVeiculoId !== tipo.id"
+                        (click)="novoItemPneuTipoVeiculoId = tipo.id">
+                <ion-icon [name]="tipo.icone || 'car-outline'"></ion-icon>
+                <ion-label>{{ tipo.nome }}</ion-label>
+              </ion-chip>
+            </div>
+          </div>
+
+          <!-- Step 2b: Tipos associados (se geral) -->
+          <div class="form-step" *ngIf="novoItemPneuTipo === 'geral'">
+            <label class="form-step-label">Tipos de veículo associados</label>
+            <div class="form-step-chips">
+              <ion-chip *ngFor="let tipo of tiposVeiculo"
+                        [color]="novoItemPneuTiposAssociados.includes(tipo.id) ? 'tertiary' : 'medium'"
+                        [outline]="!novoItemPneuTiposAssociados.includes(tipo.id)"
+                        (click)="toggleTipoAssociadoPneu(tipo.id)">
+                <ion-icon [name]="tipo.icone || 'car-outline'"></ion-icon>
+                <ion-label>{{ tipo.nome }}</ion-label>
+                <ion-icon name="checkmark" *ngIf="novoItemPneuTiposAssociados.includes(tipo.id)"></ion-icon>
+              </ion-chip>
+            </div>
+          </div>
+
+          <!-- Step 3: Nome do pneu -->
+          <div class="form-step">
+            <label class="form-step-label">Nome do pneu</label>
+            <ion-input [(ngModel)]="novoItemPneuNome"
+                       placeholder="Ex: Dianteira Direita"
+                       fill="outline"
+                       class="form-input-dark">
+            </ion-input>
+          </div>
+
+          <!-- Step 4: Tipo de resposta -->
+          <div class="form-step">
+            <label class="form-step-label">Tipo de resposta</label>
+            <div class="form-step-chips">
+              <ion-chip [color]="novoItemPneuTipoResposta === 'conforme_nao_conforme' ? 'success' : 'medium'"
+                        [outline]="novoItemPneuTipoResposta !== 'conforme_nao_conforme'"
+                        (click)="novoItemPneuTipoResposta = 'conforme_nao_conforme'">
+                <ion-icon name="checkmark-done-outline"></ion-icon>
+                <ion-label>Conforme / Não conforme</ion-label>
+              </ion-chip>
+              <ion-chip [color]="novoItemPneuTipoResposta === 'texto' ? 'primary' : 'medium'"
+                        [outline]="novoItemPneuTipoResposta !== 'texto'"
+                        (click)="novoItemPneuTipoResposta = 'texto'">
+                <ion-icon name="text-outline"></ion-icon>
+                <ion-label>Texto</ion-label>
+              </ion-chip>
+              <ion-chip [color]="novoItemPneuTipoResposta === 'numero' ? 'tertiary' : 'medium'"
+                        [outline]="novoItemPneuTipoResposta !== 'numero'"
+                        (click)="novoItemPneuTipoResposta = 'numero'">
+                <ion-icon name="calculator-outline"></ion-icon>
+                <ion-label>Número</ion-label>
+              </ion-chip>
+              <ion-chip [color]="novoItemPneuTipoResposta === 'lista_opcoes' ? 'warning' : 'medium'"
+                        [outline]="novoItemPneuTipoResposta !== 'lista_opcoes'"
+                        (click)="novoItemPneuTipoResposta = 'lista_opcoes'">
+                <ion-icon name="list-outline"></ion-icon>
+                <ion-label>Lista de opções</ion-label>
+              </ion-chip>
+              <ion-chip [color]="novoItemPneuTipoResposta === 'apenas_foto' ? 'secondary' : 'medium'"
+                        [outline]="novoItemPneuTipoResposta !== 'apenas_foto'"
+                        (click)="novoItemPneuTipoResposta = 'apenas_foto'">
+                <ion-icon name="camera-outline"></ion-icon>
+                <ion-label>Apenas foto</ion-label>
+              </ion-chip>
+            </div>
+          </div>
+
+          <!-- Step 4b: Opções da lista (se tipo = lista_opcoes) -->
+          <div class="form-step" *ngIf="novoItemPneuTipoResposta === 'lista_opcoes'">
+            <label class="form-step-label">Opções da lista</label>
+            <div class="form-opcoes-lista">
+              <div class="form-opcao-item" *ngFor="let opcao of novoItemPneuOpcoesResposta; let i = index">
+                <span>{{ opcao }}</span>
+                <ion-button fill="clear" color="danger" size="small" (click)="removerOpcaoRespostaPneu(i)">
+                  <ion-icon name="close-circle" slot="icon-only"></ion-icon>
+                </ion-button>
+              </div>
+              <div class="form-opcao-adicionar">
+                <ion-input [(ngModel)]="novoItemPneuNovaOpcao"
+                           placeholder="Digite uma opção"
+                           fill="outline"
+                           class="form-input-dark"
+                           (keyup.enter)="adicionarOpcaoRespostaPneu()">
+                </ion-input>
+                <ion-button fill="solid" color="primary" size="small" (click)="adicionarOpcaoRespostaPneu()" [disabled]="!novoItemPneuNovaOpcao.trim()">
+                  <ion-icon name="add" slot="icon-only"></ion-icon>
+                </ion-button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Opções -->
+          <div class="form-step">
+            <label class="form-step-label">Opções</label>
+            <div class="form-step-toggles">
+              <ion-item lines="none" class="form-toggle-item" *ngIf="novoItemPneuTipoResposta !== 'apenas_foto'">
+                <ion-icon name="camera-outline" slot="start" color="primary"></ion-icon>
+                <ion-label>Tem foto</ion-label>
+                <ion-toggle [(ngModel)]="novoItemPneuTemFoto" slot="end" color="primary"></ion-toggle>
+              </ion-item>
+              <ion-item lines="none" class="form-toggle-item">
+                <ion-icon name="alert-circle-outline" slot="start" color="warning"></ion-icon>
+                <ion-label>Obrigatório</ion-label>
+                <ion-toggle [(ngModel)]="novoItemPneuObrigatorio" slot="end" color="warning"></ion-toggle>
+              </ion-item>
+            </div>
+          </div>
+
+          <!-- Botões de ação -->
+          <div class="form-step-actions">
+            <ion-button fill="outline" color="medium" (click)="cancelarFormNovoItemPneu()">
+              Cancelar
+            </ion-button>
+            <ion-button color="success" (click)="salvarNovoItemPneu()"
+                        [disabled]="!novoItemPneuNome || (novoItemPneuTipo === 'especifico' && !novoItemPneuTipoVeiculoId) || (novoItemPneuTipo === 'geral' && novoItemPneuTiposAssociados.length === 0)">
+              <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+              Adicionar Pneu
+            </ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
     </div>
+
   </div>
 </ion-content>
 
@@ -824,7 +1448,7 @@
                 <ion-icon name="water" color="tertiary"></ion-icon>
                 <div class="info-content">
                   <span class="info-label">Combustível</span>
-                  <span class="info-value">{{ checklistDetalhado.nivel_combustivel }}</span>
+                  <span class="info-value">{{ formatarNivelCombustivel(checklistDetalhado.nivel_combustivel) }}</span>
                 </div>
               </div>
 
@@ -861,24 +1485,18 @@
             <ion-card-title>Tempo de Telas</ion-card-title>
           </ion-card-header>
           <ion-card-content>
-            <ion-list>
-              <ion-item *ngFor="let tempo of temposTelas">
-                <ion-icon name="time-outline" slot="start" color="primary"></ion-icon>
-                <ion-label>
-                  <h3>{{ getNomeTela(tempo.tela) }}</h3>
-                  <p>Tempo: <strong>{{ formatarTempo(tempo.tempo_segundos) }}</strong></p>
-                  <p class="ion-text-wrap" style="font-size: 0.85em; color: var(--ion-color-medium);">
-                    Início: {{ formatarData(tempo.data_hora_inicio) }}<br>
-                    Fim: {{ formatarData(tempo.data_hora_fim) }}
-                  </p>
-                </ion-label>
-              </ion-item>
-            </ion-list>
-            <ion-item lines="none">
-              <ion-label>
-                <h2><strong>Tempo Total:</strong> {{ getTotalTempo() }}</h2>
-              </ion-label>
-            </ion-item>
+            <div class="tempos-grid">
+              <div class="tempo-item" *ngFor="let tempo of temposTelas">
+                <ion-icon name="time-outline" color="primary"></ion-icon>
+                <div class="tempo-content">
+                  <span class="tempo-nome">{{ getNomeTela(tempo.tela) }}</span>
+                  <span class="tempo-valor">{{ formatarTempo(tempo.tempo_segundos) }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="tempo-total">
+              <strong>Tempo Total:</strong> {{ getTotalTempo() }}
+            </div>
           </ion-card-content>
         </ion-card>
 
@@ -1438,6 +2056,209 @@
             </ion-list>
           </ion-card-content>
         </ion-card>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<!-- Modal de Campos da Inspeção Inicial -->
+<ion-modal [isOpen]="mostrarModalCamposInspecao" (didDismiss)="fecharModalCamposInspecao()">
+  <ng-template>
+    <ion-header class="modal-campos-header">
+      <ion-toolbar>
+        <div class="modal-header-content">
+          <div class="modal-header-icon">
+            <ion-icon name="document-text-outline"></ion-icon>
+          </div>
+          <div class="modal-header-text">
+            <ion-title>Campos da Inspeção Inicial</ion-title>
+            <p>Configuração base para todos os veículos</p>
+          </div>
+        </div>
+        <ion-buttons slot="end">
+          <ion-button (click)="fecharModalCamposInspecao()" class="close-btn">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="modal-campos-content">
+      <!-- Botão Adicionar -->
+      <div class="add-campo-btn" (click)="abrirModalAdicionarCampoInspecao()">
+        <ion-icon name="add-circle"></ion-icon>
+        <span>Adicionar Novo Campo</span>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="carregandoCamposInspecao" class="loading-container">
+        <ion-spinner name="crescent" color="secondary"></ion-spinner>
+        <p>Carregando campos...</p>
+      </div>
+
+      <!-- Grid de Cards de Campos -->
+      <div *ngIf="!carregandoCamposInspecao && camposInspecao.length > 0" class="campos-grid">
+        <div *ngFor="let campo of camposInspecao; let i = index"
+             class="campo-card"
+             [class.campo-desabilitado]="!campo.habilitado"
+             [class.campo-editando]="campoEditandoId === campo.id">
+          
+          <!-- Modo Visualização -->
+          <div *ngIf="campoEditandoId !== campo.id" class="campo-view-mode">
+            <div class="campo-card-header">
+              <span class="campo-ordem">{{ i + 1 }}</span>
+              <div class="campo-status" [class.ativo]="campo.habilitado">
+                <ion-icon [name]="campo.habilitado ? 'checkmark-circle' : 'close-circle'"></ion-icon>
+              </div>
+            </div>
+
+            <div class="campo-card-body">
+              <h4 class="campo-label">{{ campo.label }}</h4>
+              <div class="campo-info">
+                <div class="info-item">
+                  <ion-icon name="pricetag-outline"></ion-icon>
+                  <span>{{ getTipoCampoAmigavel(campo.tipo_campo) }}</span>
+                </div>
+                <div class="info-item" *ngIf="campo.obrigatorio">
+                  <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
+                  <span>Obrigatório</span>
+                </div>
+                <div class="info-item" *ngIf="!campo.obrigatorio">
+                  <ion-icon name="checkmark-circle-outline" color="medium"></ion-icon>
+                  <span>Opcional</span>
+                </div>
+                <div class="info-item" *ngIf="campo.tem_foto">
+                  <ion-icon name="camera-outline" color="primary"></ion-icon>
+                  <span>Com Foto</span>
+                </div>
+                <div class="info-item" *ngIf="!campo.tem_foto">
+                  <ion-icon name="image-outline" color="medium"></ion-icon>
+                  <span>Sem Foto</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="campo-card-footer">
+              <ion-toggle [checked]="campo.habilitado"
+                          (ionChange)="toggleCampoInspecao(campo)"
+                          mode="ios"></ion-toggle>
+              <div class="campo-actions">
+                <button class="action-btn edit" (click)="iniciarEdicaoCampo(campo)">
+                  <ion-icon name="create-outline"></ion-icon>
+                </button>
+                <button class="action-btn delete" (click)="removerCampoInspecao(campo)">
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modo Edição -->
+          <div *ngIf="campoEditandoId === campo.id && campoEditando" class="campo-edit-mode">
+            <div class="campo-edit-header">
+              <h4>Editando Campo</h4>
+            </div>
+            
+            <div class="campo-edit-body">
+              <div class="edit-field">
+                <label>Nome do Campo</label>
+                <ion-input 
+                  [(ngModel)]="campoEditando.label"
+                  placeholder="Ex: Placa do Veículo"
+                  class="edit-input">
+                </ion-input>
+              </div>
+
+              <div class="edit-field">
+                <label>Tipo de Campo</label>
+                <div class="tipo-campo-options">
+                  <button
+                    *ngFor="let tipo of tiposCampoDisponiveis"
+                    class="tipo-campo-btn"
+                    [class.selected]="campoEditando.tipo_campo === tipo.value"
+                    (click)="campoEditando.tipo_campo = tipo.value; onTipoCampoChange()">
+                    <ion-icon [name]="tipo.icon"></ion-icon>
+                    <span>{{ tipo.label }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Campo de opções (só aparece quando tipo é 'select') -->
+              <div class="edit-field" *ngIf="campoEditando.tipo_campo === 'select'">
+                <label>Opções de Seleção</label>
+                <div class="opcoes-container">
+                  <div class="opcao-item" *ngFor="let opcao of getOpcoesArray(); let i = index">
+                    <ion-input
+                      [value]="opcao"
+                      (ionChange)="atualizarOpcao(i, $event)"
+                      placeholder="Digite uma opção"
+                      class="edit-input opcao-input">
+                    </ion-input>
+                    <ion-button
+                      fill="clear"
+                      color="danger"
+                      size="small"
+                      (click)="removerOpcao(i)">
+                      <ion-icon name="trash-outline"></ion-icon>
+                    </ion-button>
+                  </div>
+                  <ion-button
+                    fill="outline"
+                    size="small"
+                    (click)="adicionarOpcao()"
+                    class="add-opcao-btn">
+                    <ion-icon name="add-outline" slot="start"></ion-icon>
+                    Adicionar Opção
+                  </ion-button>
+                </div>
+              </div>
+
+              <div class="edit-field checkbox-field">
+                <ion-item lines="none">
+                  <ion-label>Campo Obrigatório</ion-label>
+                  <ion-toggle 
+                    [(ngModel)]="campoEditando.obrigatorio"
+                    slot="end">
+                  </ion-toggle>
+                </ion-item>
+              </div>
+
+              <div class="edit-field checkbox-field">
+                <ion-item lines="none">
+                  <ion-label>Campo tem Foto</ion-label>
+                  <ion-toggle 
+                    [(ngModel)]="campoEditando.tem_foto"
+                    slot="end">
+                  </ion-toggle>
+                </ion-item>
+              </div>
+            </div>
+
+            <div class="campo-edit-footer">
+              <ion-button 
+                fill="outline" 
+                color="medium"
+                (click)="cancelarEdicaoCampo()">
+                Cancelar
+              </ion-button>
+              <ion-button 
+                fill="solid" 
+                color="primary"
+                (click)="salvarEdicaoCampo()">
+                Salvar
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mensagem vazia -->
+      <div *ngIf="!carregandoCamposInspecao && camposInspecao.length === 0" class="empty-state-campos">
+        <div class="empty-icon">
+          <ion-icon name="documents-outline"></ion-icon>
+        </div>
+        <h3>Nenhum campo configurado</h3>
+        <p>Adicione campos para personalizar a inspeção inicial</p>
       </div>
     </ion-content>
   </ng-template>

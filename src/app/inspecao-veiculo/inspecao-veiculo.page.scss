@@ -106,15 +106,59 @@ ion-card {
 
 ion-segment {
   --background: #000000;
-  border: 1px solid #5a5a5a; /* borda mais evidente */
+  border: 1px solid #5a5a5a;
   border-radius: 8px;
   min-height: 40px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset; /* leve reforço */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 
+  &.segment-conforme {
+    ion-segment-button {
+      --indicator-color: var(--ion-color-primary);
+      --color: #b5b5b5;
+      --color-checked: #ffffff;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 14px;
+
+      &::part(native) {
+        border-radius: 6px;
+      }
+
+      &[value="conforme"]::part(indicator-background) {
+        background: #2dd36f;
+      }
+
+      &[value="nao_conforme"]::part(indicator-background) {
+        background: var(--ion-color-primary);
+      }
+    }
+  }
+
+  &.segment-opcoes {
+    ion-segment-button {
+      --indicator-color: var(--ion-color-primary);
+      --color: #b5b5b5;
+      --color-checked: #ffffff;
+      font-weight: 600;
+      text-transform: capitalize;
+      font-size: 13px;
+      min-width: 80px;
+
+      &::part(native) {
+        border-radius: 6px;
+      }
+
+      &::part(indicator-background) {
+        background: var(--ion-color-primary);
+      }
+    }
+  }
+
+  // Legado: manter para compatibilidade com dados antigos
   &.segment-motor {
     ion-segment-button {
       --indicator-color: var(--ion-color-primary);
-      --color: #b5b5b5; /* texto mais legível */
+      --color: #b5b5b5;
       --color-checked: #ffffff;
       font-weight: 600;
       text-transform: uppercase;
@@ -187,6 +231,35 @@ ion-segment {
         background: var(--ion-color-primary);
       }
     }
+  }
+}
+
+.input-item {
+  --background: #000000;
+  border: 1px solid #5a5a5a;
+  border-radius: 8px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --min-height: 40px;
+
+  ion-input {
+    --color: #ffffff;
+    --placeholder-color: #888888;
+    font-size: 14px;
+  }
+}
+
+.apenas-foto-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  color: var(--ion-color-primary);
+  font-weight: 600;
+  font-size: 14px;
+
+  ion-icon {
+    font-size: 20px;
   }
 }
 

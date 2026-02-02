@@ -31,19 +31,50 @@
         <div *ngFor="let item of inspecao.motor; let i = index" class="item-inspecao">
           <div class="item-label">
             <ion-text color="light">{{ item.nome }}</ion-text>
+            <ion-text *ngIf="item.obrigatorio === false" color="medium" style="font-size: 12px; margin-left: 6px;">(Opcional)</ion-text>
           </div>
 
-          <ion-segment [(ngModel)]="item.valor" (ionChange)="onValorMotorChange(item)" class="segment-motor">
-            <ion-segment-button value="bom">
-              <ion-label>Bom</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="ruim">
-              <ion-label>Ruim</ion-label>
-            </ion-segment-button>
-          </ion-segment>
+          <div [ngSwitch]="item.tipo_resposta">
+            <ion-segment *ngSwitchCase="'conforme_nao_conforme'" [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-conforme">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <ion-item *ngSwitchCase="'texto'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="item.valor" (ionBlur)="salvarLocalmente()" placeholder="Digite..." color="light"></ion-input>
+            </ion-item>
+
+            <ion-item *ngSwitchCase="'numero'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="item.valor" (ionBlur)="salvarLocalmente()" type="number" placeholder="0" color="light"></ion-input>
+            </ion-item>
+
+            <ion-segment *ngSwitchCase="'lista_opcoes'" [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-opcoes" scrollable="true">
+              <ion-segment-button *ngFor="let opcao of item.opcoes_resposta" [value]="opcao">
+                <ion-label>{{ opcao }}</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <div *ngSwitchCase="'apenas_foto'" class="apenas-foto-label">
+              <ion-icon name="camera" color="primary"></ion-icon>
+              <span>Tire a foto abaixo</span>
+            </div>
+
+            <ion-segment *ngSwitchDefault [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-conforme">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+          </div>
 
           <!-- Campo de foto condicional -->
-          <div *ngIf="precisaFotoMotor(item)" class="photo-section">
+          <div *ngIf="mostrarFoto(item)" class="photo-section">
             <ion-button
               expand="block"
               color="primary"
@@ -67,8 +98,8 @@
               </ion-button>
             </div>
 
-            <!-- Campo de descrição -->
-            <ion-item color="dark" lines="none" class="description-item">
+            <!-- Campo de descrição (só quando não conforme) -->
+            <ion-item *ngIf="item.valor === 'nao_conforme'" color="dark" lines="none" class="description-item">
               <ion-textarea
                 [(ngModel)]="item.descricao"
                 (ionChange)="salvarLocalmente()"
@@ -93,19 +124,50 @@
         <div *ngFor="let item of inspecao.eletricos; let i = index" class="item-inspecao">
           <div class="item-label">
             <ion-text color="light">{{ item.nome }}</ion-text>
+            <ion-text *ngIf="item.obrigatorio === false" color="medium" style="font-size: 12px; margin-left: 6px;">(Opcional)</ion-text>
           </div>
 
-          <ion-segment [(ngModel)]="item.valor" (ionChange)="onValorEletricoChange(item)" class="segment-motor">
-            <ion-segment-button value="bom">
-              <ion-label>Bom</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="ruim">
-              <ion-label>Ruim</ion-label>
-            </ion-segment-button>
-          </ion-segment>
+          <div [ngSwitch]="item.tipo_resposta">
+            <ion-segment *ngSwitchCase="'conforme_nao_conforme'" [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-conforme">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <ion-item *ngSwitchCase="'texto'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="item.valor" (ionBlur)="salvarLocalmente()" placeholder="Digite..." color="light"></ion-input>
+            </ion-item>
+
+            <ion-item *ngSwitchCase="'numero'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="item.valor" (ionBlur)="salvarLocalmente()" type="number" placeholder="0" color="light"></ion-input>
+            </ion-item>
+
+            <ion-segment *ngSwitchCase="'lista_opcoes'" [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-opcoes" scrollable="true">
+              <ion-segment-button *ngFor="let opcao of item.opcoes_resposta" [value]="opcao">
+                <ion-label>{{ opcao }}</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <div *ngSwitchCase="'apenas_foto'" class="apenas-foto-label">
+              <ion-icon name="camera" color="primary"></ion-icon>
+              <span>Tire a foto abaixo</span>
+            </div>
+
+            <ion-segment *ngSwitchDefault [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-conforme">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+          </div>
 
           <!-- Campo de foto condicional -->
-          <div *ngIf="precisaFotoEletrico(item)" class="photo-section">
+          <div *ngIf="mostrarFoto(item)" class="photo-section">
             <ion-button
               expand="block"
               color="primary"
@@ -129,8 +191,8 @@
               </ion-button>
             </div>
 
-            <!-- Campo de descrição -->
-            <ion-item color="dark" lines="none" class="description-item">
+            <!-- Campo de descrição (só quando não conforme) -->
+            <ion-item *ngIf="item.valor === 'nao_conforme'" color="dark" lines="none" class="description-item">
               <ion-textarea
                 [(ngModel)]="item.descricao"
                 (ionChange)="salvarLocalmente()"
@@ -155,25 +217,50 @@
         <div *ngFor="let item of inspecao.limpeza; let i = index" class="item-inspecao">
           <div class="item-label">
             <ion-text color="light">{{ item.nome }}</ion-text>
+            <ion-text *ngIf="item.obrigatorio === false" color="medium" style="font-size: 12px; margin-left: 6px;">(Opcional)</ion-text>
           </div>
 
-          <ion-segment [(ngModel)]="item.valor" (ionChange)="onValorLimpezaChange(item)" class="segment-limpeza" scrollable="true">
-            <ion-segment-button value="pessima">
-              <ion-label>Péssima</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="ruim">
-              <ion-label>Ruim</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="satisfatoria">
-              <ion-label>Satisfatória</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="otimo">
-              <ion-label>Ótimo</ion-label>
-            </ion-segment-button>
-          </ion-segment>
+          <div [ngSwitch]="item.tipo_resposta">
+            <ion-segment *ngSwitchCase="'conforme_nao_conforme'" [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-conforme">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <ion-item *ngSwitchCase="'texto'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="item.valor" (ionBlur)="salvarLocalmente()" placeholder="Digite..." color="light"></ion-input>
+            </ion-item>
+
+            <ion-item *ngSwitchCase="'numero'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="item.valor" (ionBlur)="salvarLocalmente()" type="number" placeholder="0" color="light"></ion-input>
+            </ion-item>
+
+            <ion-segment *ngSwitchCase="'lista_opcoes'" [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-opcoes" scrollable="true">
+              <ion-segment-button *ngFor="let opcao of item.opcoes_resposta" [value]="opcao">
+                <ion-label>{{ opcao }}</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <div *ngSwitchCase="'apenas_foto'" class="apenas-foto-label">
+              <ion-icon name="camera" color="primary"></ion-icon>
+              <span>Tire a foto abaixo</span>
+            </div>
+
+            <ion-segment *ngSwitchDefault [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-conforme">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+          </div>
 
           <!-- Campo de foto condicional -->
-          <div *ngIf="precisaFotoLimpeza(item)" class="photo-section">
+          <div *ngIf="mostrarFoto(item)" class="photo-section">
             <ion-button
               expand="block"
               color="primary"
@@ -197,8 +284,8 @@
               </ion-button>
             </div>
 
-            <!-- Campo de descrição -->
-            <ion-item color="dark" lines="none" class="description-item">
+            <!-- Campo de descrição (só quando não conforme) -->
+            <ion-item *ngIf="item.valor === 'nao_conforme'" color="dark" lines="none" class="description-item">
               <ion-textarea
                 [(ngModel)]="item.descricao"
                 (ionChange)="salvarLocalmente()"
@@ -223,19 +310,50 @@
         <div *ngFor="let item of inspecao.ferramentas; let i = index" class="item-inspecao">
           <div class="item-label">
             <ion-text color="light">{{ item.nome }}</ion-text>
+            <ion-text *ngIf="item.obrigatorio === false" color="medium" style="font-size: 12px; margin-left: 6px;">(Opcional)</ion-text>
           </div>
 
-          <ion-segment [(ngModel)]="item.valor" (ionChange)="onValorFerramentaChange(item)" class="segment-ferramenta">
-            <ion-segment-button value="contem">
-              <ion-label>Contém</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="nao_contem">
-              <ion-label>Não Contém</ion-label>
-            </ion-segment-button>
-          </ion-segment>
+          <div [ngSwitch]="item.tipo_resposta">
+            <ion-segment *ngSwitchCase="'conforme_nao_conforme'" [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-conforme">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <ion-item *ngSwitchCase="'texto'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="item.valor" (ionBlur)="salvarLocalmente()" placeholder="Digite..." color="light"></ion-input>
+            </ion-item>
+
+            <ion-item *ngSwitchCase="'numero'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="item.valor" (ionBlur)="salvarLocalmente()" type="number" placeholder="0" color="light"></ion-input>
+            </ion-item>
+
+            <ion-segment *ngSwitchCase="'lista_opcoes'" [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-opcoes" scrollable="true">
+              <ion-segment-button *ngFor="let opcao of item.opcoes_resposta" [value]="opcao">
+                <ion-label>{{ opcao }}</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <div *ngSwitchCase="'apenas_foto'" class="apenas-foto-label">
+              <ion-icon name="camera" color="primary"></ion-icon>
+              <span>Tire a foto abaixo</span>
+            </div>
+
+            <ion-segment *ngSwitchDefault [(ngModel)]="item.valor" (ionChange)="onValorChange(item)" class="segment-conforme">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+          </div>
 
           <!-- Campo de foto condicional -->
-          <div *ngIf="precisaFotoFerramenta(item)" class="photo-section">
+          <div *ngIf="mostrarFoto(item)" class="photo-section">
             <ion-button
               expand="block"
               color="primary"
@@ -259,8 +377,8 @@
               </ion-button>
             </div>
 
-            <!-- Campo de descrição -->
-            <ion-item color="dark" lines="none" class="description-item">
+            <!-- Campo de descrição (só quando não conforme) -->
+            <ion-item *ngIf="item.valor === 'nao_conforme'" color="dark" lines="none" class="description-item">
               <ion-textarea
                 [(ngModel)]="item.descricao"
                 (ionChange)="salvarLocalmente()"

@@ -227,12 +227,18 @@ export class FotosVeiculoPage implements OnInit, OnDestroy {
     }
 
     const usuarioId = this.authService.currentUserValue?.id;
-    const inspecaoId = this.checklistData.getInspecaoId();
+    console.log('[FotosVeiculo] 🔍 Buscando inspecaoId para salvar fotos...');
+    const inspecaoId = await this.checklistData.getInspecaoId();
+    console.log('[FotosVeiculo] InspecaoId recebido:', inspecaoId, 'Tipo:', typeof inspecaoId);
 
     if (!inspecaoId) {
+      console.error('[FotosVeiculo] ❌ ERRO: ID da inspeção não encontrado!');
+      console.error('[FotosVeiculo] UsuarioId:', usuarioId);
       alert('Erro: ID da inspeção não encontrado. Por favor, reinicie o processo.');
       return;
     }
+    
+    console.log('[FotosVeiculo] ✅ Prosseguindo com inspecaoId:', inspecaoId);
 
     try {
       // Mapeia os tipos de fotos

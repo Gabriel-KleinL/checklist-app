@@ -33,28 +33,37 @@ export class HomePage implements OnInit {
   async carregarTiposVeiculo() {
     this.carregandoTipos = true;
 
-    // Define tipo padrão como "Carro" (ID 1) SEMPRE
-    this.tipoVeiculoSelecionado = 1;
-    await this.localStorage.setItem('tipo_veiculo_id', '1');
-
     try {
+      // Carrega todos os tipos de veículo ativos do banco
       this.tiposVeiculo = await this.tiposVeiculoService.listarTipos().toPromise() || [];
 
-      // Desabilitar todos os tipos exceto "Carro"
-      this.tiposVeiculo = this.tiposVeiculo.map(tipo => ({
-        ...tipo,
-        ativo: tipo.nome.toLowerCase() === 'carro'
-      }));
+      // Verifica se já tem um tipo selecionado no localStorage
+      const tipoSalvo = await this.localStorage.getItem('tipo_veiculo_id');
+      if (tipoSalvo) {
+        const tipoId = parseInt(tipoSalvo, 10);
+        const tipoExiste = this.tiposVeiculo.find(t => t.id === tipoId && t.ativo);
+        if (tipoExiste) {
+          this.tipoVeiculoSelecionado = tipoId;
+        }
+      }
 
-      // Se encontrar o Carro na lista, atualiza o ID selecionado
-      const carro = this.tiposVeiculo.find(t => t.nome.toLowerCase() === 'carro');
-      if (carro) {
-        this.tipoVeiculoSelecionado = carro.id;
-        await this.localStorage.setItem('tipo_veiculo_id', carro.id.toString());
+      // Se não tem tipo selecionado, seleciona o primeiro ativo (Carro como fallback)
+      if (!this.tipoVeiculoSelecionado) {
+        const primeiroAtivo = this.tiposVeiculo.find(t => t.ativo);
+        if (primeiroAtivo) {
+          this.tipoVeiculoSelecionado = primeiroAtivo.id;
+          await this.localStorage.setItem('tipo_veiculo_id', primeiroAtivo.id.toString());
+        } else {
+          // Fallback para Carro (ID 1) se nenhum tipo estiver ativo
+          this.tipoVeiculoSelecionado = 1;
+          await this.localStorage.setItem('tipo_veiculo_id', '1');
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar tipos de veículos:', error);
-      // Mesmo com erro, mantém tipo padrão 1 (Carro)
+      // Fallback para Carro (ID 1) em caso de erro
+      this.tipoVeiculoSelecionado = 1;
+      await this.localStorage.setItem('tipo_veiculo_id', '1');
       console.log('Usando tipo padrão: Carro (ID: 1)');
     } finally {
       this.carregandoTipos = false;
@@ -101,7 +110,7 @@ export class HomePage implements OnInit {
       // Mostra mensagem informativa para tipos desabilitados
       const alert = await this.alertController.create({
         header: 'Tipo de Veículo Indisponível',
-        message: `O tipo "${tipo.nome}" está temporariamente indisponível. Apenas veículos do tipo "Carro" podem ser inspecionados no momento.`,
+        message: `O tipo "${tipo.nome}" está temporariamente indisponível. Por favor, selecione outro tipo de veículo.`,
         buttons: ['OK']
       });
       await alert.present();

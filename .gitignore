@@ -90,3 +90,4 @@ backend/.env.staging
 backend/.env.production
 .env
 api/adminer.php
+api/MYSQL_LOGIN.txt

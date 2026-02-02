@@ -26,13 +26,21 @@
       <h2>Dados Iniciais do Veículo</h2>
     </div>
 
-    <ion-card>
+    <!-- Loading enquanto carrega campos -->
+    <ion-card *ngIf="carregandoCampos">
+      <ion-card-content class="ion-text-center">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <p>Carregando campos...</p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="!carregandoCampos">
       <ion-card-content>
 
         <!-- PLACA -->
-        <ion-item color="dark" lines="none" id="tour-placa">
+        <ion-item *ngIf="campoHabilitado('placa')" color="dark" lines="none" id="tour-placa">
           <ion-label position="stacked" color="light">
-            Placa *
+            {{ getCampoLabel('placa') }} {{ campoObrigatorio('placa') ? '*' : '' }}
           </ion-label>
           <ion-input
             [(ngModel)]="inspecaoInicial.placa"
@@ -59,12 +67,38 @@
           </ion-item>
         </div>
 
-        <div class="spacer"></div>
+        <!-- FOTO DA PLACA (se tem_foto habilitado) -->
+        <div *ngIf="campoHabilitado('placa') && campoTemFoto('placa')" class="photo-section-inline">
+          <ion-button
+            expand="block"
+            color="primary"
+            size="small"
+            (click)="tirarFotoCampo('placa')"
+            [fill]="getFotoCampo('placa') ? 'outline' : 'solid'"
+          >
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ getFotoCampo('placa') ? 'Alterar Foto' : 'Tirar Foto da Placa' }}
+          </ion-button>
+
+          <div *ngIf="getFotoCampo('placa')" class="photo-preview-small">
+            <img [src]="getFotoCampo('placa')" />
+            <ion-button
+              size="small"
+              color="danger"
+              fill="clear"
+              (click)="removerFotoCampo('placa')"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
+        <div *ngIf="campoHabilitado('placa')" class="spacer"></div>
 
         <!-- LOCAL -->
-        <ion-item color="dark" lines="none" id="tour-local">
+        <ion-item *ngIf="campoHabilitado('local')" color="dark" lines="none" id="tour-local">
           <ion-label position="stacked" color="light">
-            Local *
+            {{ getCampoLabel('local') }} {{ campoObrigatorio('local') ? '*' : '' }}
           </ion-label>
           <ion-select
             [(ngModel)]="inspecaoInicial.local"
@@ -79,12 +113,38 @@
           </ion-select>
         </ion-item>
 
-        <div class="spacer"></div>
+        <!-- FOTO DO LOCAL (se tem_foto habilitado) -->
+        <div *ngIf="campoHabilitado('local') && campoTemFoto('local')" class="photo-section-inline">
+          <ion-button
+            expand="block"
+            color="primary"
+            size="small"
+            (click)="tirarFotoCampo('local')"
+            [fill]="getFotoCampo('local') ? 'outline' : 'solid'"
+          >
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ getFotoCampo('local') ? 'Alterar Foto' : 'Tirar Foto do Local' }}
+          </ion-button>
+
+          <div *ngIf="getFotoCampo('local')" class="photo-preview-small">
+            <img [src]="getFotoCampo('local')" />
+            <ion-button
+              size="small"
+              color="danger"
+              fill="clear"
+              (click)="removerFotoCampo('local')"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
+        <div *ngIf="campoHabilitado('local')" class="spacer"></div>
 
         <!-- KM INICIAL -->
-        <ion-item color="dark" lines="none" id="tour-km">
+        <ion-item *ngIf="campoHabilitado('km_inicial')" color="dark" lines="none" id="tour-km">
           <ion-label position="stacked" color="light">
-            KM Inicial *
+            {{ getCampoLabel('km_inicial') }} {{ campoObrigatorio('km_inicial') ? '*' : '' }}
           </ion-label>
           <ion-input
             [(ngModel)]="inspecaoInicial.kmInicial"
@@ -96,12 +156,38 @@
           ></ion-input>
         </ion-item>
 
-        <div class="spacer"></div>
+        <!-- FOTO DO KM INICIAL (se tem_foto habilitado) -->
+        <div *ngIf="campoHabilitado('km_inicial') && campoTemFoto('km_inicial')" class="photo-section-inline">
+          <ion-button
+            expand="block"
+            color="primary"
+            size="small"
+            (click)="tirarFotoCampo('km_inicial')"
+            [fill]="getFotoCampo('km_inicial') ? 'outline' : 'solid'"
+          >
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ getFotoCampo('km_inicial') ? 'Alterar Foto' : 'Tirar Foto do KM' }}
+          </ion-button>
+
+          <div *ngIf="getFotoCampo('km_inicial')" class="photo-preview-small">
+            <img [src]="getFotoCampo('km_inicial')" />
+            <ion-button
+              size="small"
+              color="danger"
+              fill="clear"
+              (click)="removerFotoCampo('km_inicial')"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
+        <div *ngIf="campoHabilitado('km_inicial')" class="spacer"></div>
 
         <!-- NÍVEL DE COMBUSTÍVEL -->
-        <div class="combustivel-section" id="tour-combustivel">
+        <div *ngIf="campoHabilitado('nivel_combustivel')" class="combustivel-section" id="tour-combustivel">
           <ion-label color="light" class="field-label">
-            Nível de Combustível *
+            {{ getCampoLabel('nivel_combustivel') }} {{ campoObrigatorio('nivel_combustivel') ? '*' : '' }}
           </ion-label>
 
           <ion-segment
@@ -116,22 +202,93 @@
           </ion-segment>
         </div>
 
+        <!-- FOTO DO NÍVEL DE COMBUSTÍVEL (se tem_foto habilitado) -->
+        <div *ngIf="campoHabilitado('nivel_combustivel') && campoTemFoto('nivel_combustivel')" class="photo-section-inline">
+          <ion-button
+            expand="block"
+            color="primary"
+            size="small"
+            (click)="tirarFotoCampo('nivel_combustivel')"
+            [fill]="getFotoCampo('nivel_combustivel') ? 'outline' : 'solid'"
+          >
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ getFotoCampo('nivel_combustivel') ? 'Alterar Foto' : 'Tirar Foto do Combustível' }}
+          </ion-button>
+
+          <div *ngIf="getFotoCampo('nivel_combustivel')" class="photo-preview-small">
+            <img [src]="getFotoCampo('nivel_combustivel')" />
+            <ion-button
+              size="small"
+              color="danger"
+              fill="clear"
+              (click)="removerFotoCampo('nivel_combustivel')"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
+        <div *ngIf="campoHabilitado('nivel_combustivel')" class="spacer"></div>
+
+        <!-- STATUS GERAL -->
+        <div *ngIf="campoHabilitado('status_geral')" class="combustivel-section" id="tour-status">
+          <ion-label color="light" class="field-label">
+            {{ getCampoLabel('status_geral') }} {{ campoObrigatorio('status_geral') ? '*' : '' }}
+          </ion-label>
+
+          <ion-segment
+            [(ngModel)]="inspecaoInicial.statusGeral"
+            (ionChange)="onCampoChange()"
+            class="segment-combustivel"
+          >
+            <ion-segment-button *ngFor="let opcao of opcoesStatusGeral" [value]="opcao.valor">
+              <ion-label>{{ opcao.label }}</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+        </div>
+
+        <!-- FOTO DO STATUS GERAL (se tem_foto habilitado) -->
+        <div *ngIf="campoHabilitado('status_geral') && campoTemFoto('status_geral')" class="photo-section-inline">
+          <ion-button
+            expand="block"
+            color="primary"
+            size="small"
+            (click)="tirarFotoCampo('status_geral')"
+            [fill]="getFotoCampo('status_geral') ? 'outline' : 'solid'"
+          >
+            <ion-icon slot="start" name="camera"></ion-icon>
+            {{ getFotoCampo('status_geral') ? 'Alterar Foto' : 'Tirar Foto do Status' }}
+          </ion-button>
+
+          <div *ngIf="getFotoCampo('status_geral')" class="photo-preview-small">
+            <img [src]="getFotoCampo('status_geral')" />
+            <ion-button
+              size="small"
+              color="danger"
+              fill="clear"
+              (click)="removerFotoCampo('status_geral')"
+            >
+              <ion-icon slot="icon-only" name="trash"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
       </ion-card-content>
     </ion-card>
 
-    <!-- SEÇÃO: FOTO DO PAINEL -->
-    <div class="section-header">
+    <!-- SEÇÃO: FOTO DO PAINEL (só mostra se observacao_painel tem foto habilitada) -->
+    <div *ngIf="campoHabilitado('observacao_painel') && campoTemFoto('observacao_painel')" class="section-header">
       <ion-icon name="speedometer" color="primary"></ion-icon>
       <h2>Painel do Veículo</h2>
     </div>
 
-    <ion-card>
+    <ion-card *ngIf="campoHabilitado('observacao_painel')">
       <ion-card-content>
 
-        <!-- FOTO DO PAINEL -->
-        <div class="photo-section" id="tour-foto-painel">
+        <!-- FOTO DO PAINEL (só mostra se campo tem_foto está habilitado) -->
+        <div *ngIf="campoTemFoto('observacao_painel')" class="photo-section" id="tour-foto-painel">
           <ion-label color="light" class="field-label">
-            Foto do Painel *
+            Foto do Painel {{ campoObrigatorio('observacao_painel') ? '*' : '' }}
           </ion-label>
 
           <ion-button
@@ -158,12 +315,12 @@
           </div>
         </div>
 
-        <div class="spacer"></div>
+        <div *ngIf="campoTemFoto('observacao_painel')" class="spacer"></div>
 
         <!-- OBSERVAÇÕES DO PAINEL -->
         <ion-item color="dark" lines="none" id="tour-observacoes">
           <ion-label position="stacked" color="light">
-            Observações do Painel (opcional)
+            {{ getCampoLabel('observacao_painel') }} {{ campoObrigatorio('observacao_painel') ? '*' : '(opcional)' }}
           </ion-label>
           <ion-textarea
             [(ngModel)]="inspecaoInicial.observacaoPainel"

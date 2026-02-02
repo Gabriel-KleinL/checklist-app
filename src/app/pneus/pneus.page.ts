@@ -3,21 +3,25 @@ import { Router } from '@angular/router';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { ChecklistDataService } from '../services/checklist-data.service';
 import { ApiService } from '../services/api.service';
+import { ConfigItensService } from '../services/config-itens.service';
 import { AlertController, ToastController } from '@ionic/angular';
 import { LocalStorageService } from '../services/local-storage';
 import { environment } from '../../environments/environment';
 import { AuthService } from '../services/auth.service';
 import { TempoTelasService } from '../services/tempo-telas.service';
-import { ConfigItensService } from '../services/config-itens.service';
 import { driver } from 'driver.js';
 
 interface Pneu {
   nome: string;
   posicao: string;
-  valor: 'bom' | 'ruim' | null;
+  valor: string | null;
   foto?: string;
   pressao?: number;
   descricao?: string;
+  tipo_resposta?: string;
+  opcoes_resposta?: string[];
+  tem_foto?: boolean;
+  obrigatorio?: boolean;
 }
 
 @Component({
@@ -28,13 +32,15 @@ interface Pneu {
 })
 export class PneusPage implements OnInit, OnDestroy {
 
-  pneus: Pneu[] = [
+  private pneusPadrao: Pneu[] = [
     { nome: 'Dianteira Direita', posicao: 'dianteira-direita', valor: null },
     { nome: 'Dianteira Esquerda', posicao: 'dianteira-esquerda', valor: null },
     { nome: 'Traseira Direita', posicao: 'traseira-direita', valor: null },
     { nome: 'Traseira Esquerda', posicao: 'traseira-esquerda', valor: null },
     { nome: 'Estepe', posicao: 'estepe', valor: null }
   ];
+
+  pneus: Pneu[] = [...this.pneusPadrao];
 
   opcoesPneu = ['bom', 'ruim'];
   salvando = false;
@@ -45,23 +51,93 @@ export class PneusPage implements OnInit, OnDestroy {
     private router: Router,
     private checklistData: ChecklistDataService,
     private apiService: ApiService,
+    private configItensService: ConfigItensService,
     private alertController: AlertController,
     private toastController: ToastController,
     private localStorage: LocalStorageService,
     private authService: AuthService,
-    private tempoTelasService: TempoTelasService,
-    private configItensService: ConfigItensService
+    private tempoTelasService: TempoTelasService
   ) { }
 
   async ngOnInit() {
     // Inicia rastreamento de tempo
     this.tempoTelasService.iniciarTela('pneus');
 
-    // Carrega itens de pneus habilitados do banco de dados
-    await this.carregarItensHabilitados();
-
+    await this.carregarItensPneusConfig();
     await this.recuperarDadosSalvos();
+
+    // Verifica se o inspecaoId está disponível (tenta recuperar do storage se necessário)
+    const inspecaoId = await this.checklistData.getInspecaoId();
+    if (inspecaoId) {
+      console.log('[Pneus] ✅ Inspeção ID encontrado:', inspecaoId);
+    } else {
+      console.warn('[Pneus] ⚠️ Inspeção ID não encontrado. O usuário precisará reiniciar o processo se tentar salvar.');
+    }
+
     await this.verificarPrimeiroAcesso();
+  }
+
+  private async carregarItensPneusConfig() {
+    try {
+      const tipoVeiculoIdStr = await this.localStorage.getItem('tipo_veiculo_id');
+      const tipoVeiculoId = tipoVeiculoIdStr ? parseInt(tipoVeiculoIdStr, 10) : 1;
+
+      const itens = await this.configItensService
+        .buscarPorTipoVeiculo(tipoVeiculoId, 'PNEU', true)
+        .toPromise();
+
+      if (itens && itens.length > 0) {
+        this.pneus = itens.map(item => ({
+          nome: item.nome_item,
+          posicao: this.gerarPosicao(item.nome_item),
+          valor: null,
+          tipo_resposta: item.tipo_resposta || 'conforme_nao_conforme',
+          opcoes_resposta: this.parseOpcoes(item.opcoes_resposta),
+          tem_foto: !!item.tem_foto,
+          obrigatorio: item.obrigatorio !== undefined ? !!item.obrigatorio : true
+        }));
+        console.log(`[Pneus] Carregados ${itens.length} pneus do banco para tipo ${tipoVeiculoId}`);
+      } else {
+        console.log('[Pneus] Nenhum pneu no banco, usando padrão');
+        this.pneus = [...this.pneusPadrao];
+      }
+    } catch (error) {
+      console.warn('[Pneus] Erro ao carregar config, usando padrão:', error);
+      this.pneus = [...this.pneusPadrao];
+    }
+  }
+
+  private gerarPosicao(nome: string): string {
+    return nome.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private parseOpcoes(opcoes: any): string[] {
+    if (!opcoes) return [];
+    if (Array.isArray(opcoes)) return opcoes;
+    try {
+      const parsed = JSON.parse(opcoes);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  precisaFoto(pneu: Pneu): boolean {
+    if (pneu.tipo_resposta === 'apenas_foto') return true;
+    if (pneu.tem_foto) return true;
+    if (pneu.tipo_resposta === 'conforme_nao_conforme' || !pneu.tipo_resposta) {
+      return pneu.valor === 'nao_conforme';
+    }
+    return false;
+  }
+
+  mostrarFoto(pneu: Pneu): boolean {
+    if (pneu.tipo_resposta === 'apenas_foto') return true;
+    return this.precisaFoto(pneu) || (pneu.valor !== null && pneu.valor !== '');
+  }
+
+  onValorChange(pneu: Pneu) {
+    this.salvarLocalmente();
   }
 
   ngOnDestroy() {
@@ -76,52 +152,18 @@ export class PneusPage implements OnInit, OnDestroy {
     }
   }
 
-  async carregarItensHabilitados() {
-    try {
-      console.log('[Config Itens Pneus] Carregando itens de pneus habilitados do banco...');
-
-      // Carrega apenas itens habilitados da categoria PNEU
-      const itensHabilitados = await this.configItensService.buscarHabilitados('PNEU').toPromise();
-
-      if (itensHabilitados && itensHabilitados.length > 0) {
-        console.log('[Config Itens Pneus] Itens carregados:', itensHabilitados);
-
-        // Mapeia itens do banco para a estrutura de pneus
-        this.pneus = itensHabilitados
-          .filter(item => !item.nome_item.toLowerCase().includes('caneta'))
-          .map((item, index) => ({
-            nome: item.nome_item,
-            posicao: this.gerarPosicao(item.nome_item, index),
-            valor: null
-          }));
-
-        console.log('[Config Itens Pneus] Pneus configurados com itens do banco:', this.pneus);
-      } else {
-        console.log('[Config Itens Pneus] Nenhum item de pneu habilitado encontrado, usando itens padrão');
-      }
-    } catch (error) {
-      console.error('[Config Itens Pneus] Erro ao carregar itens:', error);
-      console.log('[Config Itens Pneus] Mantendo itens padrão hardcoded devido ao erro');
-    }
-  }
-
-  gerarPosicao(nomeItem: string, index: number): string {
-    // Tenta identificar a posição pelo nome, senão usa um padrão baseado no índice
-    const nomeLower = nomeItem.toLowerCase();
-    if (nomeLower.includes('dianteira') && nomeLower.includes('direita')) return 'dianteira-direita';
-    if (nomeLower.includes('dianteira') && nomeLower.includes('esquerda')) return 'dianteira-esquerda';
-    if (nomeLower.includes('traseira') && nomeLower.includes('direita')) return 'traseira-direita';
-    if (nomeLower.includes('traseira') && nomeLower.includes('esquerda')) return 'traseira-esquerda';
-    if (nomeLower.includes('estepe')) return 'estepe';
-
-    // Fallback para posições genéricas
-    return `pneu-${index}`;
-  }
-
   async recuperarDadosSalvos() {
     const dadosSalvos = await this.localStorage.recuperarPneus();
-    if (dadosSalvos) {
-      this.pneus = dadosSalvos;
+    if (dadosSalvos && dadosSalvos.length > 0) {
+      for (const pneu of this.pneus) {
+        const saved = dadosSalvos.find((s: any) => s.nome === pneu.nome);
+        if (saved) {
+          pneu.valor = saved.valor;
+          pneu.foto = saved.foto;
+          pneu.pressao = saved.pressao;
+          pneu.descricao = saved.descricao;
+        }
+      }
     }
   }
 
@@ -164,20 +206,28 @@ export class PneusPage implements OnInit, OnDestroy {
 
   validarFormulario(): boolean {
     return this.pneus.every(pneu => {
-      // Todos devem ter valor selecionado
-      const valorPreenchido = pneu.valor !== null;
-      // Se o pneu está ruim, a foto é obrigatória
-      const fotoObrigatoria = pneu.valor === 'ruim' && !pneu.foto;
-      // Pressão é obrigatória
-      const pressaoPreenchida = pneu.pressao !== undefined && pneu.pressao !== null;
+      // Se não é obrigatório e não tem valor, aceita
+      if (pneu.obrigatorio === false && (pneu.valor === null || pneu.valor === '') && pneu.tipo_resposta !== 'apenas_foto') {
+        return true;
+      }
+      // Apenas foto: só precisa da foto
+      if (pneu.tipo_resposta === 'apenas_foto') {
+        if (pneu.obrigatorio === false) return true;
+        return !!pneu.foto;
+      }
+      // Valor deve estar preenchido
+      const valorPreenchido = pneu.valor !== null && pneu.valor !== '';
+      // Se precisa de foto (tem_foto ou nao_conforme), foto deve existir
+      const fotoFaltando = this.precisaFoto(pneu) && !pneu.foto;
+      // Pressão é OPCIONAL - não valida pressão
 
-      return valorPreenchido && !fotoObrigatoria && pressaoPreenchida;
+      return valorPreenchido && !fotoFaltando;
     });
   }
 
   async finalizarChecklist() {
     if (!this.validarFormulario()) {
-      alert('Por favor, preencha todos os campos: condição e pressão para cada pneu. Tire também a foto do pneu se estiver marcado como "ruim".');
+      alert('Por favor, preencha a condição para cada pneu. Tire também a foto do pneu se estiver marcado como "ruim". A pressão é opcional.');
       return;
     }
 
@@ -185,13 +235,25 @@ export class PneusPage implements OnInit, OnDestroy {
       this.salvando = true;
 
       const usuarioId = this.authService.currentUserValue?.id;
-      const inspecaoId = this.checklistData.getInspecaoId();
+      // Tenta recuperar o inspecaoId (pode estar no storage se foi perdido da memória)
+      console.log('[Pneus] 🔍 Buscando inspecaoId para salvar pneus...');
+      const inspecaoId = await this.checklistData.getInspecaoId();
+      console.log('[Pneus] InspecaoId recebido:', inspecaoId, 'Tipo:', typeof inspecaoId);
 
       if (!inspecaoId) {
-        alert('Erro: ID da inspeção não encontrado. Por favor, reinicie o processo.');
+        console.error('[Pneus] ❌ ERRO: ID da inspeção não encontrado!');
+        console.error('[Pneus] UsuarioId:', usuarioId);
+        const alert = await this.alertController.create({
+          header: 'Erro',
+          message: 'ID da inspeção não encontrado. Por favor, reinicie o processo do início.',
+          buttons: ['OK']
+        });
+        await alert.present();
         this.salvando = false;
         return;
       }
+      
+      console.log('[Pneus] ✅ Prosseguindo com inspecaoId:', inspecaoId);
 
       // Salva os dados dos pneus no serviço compartilhado
       this.checklistData.setPneus(this.pneus);
@@ -241,9 +303,9 @@ export class PneusPage implements OnInit, OnDestroy {
         buttons: [
           {
             text: 'OK',
-            handler: () => {
+            handler: async () => {
               // Limpa os dados e volta para home
-              this.checklistData.limparChecklist();
+              await this.checklistData.limparChecklist();
               this.router.navigate(['/home']);
             }
           }

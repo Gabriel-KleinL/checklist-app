@@ -2,9 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import { TempoTelasService } from '../services/tempo-telas.service';
-import { ConfigItensService, ConfigItem } from '../services/config-itens.service';
+import { ConfigItensService, ConfigItem, AdicionarItemRequest } from '../services/config-itens.service';
 import { ConfigItensCompletoService, ConfigItemCompleto } from '../services/config-itens-completo.service';
 import { AuthService } from '../services/auth.service';
+import { TiposVeiculoService } from '../services/tipos-veiculo.service';
+import { TipoVeiculo } from '../models/checklist.models';
+import { ConfigCamposInspecaoService, CampoInspecao } from '../services/config-campos-inspecao.service';
 import { AlertController, ToastController, ActionSheetController, LoadingController } from '@ionic/angular';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { PhotoCompressionService } from '../services/photo-compression.service';
@@ -36,6 +39,7 @@ export class AdminPage implements OnInit {
   filtroPlaca = '';
   filtroDataInicio = '';
   filtroDataFim = '';
+  filtroLocal = '';
 
   // Estatísticas (Simples)
   totalChecklists = 0;
@@ -48,16 +52,30 @@ export class AdminPage implements OnInit {
   checklistsCompletosSemana = 0;
 
   // Configuração de itens - SIMPLES
-  abaSelecionada: 'historico' | 'anomalias' | 'configuracao' | 'metricas' | 'relatorios' = 'historico';
+  abaSelecionada: 'historico' | 'anomalias' | 'configuracao' | 'pneus' | 'metricas' = 'historico';
   itensConfig: ConfigItem[] = [];
   itensConfigPorCategoria: { [key: string]: ConfigItem[] } = {};
   carregandoConfig = false;
 
-  // Relatórios
-  carregandoRelatorio = false;
+  // Configuração de Pneus (aba separada)
+  tipoVeiculoSelecionadoPneus: number | null = null;
+  itensPneusPorTipo: { [tipoId: number]: ConfigItem[] } = {};
+  carregandoItensPneus = false;
+  mostrarFormNovoItemPneu = false;
+  novoItemPneuTipo: 'geral' | 'especifico' = 'geral';
+  novoItemPneuTipoVeiculoId: number | null = null;
+  novoItemPneuTiposAssociados: number[] = [];
+  novoItemPneuNome: string = '';
+  novoItemPneuTemFoto = false;
+  novoItemPneuObrigatorio = false;
+  novoItemPneuTipoResposta: string = '';
+  novoItemPneuOpcoesResposta: string[] = [];
+  novoItemPneuNovaOpcao: string = '';
 
   // Anomalias
   anomalias: any[] = [];
+  anomaliasFiltradas: any[] = [];
+  filtroPlacaAnomalia = '';
   carregandoAnomalias = false;
   erroAnomalias = '';
   detalhesAnomaliaExpandido: { [placa: string]: boolean } = {};
@@ -71,8 +89,7 @@ export class AdminPage implements OnInit {
     { key: 'MOTOR', label: 'Motor', icon: 'construct-outline', color: '#3880ff' },
     { key: 'ELETRICO', label: 'Elétrico', icon: 'flash-outline', color: '#ffc409' },
     { key: 'LIMPEZA', label: 'Limpeza', icon: 'water-outline', color: '#2dd36f' },
-    { key: 'FERRAMENTA', label: 'Ferramentas', icon: 'build-outline', color: '#eb445a' },
-    { key: 'PNEU', label: 'Pneus', icon: 'ellipse-outline', color: '#3dc2ff' }
+    { key: 'FERRAMENTA', label: 'Ferramentas', icon: 'build-outline', color: '#eb445a' }
   ];
 
   // Métricas
@@ -83,6 +100,8 @@ export class AdminPage implements OnInit {
     anomaliasAtivas: 0,
     anomaliasFinalizadas: 0,
     totalVeiculos: 0,
+    totalUsuarios: 0,
+    totalLocais: 0,
     inspecoesHoje: 0,
     inspecoesSemana: 0,
     taxaAprovacao: 0,
@@ -101,6 +120,65 @@ export class AdminPage implements OnInit {
     { key: 'PARTE5_ESPECIAL', label: 'Parte 5 - Veículos Pesados', icon: 'bus-outline', color: '#3dc2ff' }
   ];
 
+  // Tipos de Veículos
+  tiposVeiculo: TipoVeiculo[] = [];
+  carregandoTiposVeiculo = false;
+  mostrarGerenciarTipos = false;
+
+  // Visualização por tipo de veículo
+  tipoVeiculoSelecionadoConfig: number | null = null;
+  itensPorTipoVeiculo: { [tipoId: number]: ConfigItem[] } = {};
+  carregandoItensPorTipo = false;
+
+  // Árvore de herança
+  arvoreHeranca: any[] = [];
+  carregandoArvore = false;
+  categoriaExpandida: { [key: string]: boolean } = {};
+  
+  // Formulário inline para novo item
+  mostrarFormNovoItem = false;
+  novoItemTipo: 'geral' | 'especifico' = 'geral';
+  novoItemCategoria: string = '';
+  novoItemTipoVeiculoId: number | null = null;
+  novoItemTiposAssociados: number[] = [];
+  novoItemNome: string = '';
+  novoItemTemFoto = false;
+  novoItemObrigatorio = false;
+  novoItemTipoResposta: string = '';
+  novoItemOpcoesResposta: string[] = [];
+  novoItemNovaOpcao: string = '';
+
+  // Edição inline de item existente
+  editandoItemId: number | null = null;
+  editItemNome: string = '';
+  editItemTemFoto: boolean = false;
+  editItemObrigatorio: boolean = false;
+  editItemHabilitado: boolean = true;
+  editItemTipoResposta: string = '';
+  editItemOpcoesResposta: string[] = [];
+  editItemNovaOpcao: string = '';
+
+  // Drag and Drop
+  itemSendoArrastado: any = null;
+  categoriaOrigem: string = '';
+  tipoOrigem: 'geral' | 'especifico' = 'geral';
+  dropZoneAtiva: string | null = null;
+
+  // Campos de Inspeção Inicial
+  camposInspecao: CampoInspecao[] = [];
+  carregandoCamposInspecao = false;
+  mostrarModalCamposInspecao = false;
+  campoEditandoId: number | null = null;
+  campoEditando: CampoInspecao | null = null;
+
+  // Tipos de campo disponíveis para seleção
+  tiposCampoDisponiveis: Array<{ value: 'text' | 'number' | 'select' | 'textarea'; label: string; icon: string }> = [
+    { value: 'text', label: 'Texto', icon: 'text-outline' },
+    { value: 'number', label: 'Número', icon: 'calculator-outline' },
+    { value: 'select', label: 'Seleção', icon: 'list-outline' },
+    { value: 'textarea', label: 'Área de Texto', icon: 'document-text-outline' }
+  ];
+
   constructor(
     private router: Router,
     private apiService: ApiService,
@@ -108,11 +186,13 @@ export class AdminPage implements OnInit {
     private configItensService: ConfigItensService,
     private configItensCompletoService: ConfigItensCompletoService,
     private authService: AuthService,
+    private tiposVeiculoService: TiposVeiculoService,
     private alertController: AlertController,
     private toastController: ToastController,
     private actionSheetController: ActionSheetController,
     private photoCompressionService: PhotoCompressionService,
-    private loadingController: LoadingController
+    private loadingController: LoadingController,
+    private configCamposInspecaoService: ConfigCamposInspecaoService
   ) {
     Chart.register(...registerables);
   }
@@ -120,6 +200,7 @@ export class AdminPage implements OnInit {
   ngOnInit() {
     this.carregarChecklists();
     this.carregarConfigItens();
+    this.carregarTiposVeiculo();
   }
 
   // Gráficos
@@ -344,14 +425,22 @@ export class AdminPage implements OnInit {
     });
   }
 
-  mudarAba(aba: 'historico' | 'anomalias' | 'configuracao' | 'metricas' | 'relatorios') {
+  mudarAba(aba: 'historico' | 'anomalias' | 'configuracao' | 'pneus' | 'metricas') {
     this.abaSelecionada = aba;
-    if (aba === 'configuracao') {
+    if (aba === 'pneus') {
+      if (this.tiposVeiculo.length === 0) {
+        this.carregarTiposVeiculo();
+      }
+    } else if (aba === 'configuracao') {
       // Carrega a configuração apropriada dependendo do tipo de checklist
       if (this.tipoChecklistSelecionado === 'simples' && this.itensConfig.length === 0) {
         this.carregarConfigItens();
       } else if (this.tipoChecklistSelecionado === 'completo' && this.itensConfigCompleto.length === 0) {
         this.carregarConfigItensCompleto();
+      }
+      // Carrega campos de inspeção inicial para mostrar no badge
+      if (this.camposInspecao.length === 0) {
+        this.carregarCamposInspecao();
       }
     } else if (aba === 'anomalias') {
       // Carrega as anomalias se ainda não foram carregadas
@@ -484,6 +573,827 @@ export class AdminPage implements OnInit {
     });
   }
 
+  // Carrega itens para um tipo de veículo específico
+  carregarItensPorTipoVeiculo(tipoId: number) {
+    if (this.itensPorTipoVeiculo[tipoId]) {
+      // Já carregado, não precisa buscar novamente
+      return;
+    }
+
+    this.carregandoItensPorTipo = true;
+    this.configItensService.buscarPorTipoVeiculo(tipoId, undefined, false).subscribe({
+      next: (itens) => {
+        this.itensPorTipoVeiculo[tipoId] = itens;
+        this.carregandoItensPorTipo = false;
+        console.log(`Itens carregados para tipo ${tipoId}:`, itens);
+      },
+      error: (error) => {
+        console.error(`Erro ao carregar itens para tipo ${tipoId}:`, error);
+        this.carregandoItensPorTipo = false;
+        this.mostrarToast('Erro ao carregar itens do tipo de veículo', 'danger');
+      }
+    });
+  }
+
+  // Seleciona um tipo de veículo para visualizar seus itens
+  selecionarTipoVeiculoConfig(tipoId: number) {
+    this.tipoVeiculoSelecionadoConfig = tipoId;
+    this.carregarItensPorTipoVeiculo(tipoId);
+  }
+
+  // Carrega itens para todos os tipos de veículo
+  carregarTodosItensPorTipo() {
+    this.tiposVeiculo.forEach(tipo => {
+      this.carregarItensPorTipoVeiculo(tipo.id);
+    });
+  }
+
+  // Organiza os itens de um tipo de veículo por categoria
+  getItensPorCategoria(tipoId: number): { [key: string]: ConfigItem[] } {
+    const itens = this.itensPorTipoVeiculo[tipoId] || [];
+    const resultado: { [key: string]: ConfigItem[] } = {};
+
+    itens.forEach(item => {
+      if (!resultado[item.categoria]) {
+        resultado[item.categoria] = [];
+      }
+      resultado[item.categoria].push(item);
+    });
+
+    return resultado;
+  }
+
+  // Conta total de itens de um tipo de veículo
+  getTotalItensTipo(tipoId: number): number {
+    return (this.itensPorTipoVeiculo[tipoId] || []).length;
+  }
+
+  // Conta itens habilitados de um tipo de veículo
+  getItensHabilitadosTipo(tipoId: number): number {
+    return (this.itensPorTipoVeiculo[tipoId] || []).filter(i => i.habilitado).length;
+  }
+
+  // ============================================
+  // Métodos de Pneus (aba separada)
+  // ============================================
+
+  selecionarTipoVeiculoPneus(tipoId: number) {
+    this.tipoVeiculoSelecionadoPneus = tipoId;
+    this.carregarItensPneus(tipoId);
+  }
+
+  carregarItensPneus(tipoId: number) {
+    if (this.itensPneusPorTipo[tipoId]) {
+      return;
+    }
+    this.carregandoItensPneus = true;
+    this.configItensService.buscarPorTipoVeiculo(tipoId, 'PNEU', false).subscribe({
+      next: (itens) => {
+        this.itensPneusPorTipo[tipoId] = itens;
+        this.carregandoItensPneus = false;
+      },
+      error: (error) => {
+        console.error(`Erro ao carregar pneus para tipo ${tipoId}:`, error);
+        this.carregandoItensPneus = false;
+        this.mostrarToast('Erro ao carregar itens de pneus', 'danger');
+      }
+    });
+  }
+
+  getItensPneus(): ConfigItem[] {
+    if (!this.tipoVeiculoSelecionadoPneus) return [];
+    return this.itensPneusPorTipo[this.tipoVeiculoSelecionadoPneus] || [];
+  }
+
+  getTotalPneusTipo(tipoId: number): number {
+    return (this.itensPneusPorTipo[tipoId] || []).length;
+  }
+
+  getPneusHabilitadosTipo(tipoId: number): number {
+    return (this.itensPneusPorTipo[tipoId] || []).filter(i => i.habilitado).length;
+  }
+
+  getNomeTipoVeiculoPneus(): string {
+    if (!this.tipoVeiculoSelecionadoPneus) return '';
+    const tipo = this.tiposVeiculo.find(t => t.id === this.tipoVeiculoSelecionadoPneus);
+    return tipo?.nome || '';
+  }
+
+  getIconeTipoVeiculoPneus(): string {
+    if (!this.tipoVeiculoSelecionadoPneus) return 'car-outline';
+    const tipo = this.tiposVeiculo.find(t => t.id === this.tipoVeiculoSelecionadoPneus);
+    return tipo?.icone || 'car-outline';
+  }
+
+  toggleTipoAssociadoPneu(tipoId: number) {
+    const idx = this.novoItemPneuTiposAssociados.indexOf(tipoId);
+    if (idx > -1) {
+      this.novoItemPneuTiposAssociados.splice(idx, 1);
+    } else {
+      this.novoItemPneuTiposAssociados.push(tipoId);
+    }
+  }
+
+  cancelarFormNovoItemPneu() {
+    this.mostrarFormNovoItemPneu = false;
+    this.novoItemPneuTipo = 'geral';
+    this.novoItemPneuTipoVeiculoId = null;
+    this.novoItemPneuTiposAssociados = [];
+    this.novoItemPneuNome = '';
+    this.novoItemPneuTemFoto = false;
+    this.novoItemPneuObrigatorio = false;
+    this.novoItemPneuTipoResposta = 'conforme_nao_conforme';
+    this.novoItemPneuOpcoesResposta = [];
+    this.novoItemPneuNovaOpcao = '';
+  }
+
+  adicionarOpcaoRespostaPneu() {
+    const opcao = this.novoItemPneuNovaOpcao.trim();
+    if (opcao && !this.novoItemPneuOpcoesResposta.includes(opcao)) {
+      this.novoItemPneuOpcoesResposta.push(opcao);
+      this.novoItemPneuNovaOpcao = '';
+    }
+  }
+
+  removerOpcaoRespostaPneu(index: number) {
+    this.novoItemPneuOpcoesResposta.splice(index, 1);
+  }
+
+  async salvarNovoItemPneu() {
+    if (!this.novoItemPneuNome.trim()) {
+      await this.mostrarToast('Digite o nome do pneu', 'danger');
+      return;
+    }
+    if (this.novoItemPneuTipo === 'especifico' && !this.novoItemPneuTipoVeiculoId) {
+      await this.mostrarToast('Selecione um tipo de veículo', 'danger');
+      return;
+    }
+    if (this.novoItemPneuTipo === 'geral' && this.novoItemPneuTiposAssociados.length === 0) {
+      await this.mostrarToast('Selecione pelo menos um tipo de veículo', 'warning');
+      return;
+    }
+    if (this.novoItemPneuTipoResposta === 'lista_opcoes' && this.novoItemPneuOpcoesResposta.length < 2) {
+      await this.mostrarToast('Adicione pelo menos 2 opções para lista de opções', 'warning');
+      return;
+    }
+
+    const loading = await this.loadingController.create({ message: 'Salvando pneu...' });
+    await loading.present();
+
+    const usuario = this.authService.currentUserValue;
+    const dados: AdicionarItemRequest = {
+      categoria: 'PNEU',
+      nome_item: this.novoItemPneuNome.trim(),
+      habilitado: true,
+      tem_foto: this.novoItemPneuTemFoto,
+      obrigatorio: this.novoItemPneuObrigatorio,
+      tipo_resposta: this.novoItemPneuTipoResposta as any,
+      opcoes_resposta: this.novoItemPneuOpcoesResposta.length > 0 ? this.novoItemPneuOpcoesResposta : undefined,
+      tipo_veiculo_id: this.novoItemPneuTipo === 'especifico' ? this.novoItemPneuTipoVeiculoId : null,
+      tipos_veiculo_associados: this.novoItemPneuTipo === 'geral' ? this.novoItemPneuTiposAssociados : [],
+      usuario_id: usuario?.id,
+      tipo_checklist: 'simplificado'
+    };
+
+    this.configItensService.adicionarItem(dados).subscribe({
+      next: async () => {
+        await loading.dismiss();
+        await this.mostrarToast('Pneu adicionado com sucesso!', 'success');
+        this.itensPneusPorTipo = {};
+        if (this.tipoVeiculoSelecionadoPneus) {
+          this.carregarItensPneus(this.tipoVeiculoSelecionadoPneus);
+        }
+        this.cancelarFormNovoItemPneu();
+      },
+      error: async (error) => {
+        await loading.dismiss();
+        console.error('Erro ao adicionar pneu:', error);
+        await this.mostrarToast('Erro ao adicionar pneu', 'danger');
+      }
+    });
+  }
+
+  async salvarEdicaoItemPneu() {
+    if (!this.editandoItemId) return;
+
+    if (!this.editItemNome.trim()) {
+      await this.mostrarToast('Digite o nome do pneu', 'danger');
+      return;
+    }
+    if (this.editItemTipoResposta === 'lista_opcoes' && this.editItemOpcoesResposta.length < 2) {
+      await this.mostrarToast('Adicione pelo menos 2 opções para lista de opções', 'warning');
+      return;
+    }
+
+    const loading = await this.loadingController.create({ message: 'Salvando...' });
+    await loading.present();
+
+    const dados: any = {
+      id: this.editandoItemId,
+      nome_item: this.editItemNome.trim(),
+      habilitado: this.editItemHabilitado,
+      tem_foto: this.editItemTemFoto,
+      obrigatorio: this.editItemObrigatorio,
+      tipo_resposta: this.editItemTipoResposta,
+      opcoes_resposta: this.editItemTipoResposta === 'lista_opcoes' ? this.editItemOpcoesResposta : null
+    };
+
+    this.configItensService.atualizarItem(dados).subscribe({
+      next: async () => {
+        await loading.dismiss();
+        await this.mostrarToast('Pneu atualizado com sucesso!', 'success');
+        this.fecharEdicaoItem();
+        if (this.tipoVeiculoSelecionadoPneus) {
+          delete this.itensPneusPorTipo[this.tipoVeiculoSelecionadoPneus];
+          this.carregarItensPneus(this.tipoVeiculoSelecionadoPneus);
+        }
+      },
+      error: async (error) => {
+        await loading.dismiss();
+        console.error('Erro ao atualizar pneu:', error);
+        await this.mostrarToast('Erro ao atualizar pneu', 'danger');
+      }
+    });
+  }
+
+  // Retorna o ícone do tipo de veículo selecionado
+  getIconeTipoVeiculoSelecionado(): string {
+    if (!this.tipoVeiculoSelecionadoConfig) {
+      return 'car-outline';
+    }
+    const tipo = this.tiposVeiculo.find(t => t.id === this.tipoVeiculoSelecionadoConfig);
+    return tipo?.icone || 'car-outline';
+  }
+
+  // Retorna o nome do tipo de veículo selecionado
+  getNomeTipoVeiculoSelecionado(): string {
+    if (!this.tipoVeiculoSelecionadoConfig) {
+      return '';
+    }
+    const tipo = this.tiposVeiculo.find(t => t.id === this.tipoVeiculoSelecionadoConfig);
+    return tipo?.nome || '';
+  }
+
+  // Carrega a árvore de herança de itens
+  carregarArvoreHeranca() {
+    this.carregandoArvore = true;
+    this.configItensService.buscarArvoreHeranca('simplificado', false).subscribe({
+      next: (itens) => {
+        this.arvoreHeranca = this.construirArvore(itens);
+        this.carregandoArvore = false;
+      },
+      error: (error) => {
+        console.error('Erro ao carregar árvore de herança:', error);
+        this.carregandoArvore = false;
+        this.mostrarToast('Erro ao carregar árvore de herança', 'danger');
+      }
+    });
+  }
+
+  // Constrói a estrutura de árvore a partir dos itens
+  construirArvore(itens: any[]): any[] {
+    const arvore: any[] = [];
+    const itensPorCategoria: { [key: string]: any[] } = {};
+
+    // Agrupa itens por categoria
+    itens.forEach(item => {
+      if (!itensPorCategoria[item.categoria]) {
+        itensPorCategoria[item.categoria] = [];
+      }
+      itensPorCategoria[item.categoria].push(item);
+    });
+
+    // Organiza por categoria
+    this.categorias.forEach(categoria => {
+      if (itensPorCategoria[categoria.key]) {
+        const itensCategoria = itensPorCategoria[categoria.key];
+        const itensGerais = itensCategoria.filter(i => !i.tipo_veiculo_id);
+        const itensEspecificos = itensCategoria.filter(i => i.tipo_veiculo_id);
+
+        arvore.push({
+          categoria: categoria.key,
+          categoriaInfo: categoria,
+          itensGerais: itensGerais.map(item => ({
+            ...item,
+            tipo: 'geral',
+            tiposHerdeiros: item.tipos_veiculo_info || []
+          })),
+          itensEspecificos: itensEspecificos.map(item => ({
+            ...item,
+            tipo: 'especifico',
+            tipoVeiculoInfo: item.tipo_veiculo_info
+          }))
+        });
+      }
+    });
+
+    return arvore;
+  }
+
+  // Alterna expansão de categoria
+  toggleCategoria(categoriaKey: string) {
+    this.categoriaExpandida[categoriaKey] = !this.categoriaExpandida[categoriaKey];
+  }
+
+  // Verifica se categoria está expandida
+  isCategoriaExpandida(categoriaKey: string): boolean {
+    return this.categoriaExpandida[categoriaKey] || false;
+  }
+
+  // Toggle tipo associado no formulário inline
+  toggleTipoAssociado(tipoId: number) {
+    const idx = this.novoItemTiposAssociados.indexOf(tipoId);
+    if (idx >= 0) {
+      this.novoItemTiposAssociados.splice(idx, 1);
+    } else {
+      this.novoItemTiposAssociados.push(tipoId);
+    }
+  }
+
+  // Cancela formulário inline e reseta
+  cancelarFormNovoItem() {
+    this.mostrarFormNovoItem = false;
+    this.novoItemTipo = 'geral';
+    this.novoItemCategoria = '';
+    this.novoItemTipoVeiculoId = null;
+    this.novoItemTiposAssociados = [];
+    this.novoItemNome = '';
+    this.novoItemTemFoto = false;
+    this.novoItemObrigatorio = false;
+    this.novoItemTipoResposta = 'conforme_nao_conforme';
+    this.novoItemOpcoesResposta = [];
+    this.novoItemNovaOpcao = '';
+  }
+
+  // Adiciona opção à lista de opções de resposta
+  adicionarOpcaoResposta() {
+    const opcao = this.novoItemNovaOpcao.trim();
+    if (opcao && !this.novoItemOpcoesResposta.includes(opcao)) {
+      this.novoItemOpcoesResposta.push(opcao);
+      this.novoItemNovaOpcao = '';
+    }
+  }
+
+  // Remove opção da lista
+  removerOpcaoResposta(index: number) {
+    this.novoItemOpcoesResposta.splice(index, 1);
+  }
+
+  // Salva novo item a partir do formulário inline
+  async salvarNovoItem() {
+    if (!this.novoItemNome.trim()) {
+      await this.mostrarToast('Digite o nome do item', 'danger');
+      return;
+    }
+    if (!this.novoItemCategoria) {
+      await this.mostrarToast('Selecione uma categoria', 'danger');
+      return;
+    }
+    if (this.novoItemTipo === 'especifico' && !this.novoItemTipoVeiculoId) {
+      await this.mostrarToast('Selecione um tipo de veículo', 'danger');
+      return;
+    }
+    if (this.novoItemTipo === 'geral' && this.novoItemTiposAssociados.length === 0) {
+      await this.mostrarToast('Selecione pelo menos um tipo de veículo', 'warning');
+      return;
+    }
+    if (this.novoItemTipoResposta === 'lista_opcoes' && this.novoItemOpcoesResposta.length < 2) {
+      await this.mostrarToast('Adicione pelo menos 2 opções para lista de opções', 'warning');
+      return;
+    }
+
+    await this.salvarItem(
+      this.novoItemCategoria,
+      this.novoItemNome.trim(),
+      this.novoItemTipo === 'especifico' ? this.novoItemTipoVeiculoId : null,
+      this.novoItemTipo === 'geral' ? this.novoItemTiposAssociados : [],
+      this.novoItemTemFoto,
+      this.novoItemObrigatorio,
+      this.novoItemTipoResposta,
+      this.novoItemOpcoesResposta
+    );
+
+    this.cancelarFormNovoItem();
+  }
+
+  // Abre edição inline de um item existente
+  abrirEdicaoItem(item: any) {
+    if (this.editandoItemId === item.id) {
+      this.fecharEdicaoItem();
+      return;
+    }
+    this.editandoItemId = item.id;
+    this.editItemNome = item.nome_item;
+    this.editItemTemFoto = !!item.tem_foto;
+    this.editItemObrigatorio = !!item.obrigatorio;
+    this.editItemHabilitado = !!item.habilitado;
+    this.editItemTipoResposta = item.tipo_resposta || 'conforme_nao_conforme';
+    try {
+      this.editItemOpcoesResposta = item.opcoes_resposta
+        ? (typeof item.opcoes_resposta === 'string' ? JSON.parse(item.opcoes_resposta) : item.opcoes_resposta)
+        : [];
+    } catch {
+      this.editItemOpcoesResposta = [];
+    }
+    this.editItemNovaOpcao = '';
+  }
+
+  fecharEdicaoItem() {
+    this.editandoItemId = null;
+  }
+
+  adicionarOpcaoRespostaEdit() {
+    const opcao = this.editItemNovaOpcao.trim();
+    if (opcao && !this.editItemOpcoesResposta.includes(opcao)) {
+      this.editItemOpcoesResposta.push(opcao);
+      this.editItemNovaOpcao = '';
+    }
+  }
+
+  removerOpcaoRespostaEdit(index: number) {
+    this.editItemOpcoesResposta.splice(index, 1);
+  }
+
+  async salvarEdicaoItem() {
+    if (!this.editandoItemId) return;
+
+    if (!this.editItemNome.trim()) {
+      await this.mostrarToast('Digite o nome do item', 'danger');
+      return;
+    }
+    if (this.editItemTipoResposta === 'lista_opcoes' && this.editItemOpcoesResposta.length < 2) {
+      await this.mostrarToast('Adicione pelo menos 2 opções para lista de opções', 'warning');
+      return;
+    }
+
+    const loading = await this.loadingController.create({ message: 'Salvando...' });
+    await loading.present();
+
+    const dados: any = {
+      id: this.editandoItemId,
+      nome_item: this.editItemNome.trim(),
+      habilitado: this.editItemHabilitado,
+      tem_foto: this.editItemTemFoto,
+      obrigatorio: this.editItemObrigatorio,
+      tipo_resposta: this.editItemTipoResposta,
+      opcoes_resposta: this.editItemTipoResposta === 'lista_opcoes' ? this.editItemOpcoesResposta : null
+    };
+
+    this.configItensService.atualizarItem(dados).subscribe({
+      next: async () => {
+        await loading.dismiss();
+        await this.mostrarToast('Item atualizado com sucesso!', 'success');
+        this.fecharEdicaoItem();
+        if (this.tipoVeiculoSelecionadoConfig) {
+          delete this.itensPorTipoVeiculo[this.tipoVeiculoSelecionadoConfig];
+          this.selecionarTipoVeiculoConfig(this.tipoVeiculoSelecionadoConfig);
+        }
+      },
+      error: async (error) => {
+        await loading.dismiss();
+        console.error('Erro ao atualizar item:', error);
+        await this.mostrarToast('Erro ao atualizar item', 'danger');
+      }
+    });
+  }
+
+  // ============================================
+  // DRAG AND DROP
+  // ============================================
+  
+  onDragStart(event: DragEvent, item: any, categoria: string, tipo: 'geral' | 'especifico') {
+    this.itemSendoArrastado = item;
+    this.categoriaOrigem = categoria;
+    this.tipoOrigem = tipo;
+    
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', JSON.stringify({
+        itemId: item.id,
+        categoria,
+        tipo
+      }));
+    }
+    
+    const target = event.target as HTMLElement;
+    if (target) {
+      target.classList.add('dragging');
+    }
+  }
+  
+  onDragEnd(event: DragEvent) {
+    const target = event.target as HTMLElement;
+    if (target) {
+      target.classList.remove('dragging');
+    }
+    this.dropZoneAtiva = null;
+  }
+  
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+  
+  onDragEnter(event: DragEvent) {
+    event.preventDefault();
+    const target = event.currentTarget as HTMLElement;
+    if (target) {
+      target.classList.add('drop-zone-active');
+      this.dropZoneAtiva = target.getAttribute('data-categoria') || null;
+    }
+  }
+  
+  onDragLeave(event: DragEvent) {
+    const target = event.currentTarget as HTMLElement;
+    if (target) {
+      target.classList.remove('drop-zone-active');
+    }
+  }
+  
+  async onDrop(event: DragEvent, categoriaDestino: string, tipoDestino: 'geral' | 'especifico') {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const target = event.currentTarget as HTMLElement;
+    if (target) {
+      target.classList.remove('drop-zone-active');
+    }
+    
+    if (!this.itemSendoArrastado) {
+      return;
+    }
+    
+    // Se for a mesma categoria e tipo, não faz nada
+    if (this.categoriaOrigem === categoriaDestino && this.tipoOrigem === tipoDestino) {
+      this.itemSendoArrastado = null;
+      return;
+    }
+    
+    // Se apenas a categoria mudou, move entre categorias
+    if (this.categoriaOrigem !== categoriaDestino) {
+      await this.moverItemEntreCategorias(
+        this.itemSendoArrastado.id,
+        this.categoriaOrigem,
+        categoriaDestino,
+        this.tipoOrigem,
+        tipoDestino
+      );
+    } else {
+      // Mesma categoria, mas tipo diferente - apenas atualiza o tipo
+      // Isso não é necessário pois o tipo é determinado pelo tipo_veiculo_id
+      // Se quiser mudar de geral para específico ou vice-versa, precisa editar o tipo de veículo
+      await this.mostrarToast('Para alterar o tipo (geral/específico), edite o tipo de veículo do item', 'info');
+    }
+    
+    this.itemSendoArrastado = null;
+    this.dropZoneAtiva = null;
+  }
+  
+  async moverItemEntreCategorias(
+    itemId: number,
+    categoriaOrigem: string,
+    categoriaDestino: string,
+    tipoOrigem: 'geral' | 'especifico',
+    tipoDestino: 'geral' | 'especifico'
+  ) {
+    const loading = await this.loadingController.create({
+      message: 'Movendo item...'
+    });
+    await loading.present();
+    
+    this.configItensService.moverItem(itemId, categoriaDestino).subscribe({
+      next: async (response) => {
+        await loading.dismiss();
+        await this.mostrarToast(`Item movido de ${this.getNomeCategoria(categoriaOrigem)} para ${this.getNomeCategoria(categoriaDestino)}!`, 'success');
+        // Recarrega a árvore
+        this.carregarArvoreHeranca();
+      },
+      error: async (error) => {
+        await loading.dismiss();
+        console.error('Erro ao mover item:', error);
+        await this.mostrarToast('Erro ao mover item', 'danger');
+      }
+    });
+  }
+  
+  getNomeCategoria(categoriaKey: string): string {
+    const categoria = this.categorias.find(c => c.key === categoriaKey);
+    return categoria?.label || categoriaKey;
+  }
+  
+  // ============================================
+  // EDITAR TIPOS DE VEÍCULO DE ITEM ESPECÍFICO
+  // ============================================
+  
+  async editarTiposVeiculoItem(item: any) {
+    if (!item.tipoVeiculoInfo) {
+      // Se não tem tipo, permite adicionar
+      await this.adicionarTipoVeiculoItem(item);
+      return;
+    }
+    
+    const alert = await this.alertController.create({
+      header: 'Gerenciar Tipo de Veículo',
+      message: `Item: ${item.nome_item}`,
+      inputs: [
+        {
+          name: 'acao',
+          type: 'radio' as const,
+          label: 'Manter tipo atual',
+          value: 'manter',
+          checked: true
+        },
+        {
+          name: 'acao',
+          type: 'radio' as const,
+          label: 'Alterar tipo de veículo',
+          value: 'alterar'
+        },
+        {
+          name: 'acao',
+          type: 'radio' as const,
+          label: 'Remover tipo (tornar geral)',
+          value: 'remover'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Confirmar',
+          handler: async (data) => {
+            if (data === 'alterar') {
+              await this.alterarTipoVeiculoItem(item);
+            } else if (data === 'remover') {
+              await this.removerTipoVeiculoItem(item);
+            }
+            return true;
+          }
+        }
+      ]
+    });
+    
+    await alert.present();
+  }
+  
+  async adicionarTipoVeiculoItem(item: any) {
+    const tiposDisponiveis = this.tiposVeiculo.filter(t => t.id !== item.tipo_veiculo_id);
+    
+    if (tiposDisponiveis.length === 0) {
+      await this.mostrarToast('Não há tipos de veículo disponíveis', 'warning');
+      return;
+    }
+    
+    const inputs = tiposDisponiveis.map(tipo => ({
+      name: 'tipo_veiculo',
+      type: 'radio' as const,
+      label: tipo.nome,
+      value: tipo.id.toString(),
+      checked: false
+    }));
+    
+    const alert = await this.alertController.create({
+      header: 'Selecione o Tipo de Veículo',
+      inputs: inputs,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Adicionar',
+          handler: async (tipoId) => {
+            if (!tipoId) {
+              await this.mostrarToast('Selecione um tipo de veículo', 'danger');
+              return false;
+            }
+            await this.salvarTipoVeiculoItem(item.id, parseInt(tipoId));
+            return true;
+          }
+        }
+      ]
+    });
+    
+    await alert.present();
+  }
+  
+  async alterarTipoVeiculoItem(item: any) {
+    const inputs = this.tiposVeiculo.map(tipo => ({
+      name: 'tipo_veiculo',
+      type: 'radio' as const,
+      label: tipo.nome,
+      value: tipo.id.toString(),
+      checked: tipo.id === item.tipo_veiculo_id
+    }));
+    
+    const alert = await this.alertController.create({
+      header: 'Alterar Tipo de Veículo',
+      inputs: inputs,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Alterar',
+          handler: async (tipoId) => {
+            if (!tipoId) {
+              await this.mostrarToast('Selecione um tipo de veículo', 'danger');
+              return false;
+            }
+            await this.salvarTipoVeiculoItem(item.id, parseInt(tipoId));
+            return true;
+          }
+        }
+      ]
+    });
+    
+    await alert.present();
+  }
+  
+  async removerTipoVeiculoItem(item: any) {
+    const alert = await this.alertController.create({
+      header: 'Confirmar Remoção',
+      message: `Deseja remover o tipo de veículo deste item? Ele se tornará um item geral.`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Remover',
+          handler: async () => {
+            await this.salvarTipoVeiculoItem(item.id, null);
+            return true;
+          }
+        }
+      ]
+    });
+    
+    await alert.present();
+  }
+  
+  async salvarTipoVeiculoItem(itemId: number, tipoVeiculoId: number | null) {
+    const loading = await this.loadingController.create({
+      message: 'Salvando...'
+    });
+    await loading.present();
+    
+    this.configItensService.atualizarTipoVeiculoItem(itemId, tipoVeiculoId).subscribe({
+      next: async (response) => {
+        await loading.dismiss();
+        await this.mostrarToast('Tipo de veículo atualizado!', 'success');
+        this.carregarArvoreHeranca();
+      },
+      error: async (error) => {
+        await loading.dismiss();
+        console.error('Erro ao atualizar tipo de veículo:', error);
+        await this.mostrarToast('Erro ao atualizar tipo de veículo', 'danger');
+      }
+    });
+  }
+
+  // Salva o item no banco de dados
+  async salvarItem(categoria: string, nomeItem: string, tipoVeiculoId: number | null, tiposAssociados: number[], temFoto: boolean, obrigatorio: boolean, tipoResposta: string = 'conforme_nao_conforme', opcoesResposta: string[] = []) {
+    const loading = await this.loadingController.create({
+      message: 'Salvando item...'
+    });
+    await loading.present();
+
+    const usuario = this.authService.currentUserValue;
+    const dados: AdicionarItemRequest = {
+      categoria: categoria as 'MOTOR' | 'ELETRICO' | 'LIMPEZA' | 'FERRAMENTA' | 'PNEU',
+      nome_item: nomeItem,
+      habilitado: true,
+      tem_foto: temFoto,
+      obrigatorio: obrigatorio,
+      tipo_resposta: tipoResposta as any,
+      opcoes_resposta: opcoesResposta.length > 0 ? opcoesResposta : undefined,
+      tipo_veiculo_id: tipoVeiculoId,
+      tipos_veiculo_associados: tiposAssociados,
+      usuario_id: usuario?.id,
+      tipo_checklist: 'simplificado'
+    };
+
+    this.configItensService.adicionarItem(dados).subscribe({
+      next: async (response) => {
+        await loading.dismiss();
+        await this.mostrarToast('Item adicionado com sucesso!', 'success');
+        this.itensPorTipoVeiculo = {};
+        this.carregarArvoreHeranca();
+      },
+      error: async (error) => {
+        await loading.dismiss();
+        console.error('Erro ao adicionar item:', error);
+        await this.mostrarToast('Erro ao adicionar item', 'danger');
+      }
+    });
+  }
+
   async toggleItem(item: ConfigItem) {
     const novoStatus = !item.habilitado;
 
@@ -493,6 +1403,9 @@ export class AdminPage implements OnInit {
     }).subscribe({
       next: async (response) => {
         item.habilitado = novoStatus;
+        if (this.tipoVeiculoSelecionadoConfig) {
+          delete this.itensPorTipoVeiculo[this.tipoVeiculoSelecionadoConfig];
+        }
         await this.mostrarToast(
           `Item "${item.nome_item}" ${novoStatus ? 'habilitado' : 'desabilitado'} com sucesso`,
           'success'
@@ -587,12 +1500,6 @@ export class AdminPage implements OnInit {
         type: 'radio' as const,
         label: '🔨 Ferramentas',
         value: 'FERRAMENTA'
-      },
-      {
-        name: 'categoria',
-        type: 'radio' as const,
-        label: '⭕ Pneus',
-        value: 'PNEU'
       }
     ];
 
@@ -636,7 +1543,6 @@ export class AdminPage implements OnInit {
       'ELETRICO': '⚡',
       'LIMPEZA': '💧',
       'FERRAMENTA': '🔨',
-      'PNEU': '⭕',
       'PARTE1_INTERNA': '🚗',
       'PARTE2_EQUIPAMENTOS': '🔧',
       'PARTE3_DIANTEIRA': '⬆️',
@@ -704,7 +1610,7 @@ export class AdminPage implements OnInit {
     service.adicionarItem(dados).subscribe({
       next: async (response) => {
         await this.mostrarToast('Item adicionado com sucesso!', 'success');
-        // Recarrega a lista apropriada
+        this.itensPorTipoVeiculo = {};
         if (isCompleto) {
           this.carregarConfigItensCompleto();
         } else {
@@ -748,7 +1654,7 @@ export class AdminPage implements OnInit {
     service.removerItem(id).subscribe({
       next: async (response) => {
         await this.mostrarToast('Item removido com sucesso!', 'success');
-        // Recarrega a lista apropriada
+        this.itensPorTipoVeiculo = {};
         if (isCompleto) {
           this.carregarConfigItensCompleto();
         } else {
@@ -942,7 +1848,11 @@ export class AdminPage implements OnInit {
         const passaDataFim = !this.filtroDataFim || !checklist.data_realizacao ||
           new Date(checklist.data_realizacao) <= new Date(this.filtroDataFim);
 
-        return passaPlaca && passaDataInicio && passaDataFim;
+        // Filtro por local
+        const passaLocal = !this.filtroLocal ||
+          (checklist.local && checklist.local.toLowerCase().includes(this.filtroLocal.toLowerCase()));
+
+        return passaPlaca && passaDataInicio && passaDataFim && passaLocal;
       });
     } else {
       this.checklistsCompletosFiltrados = this.checklistsCompletos.filter(checklist => {
@@ -958,7 +1868,11 @@ export class AdminPage implements OnInit {
         const passaDataFim = !this.filtroDataFim || !checklist.data_realizacao ||
           new Date(checklist.data_realizacao) <= new Date(this.filtroDataFim);
 
-        return passaPlaca && passaDataInicio && passaDataFim;
+        // Filtro por local
+        const passaLocal = !this.filtroLocal ||
+          (checklist.local && checklist.local.toLowerCase().includes(this.filtroLocal.toLowerCase()));
+
+        return passaPlaca && passaDataInicio && passaDataFim && passaLocal;
       });
     }
   }
@@ -968,10 +1882,16 @@ export class AdminPage implements OnInit {
     this.aplicarFiltros();
   }
 
+  buscarPorLocal(event: any) {
+    this.filtroLocal = event.target.value;
+    this.aplicarFiltros();
+  }
+
   limparFiltros() {
     this.filtroPlaca = '';
     this.filtroDataInicio = '';
     this.filtroDataFim = '';
+    this.filtroLocal = '';
 
     if (this.tipoChecklistSelecionado === 'simples') {
       this.checklistsFiltrados = this.checklists;
@@ -998,11 +1918,19 @@ export class AdminPage implements OnInit {
     try {
       // Busca todos os detalhes do checklist usando o endpoint 'completo'
       this.apiService.buscarCompleto(checklist.id!).subscribe({
-        next: (dados) => {
-          console.log('[ADMIN] Dados recebidos da API:', dados);
-          console.log('[ADMIN] Campo local:', dados.local);
-          console.log('[ADMIN] Tipo do campo local:', typeof dados.local);
-          console.log('[ADMIN] Local é nulo/undefined?', dados.local === null || dados.local === undefined);
+        next: (dados: any) => {
+          console.log('[ADMIN] ========== DADOS RECEBIDOS DA API ==========');
+          console.log('[ADMIN] Dados completos:', JSON.stringify(dados, null, 2));
+          console.log('[ADMIN] ID:', dados.id);
+          console.log('[ADMIN] Placa:', dados.placa);
+          console.log('[ADMIN] Local:', dados.local, '| Tipo:', typeof dados.local);
+          console.log('[ADMIN] KM Inicial:', dados.km_inicial);
+          console.log('[ADMIN] Nível Combustível:', dados.nivel_combustivel, '| Tipo:', typeof dados.nivel_combustivel);
+          console.log('[ADMIN] Data Realização:', dados.data_realizacao);
+          console.log('[ADMIN] Usuário:', dados.usuario || dados.usuario_nome || 'N/A');
+          console.log('[ADMIN] Fotos:', dados.fotos);
+          console.log('[ADMIN] Itens:', dados.itens);
+          console.log('[ADMIN] ============================================');
 
           this.checklistDetalhado = dados;
 
@@ -1208,6 +2136,22 @@ export class AdminPage implements OnInit {
     if (!data) return '-';
     const d = new Date(data);
     return d.toLocaleString('pt-BR');
+  }
+
+  formatarNivelCombustivel(nivel: string | number | undefined): string {
+    if (!nivel && nivel !== 0) return '-';
+    
+    // Se já está formatado (ex: "25%", "1/4")
+    if (typeof nivel === 'string') {
+      return nivel;
+    }
+    
+    // Se é número, converte para porcentagem
+    if (typeof nivel === 'number') {
+      return `${nivel}%`;
+    }
+    
+    return String(nivel);
   }
 
   recarregar(event: any) {
@@ -1468,6 +2412,7 @@ export class AdminPage implements OnInit {
     if (cacheValido) {
       console.log(`Usando anomalias do cache (${this.tipoAnomalias})`);
       this.anomalias = this.cacheAnomalias[this.tipoAnomalias];
+      this.filtrarAnomalias();
       return Promise.resolve();
     }
 
@@ -1485,6 +2430,8 @@ export class AdminPage implements OnInit {
           this.cacheTimestamp[this.tipoAnomalias] = Date.now();
           this.carregandoAnomalias = false;
           console.log('Anomalias carregadas e salvas no cache:', this.anomalias);
+          // Aplica filtros após carregar
+          this.filtrarAnomalias();
           resolve();
         },
         error: (error) => {
@@ -1534,7 +2481,21 @@ export class AdminPage implements OnInit {
   mudarTipoAnomalia() {
     // Força recarregamento ao mudar tipo
     console.log(`Mudando tipo de anomalia para: ${this.tipoAnomalias}`);
-    this.carregarAnomalias(true);
+    this.carregarAnomalias(true).then(() => {
+      this.filtrarAnomalias();
+    });
+  }
+
+  filtrarAnomalias() {
+    if (!this.filtroPlacaAnomalia || this.filtroPlacaAnomalia.trim() === '') {
+      this.anomaliasFiltradas = [...this.anomalias];
+      return;
+    }
+
+    const termo = this.filtroPlacaAnomalia.trim().toLowerCase();
+    this.anomaliasFiltradas = this.anomalias.filter(veiculo => {
+      return veiculo.placa && veiculo.placa.toLowerCase().includes(termo);
+    });
   }
 
   async aprovarAnomalia(placa: string, anomalia: any) {
@@ -1661,7 +2622,7 @@ export class AdminPage implements OnInit {
       'ELETRICO': 'Elétrico',
       'LIMPEZA': 'Limpeza',
       'FERRAMENTA': 'Ferramentas',
-      'PNEU': 'Pneus'
+      'PNEU': 'Pneu'
     };
     return categorias[categoria] || categoria;
   }
@@ -1746,6 +2707,26 @@ export class AdminPage implements OnInit {
           this.checklists.forEach((c: any) => placasUnicas.add(c.placa));
           this.checklistsCompletos.forEach((c: any) => placasUnicas.add(c.placa));
           this.metricas.totalVeiculos = placasUnicas.size;
+
+          // Conta usuários únicos
+          const usuariosUnicos = new Set<string>();
+          this.checklists.forEach((c: any) => {
+            if (c.usuario_nome) usuariosUnicos.add(c.usuario_nome);
+          });
+          this.checklistsCompletos.forEach((c: any) => {
+            if (c.usuario_nome) usuariosUnicos.add(c.usuario_nome);
+          });
+          this.metricas.totalUsuarios = usuariosUnicos.size;
+
+          // Conta locais únicos
+          const locaisUnicos = new Set<string>();
+          this.checklists.forEach((c: any) => {
+            if (c.local) locaisUnicos.add(c.local);
+          });
+          this.checklistsCompletos.forEach((c: any) => {
+            if (c.local) locaisUnicos.add(c.local);
+          });
+          this.metricas.totalLocais = locaisUnicos.size;
 
           // Calcula inspeções hoje e na semana
           const hoje = new Date();
@@ -1836,6 +2817,8 @@ export class AdminPage implements OnInit {
             anomaliasAtivas: 0,
             anomaliasFinalizadas: 0,
             totalVeiculos: 0,
+            totalUsuarios: 0,
+            totalLocais: 0,
             inspecoesHoje: 0,
             inspecoesSemana: 0,
             taxaAprovacao: 0,
@@ -1880,93 +2863,559 @@ export class AdminPage implements OnInit {
   }
 
   // ============================================
-  // RELATÓRIOS
+  // GERENCIAMENTO DE TIPOS DE VEÍCULOS
   // ============================================
 
-  async exportarVeiculosSemChecklist() {
-    this.carregandoRelatorio = true;
-
-    try {
-      console.log('🔍 Buscando veículos sem checklist...');
-
-      const resultado = await this.apiService.buscarVeiculosSemChecklist().toPromise();
-
-      if (!resultado || !resultado.veiculos || resultado.veiculos.length === 0) {
-        const toast = await this.toastController.create({
-          message: 'Nenhum veículo sem checklist encontrado! Todos os veículos cadastrados já possuem checklist.',
-          duration: 3000,
-          color: 'success',
-          position: 'top'
-        });
-        await toast.present();
-        this.carregandoRelatorio = false;
-        return;
+  carregarTiposVeiculo() {
+    this.carregandoTiposVeiculo = true;
+    this.tiposVeiculoService.listarTipos().subscribe({
+      next: (response) => {
+        this.tiposVeiculo = response;
+        this.carregandoTiposVeiculo = false;
+      },
+      error: (error) => {
+        console.error('Erro ao carregar tipos de veículos:', error);
+        this.tiposVeiculo = [];
+        this.carregandoTiposVeiculo = false;
       }
+    });
+  }
 
-      console.log(`📊 ${resultado.veiculos.length} veículos sem checklist encontrados`);
-
-      // Gerar CSV
-      const csv = this.gerarCSV(resultado.veiculos);
-
-      // Download do arquivo
-      this.downloadCSV(csv, `veiculos-sem-checklist-${new Date().toISOString().split('T')[0]}.csv`);
-
-      const toast = await this.toastController.create({
-        message: `Relatório gerado com sucesso! ${resultado.veiculos.length} veículos exportados.`,
-        duration: 3000,
-        color: 'success',
-        position: 'top'
-      });
-      await toast.present();
-
-    } catch (error) {
-      console.error('❌ Erro ao gerar relatório:', error);
-
-      const alert = await this.alertController.create({
-        header: 'Erro ao Gerar Relatório',
-        message: 'Não foi possível gerar o relatório de veículos sem checklist. Tente novamente.',
-        buttons: ['OK']
-      });
-      await alert.present();
-    } finally {
-      this.carregandoRelatorio = false;
+  toggleGerenciarTipos() {
+    this.mostrarGerenciarTipos = !this.mostrarGerenciarTipos;
+    if (this.mostrarGerenciarTipos && this.tiposVeiculo.length === 0) {
+      this.carregarTiposVeiculo();
     }
   }
 
-  private gerarCSV(veiculos: any[]): string {
-    // Cabeçalho
-    const header = ['Placa', 'Total de Checklists', 'Status'];
+  async adicionarTipoVeiculo() {
+    const alert = await this.alertController.create({
+      header: 'Adicionar Tipo de Veículo',
+      inputs: [
+        {
+          name: 'nome',
+          type: 'text',
+          placeholder: 'Nome (ex: Moto, Caminhão)',
+          attributes: {
+            maxlength: 50,
+            required: true
+          }
+        },
+        {
+          name: 'descricao',
+          type: 'textarea',
+          placeholder: 'Descrição (opcional)',
+          attributes: {
+            maxlength: 500
+          }
+        },
+        {
+          name: 'icone',
+          type: 'text',
+          placeholder: 'Ícone Ionic (ex: car-outline, bike-outline)',
+          attributes: {
+            maxlength: 50
+          }
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Adicionar',
+          handler: (data) => {
+            if (!data.nome || data.nome.trim() === '') {
+              this.mostrarToast('Nome é obrigatório', 'danger');
+              return false;
+            }
 
-    // Linhas de dados
-    const rows = veiculos.map(v => [
-      v.placa,
-      '0',
-      'Sem checklist'
-    ]);
+            const usuario = this.authService.currentUserValue;
+            this.tiposVeiculoService.criarTipo({
+              nome: data.nome.trim(),
+              descricao: data.descricao?.trim() || null,
+              icone: data.icone?.trim() || null,
+              usuario_id: usuario?.id
+            }).subscribe({
+              next: async (response) => {
+                await this.mostrarToast('Tipo de veículo criado com sucesso!', 'success');
+                this.carregarTiposVeiculo();
+              },
+              error: async (error) => {
+                const mensagem = error.error?.erro || 'Erro ao criar tipo de veículo';
+                await this.mostrarToast(mensagem, 'danger');
+              }
+            });
 
-    // Combinar header + rows
-    const csvContent = [
-      header.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+            return true;
+          }
+        }
+      ]
+    });
 
-    // Adicionar BOM para Excel reconhecer UTF-8
-    return '\uFEFF' + csvContent;
+    await alert.present();
   }
 
-  private downloadCSV(csvContent: string, filename: string) {
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+  async editarTipoVeiculo(tipo: TipoVeiculo) {
+    const alert = await this.alertController.create({
+      header: 'Editar Tipo de Veículo',
+      inputs: [
+        {
+          name: 'nome',
+          type: 'text',
+          value: tipo.nome,
+          placeholder: 'Nome',
+          attributes: {
+            maxlength: 50,
+            required: true
+          }
+        },
+        {
+          name: 'descricao',
+          type: 'textarea',
+          value: tipo.descricao || '',
+          placeholder: 'Descrição (opcional)',
+          attributes: {
+            maxlength: 500
+          }
+        },
+        {
+          name: 'icone',
+          type: 'text',
+          value: tipo.icone || '',
+          placeholder: 'Ícone Ionic',
+          attributes: {
+            maxlength: 50
+          }
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Salvar',
+          handler: (data) => {
+            if (!data.nome || data.nome.trim() === '') {
+              this.mostrarToast('Nome é obrigatório', 'danger');
+              return false;
+            }
 
-    if (link.download !== undefined) {
-      // Browsers que suportam HTML5 download attribute
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+            this.tiposVeiculoService.atualizarTipo(tipo.id, {
+              nome: data.nome.trim(),
+              descricao: data.descricao?.trim() || null,
+              icone: data.icone?.trim() || null
+            }).subscribe({
+              next: async (response) => {
+                await this.mostrarToast('Tipo de veículo atualizado com sucesso!', 'success');
+                this.carregarTiposVeiculo();
+              },
+              error: async (error) => {
+                const mensagem = error.error?.erro || 'Erro ao atualizar tipo de veículo';
+                await this.mostrarToast(mensagem, 'danger');
+              }
+            });
+
+            return true;
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  async toggleAtivoTipoVeiculo(tipo: TipoVeiculo) {
+    const novoStatus = !tipo.ativo;
+    const acao = novoStatus ? 'ativar' : 'desativar';
+
+    const alert = await this.alertController.create({
+      header: `${acao.charAt(0).toUpperCase() + acao.slice(1)} Tipo de Veículo`,
+      message: `Deseja ${acao} o tipo "${tipo.nome}"?`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: acao.charAt(0).toUpperCase() + acao.slice(1),
+          handler: () => {
+            this.tiposVeiculoService.toggleAtivo(tipo.id).subscribe({
+              next: async (response) => {
+                await this.mostrarToast(`Tipo de veículo ${acao}do com sucesso!`, 'success');
+                this.carregarTiposVeiculo();
+              },
+              error: async (error) => {
+                const mensagem = error.error?.erro || `Erro ao ${acao} tipo de veículo`;
+                await this.mostrarToast(mensagem, 'danger');
+              }
+            });
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  // ============================================
+  // CAMPOS DE INSPEÇÃO INICIAL
+  // ============================================
+
+  async abrirModalCamposInspecaoInicial() {
+    this.mostrarModalCamposInspecao = true;
+    this.carregarCamposInspecao();
+  }
+
+  fecharModalCamposInspecao() {
+    this.mostrarModalCamposInspecao = false;
+  }
+
+  async carregarCamposInspecao() {
+    this.carregandoCamposInspecao = true;
+    // Carrega todos os campos globais (sem filtro de tipo de veículo)
+    this.configCamposInspecaoService.listarCampos().subscribe({
+      next: (campos) => {
+        this.camposInspecao = campos;
+        this.carregandoCamposInspecao = false;
+      },
+      error: (error) => {
+        console.error('Erro ao carregar campos de inspeção:', error);
+        this.carregandoCamposInspecao = false;
+        this.mostrarToast('Erro ao carregar campos de inspeção', 'danger');
+      }
+    });
+  }
+
+  async abrirModalAdicionarCampoInspecao() {
+    const alert = await this.alertController.create({
+      header: 'Adicionar Campo de Inspeção',
+      inputs: [
+        {
+          name: 'nome_campo',
+          type: 'text',
+          placeholder: 'Nome do campo (ex: placa, km_inicial)'
+        },
+        {
+          name: 'label',
+          type: 'text',
+          placeholder: 'Label exibido (ex: Placa do Veículo)'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Próximo',
+          handler: async (data) => {
+            if (!data.nome_campo || !data.label) {
+              await this.mostrarToast('Preencha todos os campos', 'warning');
+              return false;
+            }
+            await this.selecionarTipoCampoInspecao(data.nome_campo, data.label);
+            return true;
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async selecionarTipoCampoInspecao(nomeCampo: string, label: string) {
+    const alert = await this.alertController.create({
+      header: 'Tipo do Campo',
+      inputs: [
+        { name: 'tipo', type: 'radio', label: 'Texto', value: 'text', checked: true },
+        { name: 'tipo', type: 'radio', label: 'Número', value: 'number' },
+        { name: 'tipo', type: 'radio', label: 'Seleção', value: 'select' },
+        { name: 'tipo', type: 'radio', label: 'Área de texto', value: 'textarea' }
+      ],
+      buttons: [
+        {
+          text: 'Voltar',
+          role: 'cancel'
+        },
+        {
+          text: 'Próximo',
+          handler: async (tipo) => {
+            await this.selecionarOpcoesFinais(nomeCampo, label, tipo);
+            return true;
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async selecionarOpcoesFinais(nomeCampo: string, label: string, tipoCampo: string) {
+    const alert = await this.alertController.create({
+      header: 'Configurações do Campo',
+      inputs: [
+        { name: 'obrigatorio', type: 'checkbox', label: 'Campo obrigatório', value: 'obrigatorio' }
+      ],
+      buttons: [
+        {
+          text: 'Voltar',
+          role: 'cancel'
+        },
+        {
+          text: 'Salvar',
+          handler: async (data) => {
+            const obrigatorio = Array.isArray(data) && data.includes('obrigatorio');
+
+            await this.salvarCampoInspecao({
+              nome_campo: nomeCampo,
+              label: label,
+              tipo_campo: tipoCampo as 'text' | 'number' | 'select' | 'textarea',
+              obrigatorio: obrigatorio,
+              tem_foto: false,
+              habilitado: true,
+              tipo_veiculo_id: null // Sempre global
+            });
+            return true;
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async salvarCampoInspecao(campo: any) {
+    const loading = await this.loadingController.create({
+      message: 'Salvando campo...'
+    });
+    await loading.present();
+
+    this.configCamposInspecaoService.adicionarCampo(campo).subscribe({
+      next: async (response) => {
+        await loading.dismiss();
+        await this.mostrarToast('Campo adicionado com sucesso!', 'success');
+        this.carregarCamposInspecao();
+      },
+      error: async (error) => {
+        await loading.dismiss();
+        console.error('Erro ao adicionar campo:', error);
+        await this.mostrarToast('Erro ao adicionar campo', 'danger');
+      }
+    });
+  }
+
+  async toggleCampoInspecao(campo: CampoInspecao) {
+    this.configCamposInspecaoService.toggleCampo(campo.id).subscribe({
+      next: async (response) => {
+        campo.habilitado = response.habilitado;
+        await this.mostrarToast(
+          `Campo "${campo.label}" ${response.habilitado ? 'habilitado' : 'desabilitado'}`,
+          'success'
+        );
+      },
+      error: async (error) => {
+        console.error('Erro ao alternar campo:', error);
+        await this.mostrarToast('Erro ao alternar campo', 'danger');
+      }
+    });
+  }
+
+  iniciarEdicaoCampo(campo: CampoInspecao) {
+    // Cria uma cópia do campo para edição
+    // Parse das opções se for string JSON
+    let opcoesParsed: string[] | null = null;
+    if (campo.opcoes) {
+      if (typeof campo.opcoes === 'string') {
+        try {
+          opcoesParsed = JSON.parse(campo.opcoes);
+        } catch {
+          // Se não for JSON válido, trata como array simples
+          opcoesParsed = [campo.opcoes];
+        }
+      } else if (Array.isArray(campo.opcoes)) {
+        opcoesParsed = [...campo.opcoes];
+      }
     }
+    
+    this.campoEditando = {
+      ...campo,
+      tem_foto: campo.tem_foto || false,
+      opcoes: opcoesParsed || []
+    };
+    this.campoEditandoId = campo.id;
+  }
+
+  cancelarEdicaoCampo() {
+    this.campoEditando = null;
+    this.campoEditandoId = null;
+  }
+
+  salvarEdicaoCampo() {
+    if (!this.campoEditando) {
+      return;
+    }
+
+    if (!this.campoEditando.label || this.campoEditando.label.trim() === '') {
+      this.mostrarToast('Preencha o nome do campo', 'warning');
+      return;
+    }
+
+    // Prepara as opções para envio (só se for tipo 'select')
+    let opcoesParaEnviar: string[] | null = null;
+    if (this.campoEditando.tipo_campo === 'select') {
+      const opcoesArray = this.getOpcoesArray();
+      // Remove opções vazias antes de enviar
+      opcoesParaEnviar = opcoesArray.filter(op => op && op.trim() !== '');
+      // Se não houver opções válidas, envia null
+      if (opcoesParaEnviar.length === 0) {
+        opcoesParaEnviar = null;
+      }
+    }
+
+    this.configCamposInspecaoService.atualizarCampo(this.campoEditando.id, {
+      label: this.campoEditando.label.trim(),
+      tipo_campo: this.campoEditando.tipo_campo as 'text' | 'number' | 'select' | 'textarea',
+      opcoes: opcoesParaEnviar,
+      obrigatorio: this.campoEditando.obrigatorio || false,
+      tem_foto: this.campoEditando.tem_foto || false
+    }).subscribe({
+      next: async () => {
+        await this.mostrarToast('Campo atualizado!', 'success');
+        this.campoEditando = null;
+        this.campoEditandoId = null;
+        this.carregarCamposInspecao();
+      },
+      error: async (error) => {
+        console.error('Erro ao atualizar campo:', error);
+        await this.mostrarToast('Erro ao atualizar', 'danger');
+      }
+    });
+  }
+
+  // Métodos para gerenciar opções de campos do tipo 'select'
+  getOpcoesArray(): string[] {
+    if (!this.campoEditando) {
+      return [];
+    }
+    
+    if (!this.campoEditando.opcoes) {
+      return [];
+    }
+
+    if (Array.isArray(this.campoEditando.opcoes)) {
+      return [...this.campoEditando.opcoes];
+    }
+
+    if (typeof this.campoEditando.opcoes === 'string') {
+      try {
+        return JSON.parse(this.campoEditando.opcoes);
+      } catch {
+        return [this.campoEditando.opcoes];
+      }
+    }
+
+    return [];
+  }
+
+  atualizarOpcao(index: number, event: any) {
+    if (!this.campoEditando) {
+      return;
+    }
+
+    const opcoes = this.getOpcoesArray();
+    // ion-input usa event.detail.value, input HTML usa event.target.value
+    const novoValor = event.detail?.value !== undefined ? event.detail.value : 
+                      (event.target?.value !== undefined ? event.target.value : '');
+    
+    if (opcoes[index] !== undefined) {
+      opcoes[index] = novoValor;
+      // Cria novo array para trigger de change detection
+      this.campoEditando.opcoes = [...opcoes];
+    }
+  }
+
+  removerOpcao(index: number) {
+    if (!this.campoEditando) {
+      return;
+    }
+
+    const opcoes = this.getOpcoesArray();
+    opcoes.splice(index, 1);
+    this.campoEditando.opcoes = opcoes.length > 0 ? opcoes : null;
+  }
+
+  adicionarOpcao() {
+    if (!this.campoEditando) {
+      return;
+    }
+
+    const opcoes = this.getOpcoesArray();
+    opcoes.push('');
+    this.campoEditando.opcoes = opcoes;
+  }
+
+  onTipoCampoChange() {
+    if (!this.campoEditando) {
+      return;
+    }
+
+    // Se mudou para 'select' e não tem opções, inicializa com array vazio
+    if (this.campoEditando.tipo_campo === 'select' && !this.campoEditando.opcoes) {
+      this.campoEditando.opcoes = [];
+    }
+    // Se mudou para outro tipo que não 'select', limpa as opções
+    else if (this.campoEditando.tipo_campo !== 'select' && this.campoEditando.opcoes) {
+      this.campoEditando.opcoes = null;
+    }
+  }
+
+  getTipoCampoAmigavel(tipo: string): string {
+    const tipos: { [key: string]: string } = {
+      'text': 'Texto',
+      'number': 'Número',
+      'select': 'Seleção',
+      'textarea': 'Área de Texto'
+    };
+    return tipos[tipo] || tipo;
+  }
+
+  temFoto(campo: CampoInspecao): boolean {
+    // Verifica se o campo tem foto (do banco de dados ou pelo nome como fallback)
+    if (campo.tem_foto !== undefined) {
+      return campo.tem_foto;
+    }
+    // Fallback: verifica pelo nome do campo
+    const camposComFoto = ['foto', 'photo', 'imagem', 'image', 'camera', 'painel'];
+    return camposComFoto.some(foto => campo.nome_campo.toLowerCase().includes(foto));
+  }
+
+  async removerCampoInspecao(campo: CampoInspecao) {
+    const alert = await this.alertController.create({
+      header: 'Remover Campo',
+      message: `Tem certeza que deseja remover o campo "${campo.label}"?`,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Remover',
+          cssClass: 'danger',
+          handler: async () => {
+            this.configCamposInspecaoService.removerCampo(campo.id).subscribe({
+              next: async () => {
+                await this.mostrarToast('Campo removido!', 'success');
+                this.carregarCamposInspecao();
+              },
+              error: async (error) => {
+                console.error('Erro ao remover campo:', error);
+                await this.mostrarToast('Erro ao remover', 'danger');
+              }
+            });
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 }

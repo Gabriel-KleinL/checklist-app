@@ -7,6 +7,7 @@ import { LocalStorageService } from '../services/local-storage';
 import { AuthService } from '../services/auth.service';
 import { TempoTelasService } from '../services/tempo-telas.service';
 import { ApiService } from '../services/api.service';
+import { ConfigCamposInspecaoService, CampoInspecao } from '../services/config-campos-inspecao.service';
 import { driver } from 'driver.js';
 
 @Component({
@@ -23,9 +24,16 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
     kmInicial: null,
     nivelCombustivel: undefined,
     fotoPainel: undefined,
-    observacaoPainel: ''
+    observacaoPainel: '',
+    statusGeral: undefined,
+    fotosCampos: {}
   };
 
+  // Campos configuráveis carregados do banco
+  camposConfigurados: CampoInspecao[] = [];
+  carregandoCampos = true;
+
+  // Opções para campos do tipo select (carregadas dinamicamente ou padrão)
   opcoesLocais = [
     'Metropolitana - Serra',
     'Nova Venécia',
@@ -44,6 +52,12 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
     { valor: '100%', label: 'Cheio' }
   ];
 
+  opcoesStatusGeral = [
+    { valor: 'aprovado', label: 'Aprovado' },
+    { valor: 'reprovado', label: 'Reprovado' },
+    { valor: 'pendente', label: 'Pendente' }
+  ];
+
   exibirAjuda = false;
 
   // Autocomplete de placas
@@ -58,6 +72,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
     private authService: AuthService,
     private tempoTelasService: TempoTelasService,
     private apiService: ApiService,
+    private configCamposService: ConfigCamposInspecaoService,
     private loadingController: LoadingController,
     private alertController: AlertController
   ) { }
@@ -66,8 +81,68 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
     // Inicia rastreamento de tempo
     this.tempoTelasService.iniciarTela('inspecao-inicial');
 
+    // Carrega campos configuráveis do backend
+    await this.carregarCamposConfigurados();
+
     await this.recuperarDadosSalvos();
     await this.verificarPrimeiroAcesso();
+  }
+
+  async carregarCamposConfigurados() {
+    this.carregandoCampos = true;
+
+    // Busca tipo_veiculo_id do localStorage
+    let tipoVeiculoId = 1; // Padrão: Carro
+    try {
+      const tipoVeiculoIdStr = await this.localStorage.getItem('tipo_veiculo_id');
+      if (tipoVeiculoIdStr) {
+        tipoVeiculoId = parseInt(tipoVeiculoIdStr, 10) || 1;
+      }
+    } catch (error) {
+      console.warn('Erro ao recuperar tipo_veiculo_id, usando padrão:', error);
+    }
+
+    this.configCamposService.listarCamposHabilitados(tipoVeiculoId).subscribe({
+      next: (campos) => {
+        this.camposConfigurados = campos;
+        console.log('[Inspeção Inicial] Campos configurados carregados:', campos);
+        this.carregandoCampos = false;
+      },
+      error: (error) => {
+        console.error('[Inspeção Inicial] Erro ao carregar campos:', error);
+        // Em caso de erro, usa configuração padrão
+        this.camposConfigurados = [];
+        this.carregandoCampos = false;
+      }
+    });
+  }
+
+  // Verifica se um campo específico está habilitado
+  campoHabilitado(nomeCampo: string): boolean {
+    // Se ainda está carregando ou não há campos configurados, mostra todos
+    if (this.carregandoCampos || this.camposConfigurados.length === 0) {
+      return true;
+    }
+    const campo = this.camposConfigurados.find(c => c.nome_campo === nomeCampo);
+    return campo ? campo.habilitado : false;
+  }
+
+  // Verifica se um campo é obrigatório
+  campoObrigatorio(nomeCampo: string): boolean {
+    const campo = this.camposConfigurados.find(c => c.nome_campo === nomeCampo);
+    return campo ? campo.obrigatorio : false;
+  }
+
+  // Verifica se um campo tem foto
+  campoTemFoto(nomeCampo: string): boolean {
+    const campo = this.camposConfigurados.find(c => c.nome_campo === nomeCampo);
+    return campo ? campo.tem_foto : false;
+  }
+
+  // Obtém o label de um campo
+  getCampoLabel(nomeCampo: string): string {
+    const campo = this.camposConfigurados.find(c => c.nome_campo === nomeCampo);
+    return campo ? campo.label : nomeCampo;
   }
 
   ngOnDestroy() {
@@ -114,6 +189,39 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
   async removerFotoPainel() {
     this.inspecaoInicial.fotoPainel = undefined;
     await this.salvarLocalmente();
+  }
+
+  // Métodos genéricos para foto de qualquer campo
+  async tirarFotoCampo(nomeCampo: string) {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 45,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        width: 1200,
+        height: 1200
+      });
+
+      if (!this.inspecaoInicial.fotosCampos) {
+        this.inspecaoInicial.fotosCampos = {};
+      }
+      this.inspecaoInicial.fotosCampos[nomeCampo] = image.dataUrl || '';
+      await this.salvarLocalmente();
+    } catch (error) {
+      console.log('Foto cancelada ou erro:', error);
+    }
+  }
+
+  async removerFotoCampo(nomeCampo: string) {
+    if (this.inspecaoInicial.fotosCampos) {
+      delete this.inspecaoInicial.fotosCampos[nomeCampo];
+      await this.salvarLocalmente();
+    }
+  }
+
+  getFotoCampo(nomeCampo: string): string | undefined {
+    return this.inspecaoInicial.fotosCampos?.[nomeCampo];
   }
 
   async onCampoChange() {
@@ -171,13 +279,46 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
   }
 
   validarFormulario(): boolean {
-    return !!(
-      this.inspecaoInicial.placa &&
-      this.inspecaoInicial.local &&
-      this.inspecaoInicial.kmInicial !== null &&
-      this.inspecaoInicial.nivelCombustivel &&
-      this.inspecaoInicial.fotoPainel
-    );
+    // Se ainda está carregando campos, não valida
+    if (this.carregandoCampos) {
+      return false;
+    }
+
+    // Se não há campos configurados, usa validação padrão
+    if (this.camposConfigurados.length === 0) {
+      return !!(
+        this.inspecaoInicial.placa &&
+        this.inspecaoInicial.local &&
+        this.inspecaoInicial.kmInicial !== null &&
+        this.inspecaoInicial.nivelCombustivel &&
+        this.inspecaoInicial.fotoPainel
+      );
+    }
+
+    // Valida baseado nos campos configurados como obrigatórios
+    for (const campo of this.camposConfigurados) {
+      if (campo.obrigatorio && campo.habilitado) {
+        const valor = this.getValorCampo(campo.nome_campo);
+        if (valor === null || valor === undefined || valor === '') {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  // Obtém o valor de um campo pelo nome
+  getValorCampo(nomeCampo: string): any {
+    const mapeamento: { [key: string]: any } = {
+      'placa': this.inspecaoInicial.placa,
+      'local': this.inspecaoInicial.local,
+      'km_inicial': this.inspecaoInicial.kmInicial,
+      'nivel_combustivel': this.inspecaoInicial.nivelCombustivel,
+      'observacao_painel': this.inspecaoInicial.observacaoPainel,
+      'status_geral': this.inspecaoInicial.statusGeral,
+      'foto_painel': this.inspecaoInicial.fotoPainel
+    };
+    return mapeamento[nomeCampo];
   }
 
   async verificarPlacaNoBanco(placa: string): Promise<boolean> {
@@ -185,11 +326,13 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
       // Valida se a placa existe no cadastro de veículos (tabela Vehicles)
       const response = await this.apiService.validarPlaca(placa).toPromise();
 
-      // Verifica se retornou sucesso
-      if (response && response.sucesso === true) {
+      // Verifica se retornou sucesso E se a placa foi encontrada (dados === true)
+      if (response && response.sucesso === true && response.dados === true) {
+        console.log('✅ Placa válida:', placa);
         return true;
       }
 
+      console.log('❌ Placa não encontrada:', placa, 'Response:', response);
       return false;
     } catch (error: any) {
       console.error('Erro ao validar placa:', error);
@@ -231,6 +374,17 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
 
     const usuarioId = this.authService.currentUserValue?.id;
 
+    // Busca tipo_veiculo_id do localStorage (salvo na tela Home)
+    let tipoVeiculoId = 1; // Padrão: Carro
+    try {
+      const tipoVeiculoIdStr = await this.localStorage.getItem('tipo_veiculo_id');
+      if (tipoVeiculoIdStr) {
+        tipoVeiculoId = parseInt(tipoVeiculoIdStr, 10) || 1;
+      }
+    } catch (error) {
+      console.warn('Erro ao recuperar tipo_veiculo_id, usando padrão:', error);
+    }
+
     try {
       // Cria a inspeção na API com os dados iniciais
       const dadosInspecao = {
@@ -240,7 +394,10 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
         nivel_combustivel: this.inspecaoInicial.nivelCombustivel,
         foto_painel: this.inspecaoInicial.fotoPainel,
         observacao_painel: this.inspecaoInicial.observacaoPainel,
+        status_geral: this.inspecaoInicial.statusGeral,
+        fotos_campos: this.inspecaoInicial.fotosCampos || {},
         usuario_id: usuarioId,
+        tipo_veiculo_id: tipoVeiculoId,
         itens_inspecao: [],
         itens_pneus: []
       };
@@ -252,8 +409,8 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
         const inspecaoId = resultado.id;
         console.log('[Inspeção] Inspeção criada com ID:', inspecaoId);
 
-        // Salva o ID da inspeção no serviço compartilhado
-        this.checklistData.setInspecaoId(inspecaoId);
+        // Salva o ID da inspeção no serviço compartilhado (com persistência)
+        await this.checklistData.setInspecaoId(inspecaoId);
         this.checklistData.setInspecaoInicial(this.inspecaoInicial);
 
         // Finaliza e salva o tempo de tela com o inspecao_id

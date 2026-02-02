@@ -129,7 +129,9 @@ class FotoUtils {
     }
 
     // Constrói URL baseada no ambiente
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:8000';
+    // Tenta detectar porta do servidor Express ou usa variável de ambiente
+    const port = process.env.PORT || (process.env.NODE_ENV === 'staging' ? 8001 : 8000);
+    const baseUrl = process.env.API_BASE_URL || `http://localhost:${port}`;
     return `${baseUrl}/uploads/${relativePath}`;
   }
 

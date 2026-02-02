@@ -34,6 +34,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     ferramentas: []
   };
 
+  // Opções legadas mantidas para referência
   readonly opcoesMotor = ['bom', 'ruim'];
   readonly opcoesLimpeza = ['pessima', 'ruim', 'satisfatoria', 'otimo'];
   readonly opcoesEletricos = ['bom', 'ruim'];
@@ -82,29 +83,45 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     this.logger.info('Carregando itens habilitados do banco de dados...');
 
     try {
-      // Carrega apenas itens habilitados
-      const itensHabilitados = await this.configItensService.buscarHabilitados().toPromise();
+      // Recupera o tipo de veículo selecionado
+      const tipoVeiculoIdStr = await this.localStorage.getItem('tipo_veiculo_id');
+      const tipoVeiculoId = tipoVeiculoIdStr ? parseInt(tipoVeiculoIdStr, 10) : 1;
+      this.logger.info(`Tipo de veículo selecionado: ${tipoVeiculoId}`);
+
+      // Carrega itens habilitados filtrados pelo tipo de veículo
+      const itensHabilitados = await this.configItensService
+        .buscarPorTipoVeiculo(tipoVeiculoId, undefined, true)
+        .toPromise();
 
       if (itensHabilitados && itensHabilitados.length > 0) {
         // Filtra itens por categoria e mapeia para a estrutura do componente
+        const mapItem = (item: any) => ({
+          nome: item.nome_item,
+          valor: null,
+          tipo_resposta: item.tipo_resposta || 'conforme_nao_conforme',
+          opcoes_resposta: this.parseOpcoes(item.opcoes_resposta),
+          tem_foto: !!item.tem_foto,
+          obrigatorio: item.obrigatorio !== undefined ? !!item.obrigatorio : true
+        });
+
         this.inspecao.motor = itensHabilitados
           .filter(item => item.categoria === 'MOTOR')
-          .map(item => ({ nome: item.nome_item, valor: null }));
+          .map(mapItem);
 
         this.inspecao.eletricos = itensHabilitados
           .filter(item => item.categoria === 'ELETRICO')
-          .map(item => ({ nome: item.nome_item, valor: null }));
+          .map(mapItem);
 
         this.inspecao.limpeza = itensHabilitados
           .filter(item => item.categoria === 'LIMPEZA')
-          .map(item => ({ nome: item.nome_item, valor: null }));
+          .map(mapItem);
 
         this.inspecao.ferramentas = itensHabilitados
           .filter(item => item.categoria === 'FERRAMENTA')
-          .map(item => ({ nome: item.nome_item, valor: null }));
+          .map(mapItem);
 
         this.logger.info(
-          `Itens carregados: ${this.inspecao.motor.length} motor, ` +
+          `Itens carregados para tipo ${tipoVeiculoId}: ${this.inspecao.motor.length} motor, ` +
           `${this.inspecao.eletricos.length} elétricos, ` +
           `${this.inspecao.limpeza.length} limpeza, ` +
           `${this.inspecao.ferramentas.length} ferramentas`
@@ -129,21 +146,38 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   async recuperarDadosSalvos() {
     const dadosSalvos = await this.localStorage.recuperarInspecaoVeiculo();
     if (dadosSalvos) {
-      // Faz merge dos dados salvos com os valores padrão para garantir compatibilidade
-      // Isso garante que novos campos adicionados ao app não quebrem dados antigos
-      this.inspecao = {
-        motor: dadosSalvos.motor || this.inspecao.motor,
-        limpeza: dadosSalvos.limpeza || this.inspecao.limpeza,
-        eletricos: dadosSalvos.eletricos || this.inspecao.eletricos,
-        ferramentas: dadosSalvos.ferramentas || this.inspecao.ferramentas
-      };
+      // Merge: restaura valor/foto/descricao dos dados salvos, mas preserva tipo_resposta/opcoes_resposta do config
+      this.mergeItens(this.inspecao.motor, dadosSalvos.motor);
+      this.mergeItens(this.inspecao.eletricos, dadosSalvos.eletricos);
+      this.mergeItens(this.inspecao.limpeza, dadosSalvos.limpeza);
+      this.mergeItens(this.inspecao.ferramentas, dadosSalvos.ferramentas);
+    }
+  }
 
-      // Se os dados antigos não tinham eletricos ou ferramentas, salva novamente com os novos campos
-      if (!dadosSalvos.eletricos || !dadosSalvos.ferramentas) {
-        console.log('Migrando dados antigos para nova estrutura...');
-        await this.salvarLocalmente();
+  private mergeItens(configItens: any[], savedItens?: any[]) {
+    if (!savedItens) return;
+    for (const configItem of configItens) {
+      const saved = savedItens.find((s: any) => s.nome === configItem.nome);
+      if (saved) {
+        configItem.valor = saved.valor;
+        configItem.foto = saved.foto;
+        configItem.descricao = saved.descricao;
       }
     }
+  }
+
+  private parseOpcoes(opcoes: any): string[] | undefined {
+    if (!opcoes) return undefined;
+    if (Array.isArray(opcoes)) return opcoes;
+    if (typeof opcoes === 'string') {
+      try {
+        const parsed = JSON.parse(opcoes);
+        return Array.isArray(parsed) ? parsed : undefined;
+      } catch {
+        return undefined;
+      }
+    }
+    return undefined;
   }
 
   async salvarLocalmente() {
@@ -151,49 +185,48 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   }
 
   validarFormulario(): boolean {
-    // Valida se todos os campos foram preenchidos e se fotos obrigatórias foram tiradas
-    const motorValido = this.inspecao.motor.every(item => {
-      const valorPreenchido = item.valor !== null;
-      const fotoObrigatoria = this.precisaFotoMotor(item) && !item.foto;
-      return valorPreenchido && !fotoObrigatoria;
+    const validarItens = (itens: any[]) => itens.every(item => {
+      // Itens não obrigatórios podem ser pulados
+      if (item.obrigatorio === false && (item.valor === null || item.valor === '') && item.tipo_resposta !== 'apenas_foto') {
+        return true;
+      }
+      // Apenas foto: só precisa da foto
+      if (item.tipo_resposta === 'apenas_foto') {
+        if (item.obrigatorio === false) return true;
+        return !!item.foto;
+      }
+      const valorPreenchido = item.valor !== null && item.valor !== '';
+      const fotoFaltando = this.precisaFoto(item) && !item.foto;
+      return valorPreenchido && !fotoFaltando;
     });
 
-    const limpezaValida = this.inspecao.limpeza.every(item => {
-      const valorPreenchido = item.valor !== null;
-      const fotoObrigatoria = this.precisaFotoLimpeza(item) && !item.foto;
-      return valorPreenchido && !fotoObrigatoria;
-    });
-
-    const eletricosValido = this.inspecao.eletricos.every(item => {
-      const valorPreenchido = item.valor !== null;
-      const fotoObrigatoria = this.precisaFotoEletrico(item) && !item.foto;
-      return valorPreenchido && !fotoObrigatoria;
-    });
-
-    const ferramentasValido = this.inspecao.ferramentas.every(item => {
-      const valorPreenchido = item.valor !== null;
-      const fotoObrigatoria = this.precisaFotoFerramenta(item) && !item.foto;
-      return valorPreenchido && !fotoObrigatoria;
-    });
-
-    return motorValido && limpezaValida && eletricosValido && ferramentasValido;
+    return validarItens(this.inspecao.motor)
+      && validarItens(this.inspecao.limpeza)
+      && validarItens(this.inspecao.eletricos)
+      && validarItens(this.inspecao.ferramentas);
   }
 
-  precisaFotoMotor(item: ItemMotor): boolean {
-    return item.valor === 'ruim';
+  // Foto obrigatória: quando apenas_foto, tem_foto=true no config, ou "não conforme"
+  precisaFoto(item: any): boolean {
+    if (item.tipo_resposta === 'apenas_foto') return true;
+    if (item.tem_foto) return true;
+    if (item.tipo_resposta === 'conforme_nao_conforme' || !item.tipo_resposta) {
+      return item.valor === 'nao_conforme';
+    }
+    return false;
   }
 
-  precisaFotoLimpeza(item: ItemLimpeza): boolean {
-    return item.valor === 'ruim' || item.valor === 'pessima';
+  // Mostra seção de foto: obrigatória OU item já preenchido
+  mostrarFoto(item: any): boolean {
+    if (item.tipo_resposta === 'apenas_foto') return true;
+    return this.precisaFoto(item) || (item.valor !== null && item.valor !== '');
   }
 
-  precisaFotoEletrico(item: ItemEletrico): boolean {
-    return item.valor === 'ruim';
-  }
-
-  precisaFotoFerramenta(item: ItemFerramenta): boolean {
-    return item.valor === 'nao_contem';
-  }
+  // Métodos legados mantidos para compatibilidade com template existente
+  precisaFotoMotor(item: ItemMotor): boolean { return this.precisaFoto(item); }
+  precisaFotoLimpeza(item: ItemLimpeza): boolean { return this.precisaFoto(item); }
+  precisaFotoEletrico(item: ItemEletrico): boolean { return this.precisaFoto(item); }
+  precisaFotoFerramenta(item: ItemFerramenta): boolean { return this.precisaFoto(item); }
 
   async tirarFotoMotor(index: number): Promise<void> {
     try {
@@ -289,9 +322,16 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     await this.salvarLocalmente();
   }
 
+  async onValorChange(item: any) {
+    if (!this.precisaFoto(item)) {
+      item.foto = undefined;
+      item.descricao = undefined;
+    }
+    await this.salvarLocalmente();
+  }
+
   async onValorMotorChange(item: ItemMotor) {
-    // Se mudou para "bom", remove a foto e descrição
-    if (item.valor === 'bom') {
+    if (!this.precisaFoto(item)) {
       item.foto = undefined;
       item.descricao = undefined;
     }
@@ -299,8 +339,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   }
 
   async onValorLimpezaChange(item: ItemLimpeza) {
-    // Se mudou para "satisfatória" ou "ótimo", remove a foto e descrição
-    if (item.valor === 'satisfatoria' || item.valor === 'otimo') {
+    if (!this.precisaFoto(item)) {
       item.foto = undefined;
       item.descricao = undefined;
     }
@@ -308,8 +347,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   }
 
   async onValorEletricoChange(item: ItemEletrico) {
-    // Se mudou para "bom", remove a foto e descrição
-    if (item.valor === 'bom') {
+    if (!this.precisaFoto(item)) {
       item.foto = undefined;
       item.descricao = undefined;
     }
@@ -317,8 +355,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   }
 
   async onValorFerramentaChange(item: ItemFerramenta) {
-    // Se mudou para "contém", remove a foto e descrição
-    if (item.valor === 'contem') {
+    if (!this.precisaFoto(item)) {
       item.foto = undefined;
       item.descricao = undefined;
     }
@@ -341,9 +378,13 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     }
 
     const usuarioId = this.authService.currentUserValue?.id;
-    const inspecaoId = this.checklistData.getInspecaoId();
+    console.log('[InspecaoVeiculo] 🔍 Buscando inspecaoId para salvar inspeção...');
+    const inspecaoId = await this.checklistData.getInspecaoId();
+    console.log('[InspecaoVeiculo] InspecaoId recebido:', inspecaoId, 'Tipo:', typeof inspecaoId);
 
     if (!inspecaoId) {
+      console.error('[InspecaoVeiculo] ❌ ERRO: ID da inspeção não encontrado!');
+      console.error('[InspecaoVeiculo] UsuarioId:', usuarioId);
       await this.errorHandler.handleError(
         new Error('ID da inspeção não encontrado'),
         'Erro: ID da inspeção não encontrado. Por favor, reinicie o processo.',
@@ -351,6 +392,8 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
       );
       return;
     }
+    
+    console.log('[InspecaoVeiculo] ✅ Prosseguindo com inspecaoId:', inspecaoId);
 
     this.logger.group('Salvando Inspeção do Veículo');
     this.logger.info(`Inspeção ID: ${inspecaoId}`);

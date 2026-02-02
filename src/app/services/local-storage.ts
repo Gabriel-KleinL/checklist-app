@@ -148,4 +148,23 @@ export class LocalStorageService {
       return false;
     }
   }
+
+  // Métodos genéricos para get/set de itens
+  async getItem(key: string): Promise<string | null> {
+    try {
+      const { value } = await Preferences.get({ key });
+      return value;
+    } catch (error) {
+      console.error(`Erro ao recuperar ${key}:`, error);
+      return null;
+    }
+  }
+
+  async setItem(key: string, value: string): Promise<void> {
+    try {
+      await Preferences.set({ key, value });
+    } catch (error) {
+      console.error(`Erro ao salvar ${key}:`, error);
+    }
+  }
 }

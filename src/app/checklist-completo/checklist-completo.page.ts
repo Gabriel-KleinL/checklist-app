@@ -6,6 +6,7 @@ import { ConfigItensCompletoService, ConfigItemCompleto } from '../services/conf
 import { AlertController, LoadingController } from '@ionic/angular';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { NivelCombustivel } from '../models/checklist.models';
+import { LocalStorageService } from '../services/local-storage';
 
 interface ItemChecklist {
   descricao: string;
@@ -254,7 +255,8 @@ export class ChecklistCompletoPage implements OnInit {
     private authService: AuthService,
     private configItensCompletoService: ConfigItensCompletoService,
     private alertController: AlertController,
-    private loadingController: LoadingController
+    private loadingController: LoadingController,
+    private localStorage: LocalStorageService
   ) { }
 
   ngOnInit() {
@@ -465,11 +467,13 @@ export class ChecklistCompletoPage implements OnInit {
       // Valida se a placa existe no cadastro de veículos (tabela Vehicles)
       const response = await this.apiService.validarPlaca(placa).toPromise();
 
-      // Verifica se retornou sucesso
-      if (response && response.sucesso === true) {
+      // Verifica se retornou sucesso E se a placa foi encontrada (dados === true)
+      if (response && response.sucesso === true && response.dados === true) {
+        console.log('✅ Placa válida:', placa);
         return true;
       }
 
+      console.log('❌ Placa não encontrada:', placa, 'Response:', response);
       return false;
     } catch (error: any) {
       console.error('Erro ao validar placa:', error);
@@ -520,6 +524,17 @@ export class ChecklistCompletoPage implements OnInit {
     // Obtém o usuário logado
     const usuarioId = this.authService.currentUserValue?.id;
 
+    // Busca tipo_veiculo_id do localStorage (salvo na tela Home)
+    let tipoVeiculoId = 1; // Padrão: Carro
+    try {
+      const tipoVeiculoIdStr = await this.localStorage.getItem('tipo_veiculo_id');
+      if (tipoVeiculoIdStr) {
+        tipoVeiculoId = parseInt(tipoVeiculoIdStr, 10) || 1;
+      }
+    } catch (error) {
+      console.warn('Erro ao recuperar tipo_veiculo_id, usando padrão:', error);
+    }
+
     // Monta o objeto com todos os dados
     const checklistCompleto = {
       placa: this.placa,
@@ -528,6 +543,7 @@ export class ChecklistCompletoPage implements OnInit {
       foto_painel: this.fotoPainel,
       observacao_painel: this.observacaoPainel,
       usuario_id: usuarioId,
+      tipo_veiculo_id: tipoVeiculoId,
       data_realizacao: new Date().toISOString(),
       parte1: this.parte1,
       parte2: this.parte2,

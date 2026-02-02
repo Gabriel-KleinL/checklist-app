@@ -74,6 +74,35 @@ ion-card {
   }
 }
 
+// Foto inline para campos com tem_foto habilitado
+.photo-section-inline {
+  margin: 12px 0;
+  padding: 0 4px;
+
+  ion-button {
+    margin-bottom: 8px;
+  }
+
+  .photo-preview-small {
+    position: relative;
+    margin-top: 8px;
+
+    img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: var(--ion-color-dark);
+    }
+
+    ion-button {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+    }
+  }
+}
+
 .info-text {
   display: flex;
   align-items: center;

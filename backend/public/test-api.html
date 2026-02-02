@@ -123,6 +123,34 @@
             margin-bottom: 20px;
             border-radius: 4px;
         }
+        .log-card {
+            margin-top: 20px;
+        }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .log-header h2 {
+            margin: 0;
+            font-size: 1.1em;
+        }
+        .log-area {
+            width: 100%;
+            min-height: 160px;
+            max-height: 260px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            background: #0b0c10;
+            color: #e5e5e5;
+            white-space: pre;
+            overflow: auto;
+        }
     </style>
 </head>
 <body>
@@ -138,6 +166,11 @@
         <div class="card">
             <h2>Endpoints Disponíveis</h2>
             
+            <div style="margin-bottom: 15px; display:flex; justify-content: space-between; align-items:center;">
+                <span style="font-size:0.9em; color:#555;">Clique em um endpoint ou teste todos de uma vez.</span>
+                <button id="btn-test-all" onclick="testAll()" style="background:#28a745;">Testar todos</button>
+            </div>
+            
             <div class="endpoint">
                 <span class="method get">GET</span>
                 <span class="endpoint-path">/health</span>
@@ -146,50 +179,62 @@
 
             <div class="endpoint">
                 <span class="method get">GET</span>
-                <span class="endpoint-path">/b_tipos_veiculo.php?acao=todos</span>
-                <button onclick="testEndpoint('GET', '/b_tipos_veiculo.php?acao=todos')">Testar</button>
+                <span class="endpoint-path">/api/tipos-veiculo</span>
+                <button onclick="testEndpoint('GET', '/api/tipos-veiculo')">Testar</button>
             </div>
 
             <div class="endpoint">
                 <span class="method get">GET</span>
-                <span class="endpoint-path">/b_veicular_get.php?acao=todos&limite=5</span>
-                <button onclick="testEndpoint('GET', '/b_veicular_get.php?acao=todos&limite=5')">Testar</button>
+                <span class="endpoint-path">/api/veicular/get?acao=todos&limite=5</span>
+                <button onclick="testEndpoint('GET', '/api/veicular/get?acao=todos&limite=5')">Testar</button>
             </div>
 
             <div class="endpoint">
                 <span class="method get">GET</span>
-                <span class="endpoint-path">/b_config_itens.php?acao=todos</span>
-                <button onclick="testEndpoint('GET', '/b_config_itens.php?acao=todos')">Testar</button>
+                <span class="endpoint-path">/api/config/itens</span>
+                <button onclick="testEndpoint('GET', '/api/config/itens')">Testar</button>
             </div>
 
             <div class="endpoint">
                 <span class="method get">GET</span>
-                <span class="endpoint-path">/b_veicular_anomalias.php?tipo=ativas</span>
-                <button onclick="testEndpoint('GET', '/b_veicular_anomalias.php?tipo=ativas')">Testar</button>
+                <span class="endpoint-path">/api/anomalias?tipo=ativas</span>
+                <button onclick="testEndpoint('GET', '/api/anomalias?tipo=ativas')">Testar</button>
             </div>
 
             <div class="endpoint">
                 <span class="method post">POST</span>
-                <span class="endpoint-path">/b_veicular_auth.php (login)</span>
+                <span class="endpoint-path">/api/auth/login (login)</span>
                 <button onclick="testAuth()">Testar</button>
             </div>
 
             <div class="endpoint">
                 <span class="method get">GET</span>
-                <span class="endpoint-path">/b_veicular_tempotelas.php?acao=estatisticas</span>
-                <button onclick="testEndpoint('GET', '/b_veicular_tempotelas.php?acao=estatisticas')">Testar</button>
+                <span class="endpoint-path">/api/tempo-telas?acao=estatisticas</span>
+                <button onclick="testEndpoint('GET', '/api/tempo-telas?acao=estatisticas')">Testar</button>
             </div>
 
             <div class="endpoint">
                 <span class="method get">GET</span>
-                <span class="endpoint-path">/b_checklist_get.php?tipo=simples&acao=todos</span>
-                <button onclick="testEndpoint('GET', '/b_checklist_get.php?tipo=simples&acao=todos&limite=3')">Testar</button>
+                <span class="endpoint-path">/api/checklist?tipo=simples&acao=todos&limite=3</span>
+                <button onclick="testEndpoint('GET', '/api/checklist?tipo=simples&acao=todos&limite=3')">Testar</button>
             </div>
 
             <div class="endpoint">
                 <span class="method get">GET</span>
-                <span class="endpoint-path">/b_checklist_get.php?tipo=completo&acao=todos</span>
-                <button onclick="testEndpoint('GET', '/b_checklist_get.php?tipo=completo&acao=todos&limite=3')">Testar</button>
+                <span class="endpoint-path">/api/checklist?tipo=completo&acao=todos&limite=3</span>
+                <button onclick="testEndpoint('GET', '/api/checklist?tipo=completo&acao=todos&limite=3')">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/api/buscar-placas?limite=5</span>
+                <button onclick="testEndpoint('GET', '/api/buscar-placas?limite=5')">Testar</button>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/api/relatorios/veiculos-sem-checklist</span>
+                <button onclick="testEndpoint('GET', '/api/relatorios/veiculos-sem-checklist')">Testar</button>
             </div>
 
             <div id="response-container" style="display: none;">
@@ -199,10 +244,43 @@
                 </div>
             </div>
         </div>
+
+        <div class="card log-card">
+            <div class="log-header">
+                <h2>Log de Requisições</h2>
+                <div>
+                    <button onclick="copyLog()">Copiar log</button>
+                    <button onclick="clearLog()" style="margin-left: 6px; background:#dc3545;">Limpar</button>
+                </div>
+            </div>
+            <textarea id="log-output" class="log-area" spellcheck="false" placeholder="Logs de requisições aparecerão aqui..."></textarea>
+        </div>
     </div>
 
     <script>
         const API_BASE = 'http://localhost:8000';
+
+        function appendLog(entry) {
+            const log = document.getElementById('log-output');
+            const ts = new Date().toISOString();
+            log.value += `[${ts}] ${entry}\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            const log = document.getElementById('log-output');
+            log.value = '';
+        }
+
+        async function copyLog() {
+            const log = document.getElementById('log-output');
+            try {
+                await navigator.clipboard.writeText(log.value);
+                appendLog('> Log copiado para a área de transferência');
+            } catch (e) {
+                appendLog('> Falha ao copiar log: ' + e.message);
+            }
+        }
 
         async function testEndpoint(method, path) {
             const container = document.getElementById('response-container');
@@ -213,8 +291,10 @@
             statusDiv.innerHTML = '<span class="loading"></span> Carregando...';
             contentDiv.textContent = '';
 
+            const url = `${API_BASE}${path}`;
+            appendLog(`REQUEST ${method} ${url}`);
+
             try {
-                const url = `${API_BASE}${path}`;
                 const options = {
                     method: method,
                     headers: {
@@ -233,9 +313,11 @@
                 statusDiv.innerHTML = `<span class="status ${statusClass}">${response.status} ${response.statusText}</span> <span style="color: #666; font-size: 0.9em;">(${duration}ms)</span>`;
                 
                 contentDiv.textContent = JSON.stringify(data, null, 2);
+                appendLog(`RESPONSE ${response.status} ${response.statusText} (${duration}ms) -> ` + JSON.stringify(data).slice(0, 300));
             } catch (error) {
                 statusDiv.innerHTML = `<span class="status error">Erro</span>`;
                 contentDiv.textContent = `Erro: ${error.message}`;
+                appendLog(`ERROR ${method} ${url} -> ${error.message}`);
             }
         }
 
@@ -248,14 +330,15 @@
             statusDiv.innerHTML = '<span class="loading"></span> Testando login...';
             contentDiv.textContent = '';
 
-            try {
-                const url = `${API_BASE}/b_veicular_auth.php`;
-                const body = {
-                    acao: 'login',
-                    nome: 'teste',
-                    senha: 'teste123'
-                };
+            const url = `${API_BASE}/api/auth/login`;
+            const body = {
+                nome: 'teste',
+                senha: 'teste123'
+            };
 
+            appendLog(`REQUEST POST ${url} BODY=` + JSON.stringify(body));
+
+            try {
                 const startTime = Date.now();
                 const response = await fetch(url, {
                     method: 'POST',
@@ -273,10 +356,48 @@
                 statusDiv.innerHTML = `<span class="status ${statusClass}">${response.status} ${response.statusText}</span> <span style="color: #666; font-size: 0.9em;">(${duration}ms)</span>`;
                 
                 contentDiv.textContent = JSON.stringify(data, null, 2);
+                appendLog(`RESPONSE ${response.status} ${response.statusText} (${duration}ms) -> ` + JSON.stringify(data).slice(0, 300));
             } catch (error) {
                 statusDiv.innerHTML = `<span class="status error">Erro</span>`;
                 contentDiv.textContent = `Erro: ${error.message}`;
+                appendLog(`ERROR POST ${url} -> ${error.message}`);
             }
+        }
+
+        async function testAll() {
+            const btn = document.getElementById('btn-test-all');
+            if (!btn) return;
+
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'Testando...';
+            appendLog('================ INICIANDO TESTE COMPLETO ================');
+
+            const steps = [
+                () => testEndpoint('GET', '/health'),
+                () => testEndpoint('GET', '/api/tipos-veiculo'),
+                () => testEndpoint('GET', '/api/veicular/get?acao=todos&limite=5'),
+                () => testEndpoint('GET', '/api/config/itens'),
+                () => testEndpoint('GET', '/api/anomalias?tipo=ativas'),
+                () => testAuth(),
+                () => testEndpoint('GET', '/api/tempo-telas?acao=estatisticas'),
+                () => testEndpoint('GET', '/api/checklist?tipo=simples&acao=todos&limite=3'),
+                () => testEndpoint('GET', '/api/checklist?tipo=completo&acao=todos&limite=3'),
+                () => testEndpoint('GET', '/api/buscar-placas?limite=5'),
+                () => testEndpoint('GET', '/api/relatorios/veiculos-sem-checklist')
+            ];
+
+            for (const step of steps) {
+                try {
+                    await step();
+                } catch (e) {
+                    appendLog('> Erro durante teste em cadeia: ' + e.message);
+                }
+            }
+
+            appendLog('================  FIM DO TESTE COMPLETO  ================');
+            btn.disabled = false;
+            btn.textContent = originalText;
         }
 
         // Testa o health check ao carregar a página

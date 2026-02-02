@@ -11,7 +11,7 @@ async function get(req, res) {
                   i.placa,
                   i.id as inspecao_id,
                   i.data_realizacao,
-                  i.km_inicial,
+                  JSON_UNQUOTE(JSON_EXTRACT(i.dados_inspecao, '$.km_inicial')) as km_inicial,
                   ii.categoria,
                   ii.item,
                   ii.status,
@@ -52,36 +52,51 @@ async function get(req, res) {
     const indiceProblemas = {};
 
     anomalias.forEach(anomalia => {
-      const placa = anomaly.placa.toUpperCase().trim();
-      const categoria = anomaly.categoria.toUpperCase().trim();
-      const item = anomaly.item.trim();
+      const placa = anomalia.placa.toUpperCase().trim();
+      const categoria = anomalia.categoria.toUpperCase().trim();
+      const item = anomalia.item.trim();
 
       if (!anomaliasPorPlaca[placa]) {
         anomaliasPorPlaca[placa] = {
           placa: placa,
-          total_anomalias: 0,
-          problemas: []
+          total_problemas: 0,
+          total_inspecoes_com_problema: 0,
+          data_ultima_inspecao: null,
+          anomalias: []
         };
+      }
+
+      // Atualiza data da última inspeção
+      if (!anomaliasPorPlaca[placa].data_ultima_inspecao ||
+          new Date(anomalia.data_realizacao) > new Date(anomaliasPorPlaca[placa].data_ultima_inspecao)) {
+        anomaliasPorPlaca[placa].data_ultima_inspecao = anomalia.data_realizacao;
       }
 
       const chaveProblema = `${placa}_${categoria}_${item}`;
       if (!indiceProblemas[chaveProblema]) {
         indiceProblemas[chaveProblema] = true;
-        anomaliasPorPlaca[placa].problemas.push({
+        anomaliasPorPlaca[placa].anomalias.push({
           categoria: categoria,
           item: item,
-          status: anomaly.status,
-          inspecao_id: anomaly.inspecao_id,
-          data_realizacao: anomaly.data_realizacao,
-          km_inicial: anomaly.km_inicial,
-          usuario_nome: anomaly.usuario_nome,
-          status_anomalia: anomaly.status_anomalia,
-          data_aprovacao: anomaly.data_aprovacao,
-          data_finalizacao: anomaly.data_finalizacao,
-          observacao: anomaly.observacao,
-          usuario_aprovador_nome: anomaly.usuario_aprovador_nome
+          status: anomalia.status,
+          inspecao_id: anomalia.inspecao_id,
+          data_realizacao: anomalia.data_realizacao,
+          km_inicial: anomalia.km_inicial,
+          usuario_nome: anomalia.usuario_nome,
+          status_anomalia: anomalia.status_anomalia,
+          data_aprovacao: anomalia.data_aprovacao,
+          data_finalizacao: anomalia.data_finalizacao,
+          observacao: anomalia.observacao,
+          usuario_aprovador_nome: anomalia.usuario_aprovador_nome
         });
-        anomaliasPorPlaca[placa].total_anomalias++;
+        anomaliasPorPlaca[placa].total_problemas++;
+      }
+
+      // Conta inspeções únicas com problema
+      const chaveInspecao = `${placa}_${anomalia.inspecao_id}`;
+      if (!indiceProblemas[chaveInspecao + '_inspecao']) {
+        indiceProblemas[chaveInspecao + '_inspecao'] = true;
+        anomaliasPorPlaca[placa].total_inspecoes_com_problema++;
       }
     });
 

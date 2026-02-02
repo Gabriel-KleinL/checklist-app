@@ -30,14 +30,28 @@ export class ApiService {
   ) { }
 
   /**
-   * Adiciona prefixo ao arquivo PHP quando em ambiente staging
-   * Remove o prefixo 'b_' e adiciona o novo prefixo do environment
+   * Mapeia os nomes legados .php para as rotas REST do backend Node
    */
-  private getPhpFile(filename: string): string {
-    const prefix = environment.filePrefix || 'b_';
-    // Remove o prefixo 'b_' se existir
-    const nameWithoutPrefix = filename.startsWith('b_') ? filename.substring(2) : filename;
-    return `${prefix}${nameWithoutPrefix}`;
+  public getPhpFile(filename: string): string {
+    const map: Record<string, string> = {
+      'b_veicular_set.php': 'api/veicular/set',
+      'b_veicular_get.php': 'api/veicular/get',
+      'b_veicular_update.php': 'api/veicular/update',
+      'b_tipos_veiculo.php': 'api/tipos-veiculo',
+      'b_veicular_auth.php': 'api/auth/login',
+      'b_config_itens.php': 'api/config/itens',
+      'b_checklist_completo_config_itens.php': 'api/config/itens-completo',
+      'b_checklist_get.php': 'api/checklist', // usa query ?tipo=simples|completo&acao=...
+      'b_checklist_set.php': 'api/checklist', // POST
+      'b_checklist_completo_get.php': 'api/checklist/completo',
+      'b_checklist_completo_set.php': 'api/checklist/completo',
+      'b_veicular_anomalias.php': 'api/anomalias',
+      'b_anomalia_status.php': 'api/anomalias/status',
+      'b_veicular_tempotelas.php': 'api/tempo-telas',
+      'b_buscar_placas.php': 'api/buscar-placas'
+    };
+
+    return map[filename] || filename.replace('.php', '');
   }
 
   // ============================================
@@ -518,6 +532,7 @@ export class ApiService {
       foto_painel: inspecaoInicial?.fotoPainel || '',
       observacao_painel: inspecaoInicial?.observacaoPainel || '',
       usuario_id: checklist.usuario_id || null,
+      tipo_veiculo_id: checklist.tipo_veiculo_id || 1, // Padrão: Carro
 
       // Arrays dinâmicos
       itens_inspecao: itensInspecao,
@@ -530,20 +545,4 @@ export class ApiService {
     return dadosFinais;
   }
 
-  // ============================================
-  // RELATÓRIOS
-  // ============================================
-
-  buscarVeiculosSemChecklist(): Observable<{veiculos: any[], total: number}> {
-    const url = `${this.baseUrl}/${this.getPhpFile('b_veicular_relatorios.php')}?acao=veiculos_sem_checklist`;
-    this.logger.debug('Buscando veículos sem checklist');
-
-    return this.http.get<{veiculos: any[], total: number}>(url).pipe(
-      tap(response => this.logger.debug(`${response.total} veículos sem checklist encontrados`)),
-      catchError(error => {
-        this.logger.error('Erro ao buscar veículos sem checklist', error);
-        return throwError(() => error);
-      })
-    );
-  }
 }

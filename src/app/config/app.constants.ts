@@ -67,7 +67,6 @@ export const APP_CONSTANTS = {
       { key: 'ELETRICO', label: 'Elétrico', icon: 'flash-outline', color: '#ffc409' },
       { key: 'LIMPEZA', label: 'Limpeza', icon: 'water-outline', color: '#2dd36f' },
       { key: 'FERRAMENTA', label: 'Ferramentas', icon: 'build-outline', color: '#eb445a' },
-      { key: 'PNEU', label: 'Pneus', icon: 'ellipse-outline', color: '#3dc2ff' },
     ],
     COMPLETO: [
       { key: 'PARTE1_INTERNA', label: 'Parte 1 - Interna', icon: 'car-outline', color: '#3880ff' },
@@ -89,6 +88,8 @@ export const APP_CONSTANTS = {
     critico: 'danger',
     contem: 'success',
     nao_contem: 'danger',
+    conforme: 'success',
+    nao_conforme: 'danger',
   },
 
   // Mapeamento de Labels
@@ -100,6 +101,8 @@ export const APP_CONSTANTS = {
     bom: 'Bom',
     contem: 'Contém',
     nao_contem: 'Não Contém',
+    conforme: 'Conforme',
+    nao_conforme: 'Não Conforme',
   },
 
   // Nomes de Telas
@@ -116,7 +119,6 @@ export const APP_CONSTANTS = {
     ELETRICO: 'Elétrico',
     LIMPEZA: 'Limpeza',
     FERRAMENTA: 'Ferramentas',
-    PNEU: 'Pneus',
     PARTE1_INTERNA: 'Parte 1 - Interna',
     PARTE2_EQUIPAMENTOS: 'Parte 2 - Equipamentos',
     PARTE3_DIANTEIRA: 'Parte 3 - Dianteira',
@@ -130,7 +132,6 @@ export const APP_CONSTANTS = {
     ELETRICO: '⚡',
     LIMPEZA: '💧',
     FERRAMENTA: '🔨',
-    PNEU: '⭕',
     PARTE1_INTERNA: '🚗',
     PARTE2_EQUIPAMENTOS: '🔧',
     PARTE3_DIANTEIRA: '⬆️',
