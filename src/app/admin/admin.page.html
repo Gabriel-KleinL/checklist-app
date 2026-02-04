@@ -764,6 +764,11 @@
                           <ion-label>Tem foto</ion-label>
                           <ion-toggle [(ngModel)]="editItemTemFoto" slot="end" color="primary"></ion-toggle>
                         </ion-item>
+                        <ion-item lines="none" class="form-toggle-item" *ngIf="editItemTipoResposta === 'conforme_nao_conforme'">
+                          <ion-icon name="camera-outline" slot="start" color="tertiary"></ion-icon>
+                          <ion-label>Foto quando não conforme</ion-label>
+                          <ion-toggle [(ngModel)]="editItemFotoNaoConforme" slot="end" color="tertiary"></ion-toggle>
+                        </ion-item>
                         <ion-item lines="none" class="form-toggle-item">
                           <ion-icon name="alert-circle-outline" slot="start" color="warning"></ion-icon>
                           <ion-label>Obrigatório</ion-label>
@@ -965,6 +970,11 @@
                 <ion-label>Tem foto</ion-label>
                 <ion-toggle [(ngModel)]="novoItemTemFoto" slot="end" color="primary"></ion-toggle>
               </ion-item>
+              <ion-item lines="none" class="form-toggle-item" *ngIf="novoItemTipoResposta === 'conforme_nao_conforme'">
+                <ion-icon name="camera-outline" slot="start" color="tertiary"></ion-icon>
+                <ion-label>Foto quando não conforme</ion-label>
+                <ion-toggle [(ngModel)]="novoItemFotoNaoConforme" slot="end" color="tertiary"></ion-toggle>
+              </ion-item>
               <ion-item lines="none" class="form-toggle-item">
                 <ion-icon name="alert-circle-outline" slot="start" color="warning"></ion-icon>
                 <ion-label>Obrigatório</ion-label>
@@ -996,9 +1006,21 @@
       <ion-card color="primary">
         <ion-card-content>
           <ion-icon name="ellipse-outline"></ion-icon>
-          Configure os pneus de inspeção para cada tipo de veículo
+          Configure as posições e regras de inspeção de pneus para cada tipo de veículo
         </ion-card-content>
       </ion-card>
+
+      <!-- Sub-abas: Posições / Regras -->
+      <ion-segment [(ngModel)]="subAbaPneus" style="margin-bottom: 16px;">
+        <ion-segment-button value="posicoes">
+          <ion-icon name="navigate-outline"></ion-icon>
+          <ion-label>Posições</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="regras">
+          <ion-icon name="list-outline"></ion-icon>
+          <ion-label>Regras de Inspeção</ion-label>
+        </ion-segment-button>
+      </ion-segment>
 
       <!-- Loading -->
       <div *ngIf="carregandoTiposVeiculo" class="loading-container">
@@ -1028,41 +1050,162 @@
             <p style="margin-top: 8px; font-size: 0.9em;"
                [style.color]="tipoVeiculoSelecionadoPneus === tipo.id ? 'rgba(255,255,255,0.8)' : 'var(--ion-color-medium)'">
               <span *ngIf="tipo.ativo && itensPneusPorTipo[tipo.id]">
-                {{ getPneusHabilitadosTipo(tipo.id) }} / {{ getTotalPneusTipo(tipo.id) }} pneus
+                {{ getPneusHabilitadosTipo(tipo.id) }} / {{ getTotalPneusTipo(tipo.id) }} regras
               </span>
               <span *ngIf="tipo.ativo && !itensPneusPorTipo[tipo.id]">
-                Clique para ver pneus
+                Clique para configurar
               </span>
             </p>
           </ion-card-content>
         </ion-card>
       </div>
 
-      <!-- Loading itens pneus -->
-      <div *ngIf="carregandoItensPneus" class="loading-container" style="margin-top: 20px;">
-        <ion-spinner name="crescent" color="primary"></ion-spinner>
-        <p>Carregando pneus...</p>
+      <!-- ===== SUB-ABA: POSIÇÕES ===== -->
+      <div *ngIf="subAbaPneus === 'posicoes'">
+        <!-- Loading posições -->
+        <div *ngIf="carregandoPosicoesPneus" class="loading-container" style="margin-top: 20px;">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <p>Carregando posições...</p>
+        </div>
+
+        <!-- Lista de Posições do Tipo Selecionado -->
+        <div *ngIf="tipoVeiculoSelecionadoPneus && posicoesPneusPorTipo[tipoVeiculoSelecionadoPneus] && !carregandoPosicoesPneus">
+          <ion-card color="tertiary" style="margin-top: 20px;">
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon name="navigate-outline"></ion-icon>
+                Posições de {{ getNomeTipoVeiculoPneus() }}
+              </ion-card-title>
+              <ion-card-subtitle>
+                {{ getPosicoesPneusHabilitadosTipo(tipoVeiculoSelecionadoPneus) }} habilitadas de {{ getTotalPosicoesPneusTipo(tipoVeiculoSelecionadoPneus) }} total
+              </ion-card-subtitle>
+            </ion-card-header>
+          </ion-card>
+
+          <ion-card *ngIf="getPosicoesPneus().length > 0">
+            <ion-card-content>
+              <ion-list>
+                <ion-item *ngFor="let posicao of getPosicoesPneus()">
+                  <ion-icon [name]="posicao.habilitado ? 'checkmark-circle' : 'close-circle'"
+                            slot="start"
+                            [color]="posicao.habilitado ? 'success' : 'danger'"></ion-icon>
+                  <ion-label>
+                    <h3>{{ posicao.nome }}</h3>
+                    <p>Ordem: {{ posicao.ordem }}</p>
+                  </ion-label>
+                  <ion-toggle [checked]="posicao.habilitado"
+                              (ionChange)="toggleHabilitadoPosicaoPneu(posicao)"
+                              slot="end"
+                              color="success"></ion-toggle>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+
+          <ion-card *ngIf="getPosicoesPneus().length === 0" color="warning">
+            <ion-card-content>
+              <ion-icon name="alert-circle"></ion-icon>
+              Nenhuma posição configurada para este tipo de veículo
+            </ion-card-content>
+          </ion-card>
+        </div>
+
+        <!-- Mensagem para selecionar tipo -->
+        <ion-card *ngIf="!tipoVeiculoSelecionadoPneus && !carregandoTiposVeiculo" color="medium" style="margin-top: 20px;">
+          <ion-card-content style="text-align: center;">
+            <ion-icon name="hand-left-outline" style="font-size: 48px; margin-bottom: 16px;"></ion-icon>
+            <h3>Selecione um tipo de veículo</h3>
+            <p>Clique em um dos tipos acima para visualizar as posições</p>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Botão Adicionar Nova Posição -->
+        <ion-button expand="block" color="success" style="margin-top: 20px;" (click)="mostrarFormNovaPosicaoPneu = !mostrarFormNovaPosicaoPneu" *ngIf="!mostrarFormNovaPosicaoPneu">
+          <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+          Adicionar Nova Posição
+        </ion-button>
+
+        <!-- Formulário nova posição -->
+        <ion-card *ngIf="mostrarFormNovaPosicaoPneu" class="form-novo-item-card" style="margin-top: 20px;">
+          <ion-card-header>
+            <ion-card-title style="display: flex; align-items: center; justify-content: space-between;">
+              <span>
+                <ion-icon name="add-circle-outline" style="margin-right: 8px;"></ion-icon>
+                Nova Posição de Pneu
+              </span>
+              <ion-button fill="clear" color="medium" size="small" (click)="cancelarFormNovaPosicaoPneu()">
+                <ion-icon name="close" slot="icon-only"></ion-icon>
+              </ion-button>
+            </ion-card-title>
+          </ion-card-header>
+
+          <ion-card-content>
+            <!-- Tipos de veículo associados -->
+            <div class="form-step">
+              <label class="form-step-label">Tipos de veículo associados</label>
+              <div class="form-step-chips">
+                <ion-chip *ngFor="let tipo of tiposVeiculo"
+                          [color]="novaPosicaoPneuTiposAssociados.includes(tipo.id) ? 'tertiary' : 'medium'"
+                          [outline]="!novaPosicaoPneuTiposAssociados.includes(tipo.id)"
+                          (click)="toggleTipoAssociadoPosicaoPneu(tipo.id)">
+                  <ion-icon [name]="tipo.icone || 'car-outline'"></ion-icon>
+                  <ion-label>{{ tipo.nome }}</ion-label>
+                  <ion-icon name="checkmark" *ngIf="novaPosicaoPneuTiposAssociados.includes(tipo.id)"></ion-icon>
+                </ion-chip>
+              </div>
+            </div>
+
+            <!-- Nome da posição -->
+            <div class="form-step">
+              <label class="form-step-label">Nome da posição</label>
+              <ion-input [(ngModel)]="novaPosicaoPneuNome"
+                         placeholder="Ex: Dianteiro Direito, Estepe, Traseiro Interno Esquerdo"
+                         fill="outline"
+                         class="form-input-dark">
+              </ion-input>
+            </div>
+
+            <div class="form-step-actions">
+              <ion-button fill="outline" color="medium" (click)="cancelarFormNovaPosicaoPneu()">
+                Cancelar
+              </ion-button>
+              <ion-button color="success" (click)="salvarNovaPosicaoPneu()"
+                          [disabled]="!novaPosicaoPneuNome.trim() || novaPosicaoPneuTiposAssociados.length === 0">
+                <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+                Adicionar Posição
+              </ion-button>
+            </div>
+          </ion-card-content>
+        </ion-card>
       </div>
 
-      <!-- Lista de Pneus do Tipo Selecionado -->
-      <div *ngIf="tipoVeiculoSelecionadoPneus && itensPneusPorTipo[tipoVeiculoSelecionadoPneus] && !carregandoItensPneus">
-        <ion-card color="tertiary" style="margin-top: 20px;">
-          <ion-card-header>
-            <ion-card-title>
-              <ion-icon [name]="getIconeTipoVeiculoPneus()"></ion-icon>
-              Pneus de {{ getNomeTipoVeiculoPneus() }}
-            </ion-card-title>
-            <ion-card-subtitle>
-              {{ getPneusHabilitadosTipo(tipoVeiculoSelecionadoPneus) }} pneus habilitados de {{ getTotalPneusTipo(tipoVeiculoSelecionadoPneus) }} total
-            </ion-card-subtitle>
+      <!-- ===== SUB-ABA: REGRAS DE INSPEÇÃO ===== -->
+      <div *ngIf="subAbaPneus === 'regras'">
+        <!-- Loading itens pneus -->
+        <div *ngIf="carregandoItensPneus" class="loading-container" style="margin-top: 20px;">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <p>Carregando regras...</p>
+        </div>
+
+        <!-- Lista de Regras do Tipo Selecionado -->
+        <div *ngIf="tipoVeiculoSelecionadoPneus && itensPneusPorTipo[tipoVeiculoSelecionadoPneus] && !carregandoItensPneus">
+          <ion-card color="tertiary" style="margin-top: 20px;">
+            <ion-card-header>
+              <ion-card-title>
+                <ion-icon [name]="getIconeTipoVeiculoPneus()"></ion-icon>
+                Regras de Inspeção de {{ getNomeTipoVeiculoPneus() }}
+              </ion-card-title>
+              <ion-card-subtitle>
+                {{ getPneusHabilitadosTipo(tipoVeiculoSelecionadoPneus) }} regras habilitadas de {{ getTotalPneusTipo(tipoVeiculoSelecionadoPneus) }} total
+              </ion-card-subtitle>
           </ion-card-header>
         </ion-card>
 
         <ion-card *ngIf="getItensPneus().length > 0">
           <ion-card-header style="background: linear-gradient(135deg, #666 0%, #444 100%);">
             <ion-card-title style="color: white;">
-              <ion-icon name="ellipse-outline"></ion-icon>
-              Pneus
+              <ion-icon name="list-outline"></ion-icon>
+              Regras de Inspeção
               <ion-badge color="light">{{ getItensPneus().length }}</ion-badge>
             </ion-card-title>
           </ion-card-header>
@@ -1093,9 +1236,9 @@
                 <!-- Formulário de edição inline -->
                 <div class="edit-item-inline" *ngIf="editandoItemId === item.id">
                   <div class="form-step">
-                    <label class="form-step-label">Nome do pneu</label>
+                    <label class="form-step-label">Nome da regra</label>
                     <ion-input [(ngModel)]="editItemNome"
-                               placeholder="Nome do pneu"
+                               placeholder="Nome da regra de inspeção"
                                fill="outline"
                                class="form-input-dark">
                     </ion-input>
@@ -1173,6 +1316,11 @@
                         <ion-label>Tem foto</ion-label>
                         <ion-toggle [(ngModel)]="editItemTemFoto" slot="end" color="primary"></ion-toggle>
                       </ion-item>
+                      <ion-item lines="none" class="form-toggle-item" *ngIf="editItemTipoResposta === 'conforme_nao_conforme'">
+                        <ion-icon name="camera-outline" slot="start" color="tertiary"></ion-icon>
+                        <ion-label>Foto quando não conforme</ion-label>
+                        <ion-toggle [(ngModel)]="editItemFotoNaoConforme" slot="end" color="tertiary"></ion-toggle>
+                      </ion-item>
                       <ion-item lines="none" class="form-toggle-item">
                         <ion-icon name="alert-circle-outline" slot="start" color="warning"></ion-icon>
                         <ion-label>Obrigatório</ion-label>
@@ -1196,37 +1344,38 @@
           </ion-card-content>
         </ion-card>
 
-        <!-- Mensagem se não houver pneus -->
+        <!-- Mensagem se não houver regras -->
         <ion-card *ngIf="getItensPneus().length === 0" color="warning">
           <ion-card-content>
             <ion-icon name="alert-circle"></ion-icon>
-            Nenhum pneu configurado para este tipo de veículo
+            Nenhuma regra de inspeção configurada para este tipo de veículo
           </ion-card-content>
         </ion-card>
+        </div>
       </div>
 
-      <!-- Mensagem para selecionar um tipo -->
-      <ion-card *ngIf="!tipoVeiculoSelecionadoPneus && !carregandoTiposVeiculo" color="medium" style="margin-top: 20px;">
+      <!-- Mensagem para selecionar um tipo (sub-aba regras) -->
+      <ion-card *ngIf="subAbaPneus === 'regras' && !tipoVeiculoSelecionadoPneus && !carregandoTiposVeiculo" color="medium" style="margin-top: 20px;">
         <ion-card-content style="text-align: center;">
           <ion-icon name="hand-left-outline" style="font-size: 48px; margin-bottom: 16px;"></ion-icon>
           <h3>Selecione um tipo de veículo</h3>
-          <p>Clique em um dos tipos acima para visualizar os pneus configurados</p>
+          <p>Clique em um dos tipos acima para visualizar as regras de inspeção</p>
         </ion-card-content>
       </ion-card>
 
-      <!-- Botão Adicionar Novo Pneu -->
-      <ion-button expand="block" color="success" style="margin-top: 20px;" (click)="mostrarFormNovoItemPneu = !mostrarFormNovoItemPneu" *ngIf="!mostrarFormNovoItemPneu">
+      <!-- Botão Adicionar Nova Regra -->
+      <ion-button expand="block" color="success" style="margin-top: 20px;" (click)="mostrarFormNovoItemPneu = !mostrarFormNovoItemPneu" *ngIf="subAbaPneus === 'regras' && !mostrarFormNovoItemPneu">
         <ion-icon name="add-circle-outline" slot="start"></ion-icon>
-        Adicionar Novo Pneu
+        Adicionar Nova Regra
       </ion-button>
 
-      <!-- Formulário inline para novo pneu -->
+      <!-- Formulário inline para nova regra de inspeção -->
       <ion-card *ngIf="mostrarFormNovoItemPneu" class="form-novo-item-card" style="margin-top: 20px;">
         <ion-card-header>
           <ion-card-title style="display: flex; align-items: center; justify-content: space-between;">
             <span>
               <ion-icon name="add-circle-outline" style="margin-right: 8px;"></ion-icon>
-              Novo Pneu
+              Nova Regra de Inspeção
             </span>
             <ion-button fill="clear" color="medium" size="small" (click)="cancelarFormNovoItemPneu()">
               <ion-icon name="close" slot="icon-only"></ion-icon>
@@ -1235,37 +1384,8 @@
         </ion-card-header>
 
         <ion-card-content>
-          <!-- Step 1: Tipo do item -->
+          <!-- Tipos de veículo associados -->
           <div class="form-step">
-            <label class="form-step-label">Tipo do pneu</label>
-            <div class="form-step-options">
-              <ion-button [fill]="novoItemPneuTipo === 'geral' ? 'solid' : 'outline'" color="primary" size="small" (click)="novoItemPneuTipo = 'geral'; novoItemPneuTipoVeiculoId = null">
-                <ion-icon name="globe-outline" slot="start"></ion-icon>
-                Geral
-              </ion-button>
-              <ion-button [fill]="novoItemPneuTipo === 'especifico' ? 'solid' : 'outline'" color="primary" size="small" (click)="novoItemPneuTipo = 'especifico'">
-                <ion-icon name="car-outline" slot="start"></ion-icon>
-                Específico
-              </ion-button>
-            </div>
-          </div>
-
-          <!-- Step 2: Tipo de veículo (se específico) -->
-          <div class="form-step" *ngIf="novoItemPneuTipo === 'especifico'">
-            <label class="form-step-label">Tipo de Veículo</label>
-            <div class="form-step-chips">
-              <ion-chip *ngFor="let tipo of tiposVeiculo"
-                        [color]="novoItemPneuTipoVeiculoId === tipo.id ? 'tertiary' : 'medium'"
-                        [outline]="novoItemPneuTipoVeiculoId !== tipo.id"
-                        (click)="novoItemPneuTipoVeiculoId = tipo.id">
-                <ion-icon [name]="tipo.icone || 'car-outline'"></ion-icon>
-                <ion-label>{{ tipo.nome }}</ion-label>
-              </ion-chip>
-            </div>
-          </div>
-
-          <!-- Step 2b: Tipos associados (se geral) -->
-          <div class="form-step" *ngIf="novoItemPneuTipo === 'geral'">
             <label class="form-step-label">Tipos de veículo associados</label>
             <div class="form-step-chips">
               <ion-chip *ngFor="let tipo of tiposVeiculo"
@@ -1279,11 +1399,11 @@
             </div>
           </div>
 
-          <!-- Step 3: Nome do pneu -->
+          <!-- Nome da regra -->
           <div class="form-step">
-            <label class="form-step-label">Nome do pneu</label>
+            <label class="form-step-label">Nome da regra</label>
             <ion-input [(ngModel)]="novoItemPneuNome"
-                       placeholder="Ex: Dianteira Direita"
+                       placeholder="Ex: Estado da Borracha, Profundidade do Sulco"
                        fill="outline"
                        class="form-input-dark">
             </ion-input>
@@ -1375,7 +1495,7 @@
             <ion-button color="success" (click)="salvarNovoItemPneu()"
                         [disabled]="!novoItemPneuNome || (novoItemPneuTipo === 'especifico' && !novoItemPneuTipoVeiculoId) || (novoItemPneuTipo === 'geral' && novoItemPneuTiposAssociados.length === 0)">
               <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
-              Adicionar Pneu
+              Adicionar Regra
             </ion-button>
           </div>
         </ion-card-content>
@@ -1476,6 +1596,14 @@
               </ion-chip>
               <p class="observacao-text">{{ checklistDetalhado.observacao_painel }}</p>
             </div>
+
+            <div class="observacao-section" *ngIf="checklistDetalhado.observacao_adicional">
+              <ion-chip color="tertiary">
+                <ion-icon name="document-text-outline"></ion-icon>
+                <ion-label>Observação Adicional</ion-label>
+              </ion-chip>
+              <p class="observacao-text">{{ checklistDetalhado.observacao_adicional }}</p>
+            </div>
           </ion-card-content>
         </ion-card>
 
@@ -1532,6 +1660,7 @@
                   <ion-label>
                     <h3>{{ item.item }}</h3>
                     <p><ion-badge [color]="getCorStatus(item.status)">{{ item.status || 'N/A' }}</ion-badge></p>
+                    <p *ngIf="item.descricao"><em>{{ item.descricao }}</em></p>
                   </ion-label>
                 </ion-item>
                 <div class="foto-item" *ngIf="item.foto">
@@ -1554,6 +1683,7 @@
                   <ion-label>
                     <h3>{{ item.item }}</h3>
                     <p><ion-badge [color]="getCorStatus(item.status)">{{ item.status || 'N/A' }}</ion-badge></p>
+                    <p *ngIf="item.descricao"><em>{{ item.descricao }}</em></p>
                   </ion-label>
                 </ion-item>
                 <div class="foto-item" *ngIf="item.foto">
@@ -1576,6 +1706,7 @@
                   <ion-label>
                     <h3>{{ item.item }}</h3>
                     <p><ion-badge [color]="getCorStatus(item.status)">{{ item.status || 'N/A' }}</ion-badge></p>
+                    <p *ngIf="item.descricao"><em>{{ item.descricao }}</em></p>
                   </ion-label>
                 </ion-item>
                 <div class="foto-item" *ngIf="item.foto">
@@ -1599,6 +1730,7 @@
                     <h3>{{ item.item }}</h3>
                     <p><ion-badge [color]="item.status === 'contem' ? 'success' : 'danger'">{{ item.status === 'contem'
                         ? 'Contém' : 'Não Contém' }}</ion-badge></p>
+                    <p *ngIf="item.descricao"><em>{{ item.descricao }}</em></p>
                   </ion-label>
                 </ion-item>
                 <div class="foto-item" *ngIf="item.foto">
@@ -1640,8 +1772,39 @@
           </ion-card-content>
         </ion-card>
 
-        <!-- Pneus -->
-        <ion-card *ngIf="checklistDetalhado.itens?.PNEU && checklistDetalhado.itens.PNEU.length > 0">
+        <!-- Pneus (dados agrupados - novo formato) -->
+        <ion-card *ngIf="checklistDetalhado.itens?.PNEU_AGRUPADO && checklistDetalhado.itens.PNEU_AGRUPADO.length > 0">
+          <ion-card-header>
+            <ion-card-title>Pneus</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <div *ngFor="let posicao of checklistDetalhado.itens.PNEU_AGRUPADO" style="margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 12px;">
+              <h3 style="font-weight: bold; margin-bottom: 8px;">
+                <ion-icon name="ellipse" color="primary" style="margin-right: 6px;"></ion-icon>
+                {{ posicao.posicao }}
+              </h3>
+              <p *ngIf="posicao.pressao" style="margin-bottom: 8px;"><strong>Pressão:</strong> {{ posicao.pressao }} PSI</p>
+              <ion-list>
+                <div *ngFor="let regra of posicao.regras">
+                  <ion-item>
+                    <ion-label>
+                      <h3>{{ regra.sub_item || regra.item }}</h3>
+                      <p><ion-badge [color]="getCorStatus(regra.status)">{{ regra.status || 'N/A' }}</ion-badge></p>
+                      <p *ngIf="regra.descricao"><em>{{ regra.descricao }}</em></p>
+                    </ion-label>
+                  </ion-item>
+                  <div class="foto-item" *ngIf="regra.foto">
+                    <h4>Foto</h4>
+                    <img [src]="regra.foto" [alt]="regra.sub_item || regra.item" (click)="expandirFoto(regra.foto)" />
+                  </div>
+                </div>
+              </ion-list>
+            </div>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Pneus (dados legados - formato antigo sem sub_item) -->
+        <ion-card *ngIf="!checklistDetalhado.itens?.PNEU_AGRUPADO && checklistDetalhado.itens?.PNEU && checklistDetalhado.itens.PNEU.length > 0">
           <ion-card-header>
             <ion-card-title>Pneus</ion-card-title>
           </ion-card-header>

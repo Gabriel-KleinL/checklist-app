@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import { TempoTelasService } from '../services/tempo-telas.service';
 import { ConfigItensService, ConfigItem, AdicionarItemRequest } from '../services/config-itens.service';
+import { ConfigPneuPosicoesService, PneuPosicao } from '../services/config-pneu-posicoes.service';
 import { ConfigItensCompletoService, ConfigItemCompleto } from '../services/config-itens-completo.service';
 import { AuthService } from '../services/auth.service';
 import { TiposVeiculoService } from '../services/tipos-veiculo.service';
@@ -62,6 +63,14 @@ export class AdminPage implements OnInit {
   itensPneusPorTipo: { [tipoId: number]: ConfigItem[] } = {};
   carregandoItensPneus = false;
   mostrarFormNovoItemPneu = false;
+
+  // Posições de Pneus
+  posicoesPneusPorTipo: { [tipoId: number]: PneuPosicao[] } = {};
+  carregandoPosicoesPneus = false;
+  mostrarFormNovaPosicaoPneu = false;
+  novaPosicaoPneuNome = '';
+  novaPosicaoPneuTiposAssociados: number[] = [];
+  subAbaPneus: 'posicoes' | 'regras' = 'posicoes';
   novoItemPneuTipo: 'geral' | 'especifico' = 'geral';
   novoItemPneuTipoVeiculoId: number | null = null;
   novoItemPneuTiposAssociados: number[] = [];
@@ -143,6 +152,7 @@ export class AdminPage implements OnInit {
   novoItemTiposAssociados: number[] = [];
   novoItemNome: string = '';
   novoItemTemFoto = false;
+  novoItemFotoNaoConforme = true;
   novoItemObrigatorio = false;
   novoItemTipoResposta: string = '';
   novoItemOpcoesResposta: string[] = [];
@@ -152,6 +162,7 @@ export class AdminPage implements OnInit {
   editandoItemId: number | null = null;
   editItemNome: string = '';
   editItemTemFoto: boolean = false;
+  editItemFotoNaoConforme: boolean = true;
   editItemObrigatorio: boolean = false;
   editItemHabilitado: boolean = true;
   editItemTipoResposta: string = '';
@@ -192,7 +203,8 @@ export class AdminPage implements OnInit {
     private actionSheetController: ActionSheetController,
     private photoCompressionService: PhotoCompressionService,
     private loadingController: LoadingController,
-    private configCamposInspecaoService: ConfigCamposInspecaoService
+    private configCamposInspecaoService: ConfigCamposInspecaoService,
+    private configPneuPosicoesService: ConfigPneuPosicoesService
   ) {
     Chart.register(...registerables);
   }
@@ -639,7 +651,111 @@ export class AdminPage implements OnInit {
 
   selecionarTipoVeiculoPneus(tipoId: number) {
     this.tipoVeiculoSelecionadoPneus = tipoId;
+    this.carregarPosicoesPneus(tipoId);
     this.carregarItensPneus(tipoId);
+  }
+
+  // ============================================
+  // Métodos de Posições de Pneus
+  // ============================================
+
+  carregarPosicoesPneus(tipoId: number) {
+    if (this.posicoesPneusPorTipo[tipoId]) {
+      return;
+    }
+    this.carregandoPosicoesPneus = true;
+    this.configPneuPosicoesService.buscarPorTipoVeiculo(tipoId, false).subscribe({
+      next: (posicoes) => {
+        this.posicoesPneusPorTipo[tipoId] = posicoes;
+        this.carregandoPosicoesPneus = false;
+      },
+      error: (error) => {
+        console.error(`Erro ao carregar posições de pneus para tipo ${tipoId}:`, error);
+        this.carregandoPosicoesPneus = false;
+        this.mostrarToast('Erro ao carregar posições de pneus', 'danger');
+      }
+    });
+  }
+
+  getPosicoesPneus(): PneuPosicao[] {
+    if (!this.tipoVeiculoSelecionadoPneus) return [];
+    return this.posicoesPneusPorTipo[this.tipoVeiculoSelecionadoPneus] || [];
+  }
+
+  getTotalPosicoesPneusTipo(tipoId: number): number {
+    return (this.posicoesPneusPorTipo[tipoId] || []).length;
+  }
+
+  getPosicoesPneusHabilitadosTipo(tipoId: number): number {
+    return (this.posicoesPneusPorTipo[tipoId] || []).filter(p => p.habilitado).length;
+  }
+
+  cancelarFormNovaPosicaoPneu() {
+    this.mostrarFormNovaPosicaoPneu = false;
+    this.novaPosicaoPneuNome = '';
+    this.novaPosicaoPneuTiposAssociados = [];
+  }
+
+  toggleTipoAssociadoPosicaoPneu(tipoId: number) {
+    const idx = this.novaPosicaoPneuTiposAssociados.indexOf(tipoId);
+    if (idx > -1) {
+      this.novaPosicaoPneuTiposAssociados.splice(idx, 1);
+    } else {
+      this.novaPosicaoPneuTiposAssociados.push(tipoId);
+    }
+  }
+
+  async salvarNovaPosicaoPneu() {
+    if (!this.novaPosicaoPneuNome.trim()) {
+      await this.mostrarToast('Digite o nome da posição', 'danger');
+      return;
+    }
+
+    if (this.novaPosicaoPneuTiposAssociados.length === 0) {
+      await this.mostrarToast('Selecione pelo menos um tipo de veículo', 'warning');
+      return;
+    }
+
+    const loading = await this.loadingController.create({ message: 'Salvando posição...' });
+    await loading.present();
+
+    const usuario = this.authService.currentUserValue;
+    this.configPneuPosicoesService.adicionarPosicao({
+      nome: this.novaPosicaoPneuNome.trim(),
+      tipos_veiculo_associados: this.novaPosicaoPneuTiposAssociados,
+      usuario_id: usuario?.id
+    }).subscribe({
+      next: async () => {
+        await loading.dismiss();
+        await this.mostrarToast('Posição adicionada com sucesso!', 'success');
+        this.posicoesPneusPorTipo = {};
+        if (this.tipoVeiculoSelecionadoPneus) {
+          this.carregarPosicoesPneus(this.tipoVeiculoSelecionadoPneus);
+        }
+        this.cancelarFormNovaPosicaoPneu();
+      },
+      error: async (error) => {
+        await loading.dismiss();
+        console.error('Erro ao adicionar posição:', error);
+        await this.mostrarToast('Erro ao adicionar posição', 'danger');
+      }
+    });
+  }
+
+  async toggleHabilitadoPosicaoPneu(posicao: PneuPosicao) {
+    this.configPneuPosicoesService.atualizarPosicao({
+      id: posicao.id,
+      habilitado: !posicao.habilitado
+    }).subscribe({
+      next: async () => {
+        posicao.habilitado = !posicao.habilitado;
+        await this.mostrarToast(`Posição ${posicao.habilitado ? 'habilitada' : 'desabilitada'}`, 'success');
+      },
+      error: async (error) => {
+        console.error('Erro ao atualizar posição:', error);
+        await this.mostrarToast('Erro ao atualizar posição', 'danger');
+      }
+    });
   }
 
   carregarItensPneus(tipoId: number) {
@@ -721,7 +837,7 @@ export class AdminPage implements OnInit {
 
   async salvarNovoItemPneu() {
     if (!this.novoItemPneuNome.trim()) {
-      await this.mostrarToast('Digite o nome do pneu', 'danger');
+      await this.mostrarToast('Digite o nome da regra', 'danger');
       return;
     }
     if (this.novoItemPneuTipo === 'especifico' && !this.novoItemPneuTipoVeiculoId) {
@@ -737,7 +853,7 @@ export class AdminPage implements OnInit {
       return;
     }
 
-    const loading = await this.loadingController.create({ message: 'Salvando pneu...' });
+    const loading = await this.loadingController.create({ message: 'Salvando regra...' });
     await loading.present();
 
     const usuario = this.authService.currentUserValue;
@@ -758,7 +874,7 @@ export class AdminPage implements OnInit {
     this.configItensService.adicionarItem(dados).subscribe({
       next: async () => {
         await loading.dismiss();
-        await this.mostrarToast('Pneu adicionado com sucesso!', 'success');
+        await this.mostrarToast('Regra adicionada com sucesso!', 'success');
         this.itensPneusPorTipo = {};
         if (this.tipoVeiculoSelecionadoPneus) {
           this.carregarItensPneus(this.tipoVeiculoSelecionadoPneus);
@@ -767,8 +883,8 @@ export class AdminPage implements OnInit {
       },
       error: async (error) => {
         await loading.dismiss();
-        console.error('Erro ao adicionar pneu:', error);
-        await this.mostrarToast('Erro ao adicionar pneu', 'danger');
+        console.error('Erro ao adicionar regra:', error);
+        await this.mostrarToast('Erro ao adicionar regra', 'danger');
       }
     });
   }
@@ -777,7 +893,7 @@ export class AdminPage implements OnInit {
     if (!this.editandoItemId) return;
 
     if (!this.editItemNome.trim()) {
-      await this.mostrarToast('Digite o nome do pneu', 'danger');
+      await this.mostrarToast('Digite o nome da regra', 'danger');
       return;
     }
     if (this.editItemTipoResposta === 'lista_opcoes' && this.editItemOpcoesResposta.length < 2) {
@@ -793,6 +909,7 @@ export class AdminPage implements OnInit {
       nome_item: this.editItemNome.trim(),
       habilitado: this.editItemHabilitado,
       tem_foto: this.editItemTemFoto,
+      foto_nao_conforme: this.editItemFotoNaoConforme,
       obrigatorio: this.editItemObrigatorio,
       tipo_resposta: this.editItemTipoResposta,
       opcoes_resposta: this.editItemTipoResposta === 'lista_opcoes' ? this.editItemOpcoesResposta : null
@@ -801,7 +918,7 @@ export class AdminPage implements OnInit {
     this.configItensService.atualizarItem(dados).subscribe({
       next: async () => {
         await loading.dismiss();
-        await this.mostrarToast('Pneu atualizado com sucesso!', 'success');
+        await this.mostrarToast('Regra atualizada com sucesso!', 'success');
         this.fecharEdicaoItem();
         if (this.tipoVeiculoSelecionadoPneus) {
           delete this.itensPneusPorTipo[this.tipoVeiculoSelecionadoPneus];
@@ -810,8 +927,8 @@ export class AdminPage implements OnInit {
       },
       error: async (error) => {
         await loading.dismiss();
-        console.error('Erro ao atualizar pneu:', error);
-        await this.mostrarToast('Erro ao atualizar pneu', 'danger');
+        console.error('Erro ao atualizar regra:', error);
+        await this.mostrarToast('Erro ao atualizar regra', 'danger');
       }
     });
   }
@@ -919,6 +1036,7 @@ export class AdminPage implements OnInit {
     this.novoItemTiposAssociados = [];
     this.novoItemNome = '';
     this.novoItemTemFoto = false;
+    this.novoItemFotoNaoConforme = true;
     this.novoItemObrigatorio = false;
     this.novoItemTipoResposta = 'conforme_nao_conforme';
     this.novoItemOpcoesResposta = [];
@@ -970,7 +1088,8 @@ export class AdminPage implements OnInit {
       this.novoItemTemFoto,
       this.novoItemObrigatorio,
       this.novoItemTipoResposta,
-      this.novoItemOpcoesResposta
+      this.novoItemOpcoesResposta,
+      this.novoItemFotoNaoConforme
     );
 
     this.cancelarFormNovoItem();
@@ -985,6 +1104,7 @@ export class AdminPage implements OnInit {
     this.editandoItemId = item.id;
     this.editItemNome = item.nome_item;
     this.editItemTemFoto = !!item.tem_foto;
+    this.editItemFotoNaoConforme = item.foto_nao_conforme !== undefined ? !!item.foto_nao_conforme : true;
     this.editItemObrigatorio = !!item.obrigatorio;
     this.editItemHabilitado = !!item.habilitado;
     this.editItemTipoResposta = item.tipo_resposta || 'conforme_nao_conforme';
@@ -1034,6 +1154,7 @@ export class AdminPage implements OnInit {
       nome_item: this.editItemNome.trim(),
       habilitado: this.editItemHabilitado,
       tem_foto: this.editItemTemFoto,
+      foto_nao_conforme: this.editItemFotoNaoConforme,
       obrigatorio: this.editItemObrigatorio,
       tipo_resposta: this.editItemTipoResposta,
       opcoes_resposta: this.editItemTipoResposta === 'lista_opcoes' ? this.editItemOpcoesResposta : null
@@ -1358,7 +1479,7 @@ export class AdminPage implements OnInit {
   }
 
   // Salva o item no banco de dados
-  async salvarItem(categoria: string, nomeItem: string, tipoVeiculoId: number | null, tiposAssociados: number[], temFoto: boolean, obrigatorio: boolean, tipoResposta: string = 'conforme_nao_conforme', opcoesResposta: string[] = []) {
+  async salvarItem(categoria: string, nomeItem: string, tipoVeiculoId: number | null, tiposAssociados: number[], temFoto: boolean, obrigatorio: boolean, tipoResposta: string = 'conforme_nao_conforme', opcoesResposta: string[] = [], fotoNaoConforme: boolean = true) {
     const loading = await this.loadingController.create({
       message: 'Salvando item...'
     });
@@ -1370,6 +1491,7 @@ export class AdminPage implements OnInit {
       nome_item: nomeItem,
       habilitado: true,
       tem_foto: temFoto,
+      foto_nao_conforme: fotoNaoConforme,
       obrigatorio: obrigatorio,
       tipo_resposta: tipoResposta as any,
       opcoes_resposta: opcoesResposta.length > 0 ? opcoesResposta : undefined,

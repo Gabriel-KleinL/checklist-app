@@ -11,6 +11,7 @@ export interface ConfigItem {
   nome_item: string;
   habilitado: boolean;
   tem_foto: boolean;
+  foto_nao_conforme: boolean;
   obrigatorio: boolean;
   tipo_resposta: TipoResposta;
   opcoes_resposta?: string[] | null;
@@ -26,6 +27,7 @@ export interface AtualizarItemRequest {
   habilitado?: boolean;
   nome_item?: string;
   tem_foto?: boolean;
+  foto_nao_conforme?: boolean;
   obrigatorio?: boolean;
   tipo_resposta?: TipoResposta;
   opcoes_resposta?: string[] | null;
@@ -36,6 +38,7 @@ export interface AdicionarItemRequest {
   nome_item: string;
   habilitado?: boolean;
   tem_foto?: boolean;
+  foto_nao_conforme?: boolean;
   obrigatorio?: boolean;
   tipo_resposta?: TipoResposta;
   opcoes_resposta?: string[];

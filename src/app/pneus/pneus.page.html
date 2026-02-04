@@ -20,132 +20,119 @@
 
   <div class="form-container">
 
-    <!-- Card de cada pneu -->
-    <ion-card *ngFor="let pneu of pneus; let i = index" class="pneu-card" [id]="'tour-pneu-' + i">
+    <!-- Card de cada POSIÇÃO de pneu -->
+    <ion-card *ngFor="let posicao of posicoes; let pi = index" class="pneu-card" [id]="'tour-pneu-' + pi">
       <ion-card-header>
         <ion-card-title>
           <ion-icon name="ellipse" color="primary"></ion-icon>
-          {{ pneu.nome }}
-          <span *ngIf="pneu.obrigatorio === false" style="font-size: 0.6em; color: var(--ion-color-medium); margin-left: 8px;">(Opcional)</span>
+          {{ posicao.posicao_nome }}
         </ion-card-title>
       </ion-card-header>
 
       <ion-card-content>
-        <!-- Seleção dinâmica baseada no tipo_resposta -->
-        <div class="item-label">Condição do Pneu</div>
-
-        <div [ngSwitch]="pneu.tipo_resposta">
-          <!-- Conforme / Não Conforme -->
-          <ion-segment *ngSwitchCase="'conforme_nao_conforme'" [(ngModel)]="pneu.valor" class="segment-pneu segment-conforme" (ionChange)="onValorChange(pneu)">
-            <ion-segment-button value="conforme">
-              <ion-label>Conforme</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="nao_conforme">
-              <ion-label>Não Conforme</ion-label>
-            </ion-segment-button>
-          </ion-segment>
-
-          <!-- Texto -->
-          <ion-item *ngSwitchCase="'texto'" color="dark" lines="none" class="input-item">
-            <ion-input [(ngModel)]="pneu.valor" (ionBlur)="salvarLocalmente()" placeholder="Digite..." color="light"></ion-input>
-          </ion-item>
-
-          <!-- Número -->
-          <ion-item *ngSwitchCase="'numero'" color="dark" lines="none" class="input-item">
-            <ion-input [(ngModel)]="pneu.valor" (ionBlur)="salvarLocalmente()" type="number" placeholder="0" color="light"></ion-input>
-          </ion-item>
-
-          <!-- Lista de opções -->
-          <ion-segment *ngSwitchCase="'lista_opcoes'" [(ngModel)]="pneu.valor" class="segment-pneu segment-opcoes" scrollable="true" (ionChange)="onValorChange(pneu)">
-            <ion-segment-button *ngFor="let opcao of pneu.opcoes_resposta" [value]="opcao">
-              <ion-label>{{ opcao }}</ion-label>
-            </ion-segment-button>
-          </ion-segment>
-
-          <!-- Apenas foto -->
-          <div *ngSwitchCase="'apenas_foto'" class="apenas-foto-label">
-            <ion-icon name="camera" color="primary"></ion-icon>
-            <span>Tire a foto abaixo</span>
-          </div>
-
-          <!-- Default: Conforme / Não Conforme -->
-          <ion-segment *ngSwitchDefault [(ngModel)]="pneu.valor" class="segment-pneu segment-conforme" (ionChange)="onValorChange(pneu)">
-            <ion-segment-button value="conforme">
-              <ion-label>Conforme</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="nao_conforme">
-              <ion-label>Não Conforme</ion-label>
-            </ion-segment-button>
-          </ion-segment>
+        <!-- Mensagem se não houver regras configuradas -->
+        <div *ngIf="posicao.regras.length === 0" class="sem-regras">
+          <ion-icon name="alert-circle-outline" color="medium"></ion-icon>
+          <span>Nenhuma regra de inspeção configurada para pneus</span>
         </div>
 
-        <!-- Campo de Pressão (Opcional) -->
-        <div class="pressure-section" style="margin: 20px 0;">
-          <ion-item>
-            <ion-label position="stacked">
-              <ion-icon name="speedometer" color="primary"></ion-icon>
-              Pressão (PSI) <span style="color: var(--ion-color-medium); font-size: 0.8em;">(Opcional)</span>
-            </ion-label>
-            <ion-input
-              type="number"
-              [value]="pneu.pressao"
-              (ionChange)="atualizarPressao(i, $event)"
-              placeholder="Ex: 32 (opcional)"
-              min="0"
-              step="0.1"
-            ></ion-input>
-          </ion-item>
-        </div>
-
-        <!-- Seção de Foto -->
-        <div class="photo-section" *ngIf="mostrarFoto(pneu)">
-          <div class="photo-label">
-            <ion-icon name="camera" color="primary"></ion-icon>
-            <span>Foto do Pneu {{ precisaFoto(pneu) ? '(Obrigatória)' : '(Opcional)' }}</span>
+        <!-- REGRAS de inspeção (cada uma dentro da posição) -->
+        <div *ngFor="let regra of posicao.regras; let ri = index" class="regra-section">
+          <div class="regra-label">
+            {{ regra.nome }}
+            <span *ngIf="regra.obrigatorio" class="obrigatorio-tag">(Obrigatório)</span>
           </div>
 
-          <!-- Botão de tirar foto -->
-          <ion-button
-            expand="block"
-            color="primary"
-            (click)="tirarFoto(i)"
-            [fill]="pneu.foto ? 'outline' : 'solid'"
-          >
-            <ion-icon slot="start" name="camera"></ion-icon>
-            {{ pneu.foto ? 'Alterar Foto' : 'Tirar Foto' }}
-          </ion-button>
+          <!-- Tipo de resposta dinâmico -->
+          <div [ngSwitch]="regra.tipo_resposta">
+            <!-- Conforme / Não Conforme -->
+            <ion-segment *ngSwitchCase="'conforme_nao_conforme'" [(ngModel)]="regra.valor" class="segment-pneu segment-conforme" (ionChange)="onValorChange()">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
 
-          <!-- Preview da foto -->
-          <div *ngIf="pneu.foto" class="photo-preview">
-            <img [src]="pneu.foto" />
+            <!-- Texto -->
+            <ion-item *ngSwitchCase="'texto'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="regra.valor" (ionBlur)="salvarLocalmente()" placeholder="Digite..." color="light"></ion-input>
+            </ion-item>
+
+            <!-- Número -->
+            <ion-item *ngSwitchCase="'numero'" color="dark" lines="none" class="input-item">
+              <ion-input [(ngModel)]="regra.valor" (ionBlur)="salvarLocalmente()" type="number" placeholder="0" color="light"></ion-input>
+            </ion-item>
+
+            <!-- Lista de opções -->
+            <ion-segment *ngSwitchCase="'lista_opcoes'" [(ngModel)]="regra.valor" class="segment-pneu segment-opcoes" scrollable="true" (ionChange)="onValorChange()">
+              <ion-segment-button *ngFor="let opcao of regra.opcoes_resposta" [value]="opcao">
+                <ion-label>{{ opcao }}</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <!-- Apenas foto (sem texto, só mostra a seção de foto abaixo) -->
+            <div *ngSwitchCase="'apenas_foto'"></div>
+
+            <!-- Default: Conforme / Não Conforme -->
+            <ion-segment *ngSwitchDefault [(ngModel)]="regra.valor" class="segment-pneu segment-conforme" (ionChange)="onValorChange()">
+              <ion-segment-button value="conforme">
+                <ion-label>Conforme</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="nao_conforme">
+                <ion-label>Não Conforme</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+          </div>
+
+          <!-- Foto por regra -->
+          <div class="photo-section" *ngIf="mostrarFotoRegra(regra)">
+            <div class="photo-label">
+              <ion-icon name="camera" color="primary"></ion-icon>
+              <span>Foto</span>
+            </div>
+
             <ion-button
-              size="small"
-              color="danger"
-              fill="clear"
-              (click)="removerFoto(i)"
+              expand="block"
+              color="primary"
+              (click)="tirarFotoRegra(pi, ri)"
+              [fill]="regra.foto ? 'outline' : 'solid'"
             >
-              <ion-icon slot="icon-only" name="trash"></ion-icon>
+              <ion-icon slot="start" name="camera"></ion-icon>
+              {{ regra.foto ? 'Alterar Foto' : 'Tirar Foto' }}
             </ion-button>
+
+            <div *ngIf="regra.foto" class="photo-preview">
+              <img [src]="regra.foto" />
+              <ion-button
+                size="small"
+                color="danger"
+                fill="clear"
+                (click)="removerFotoRegra(pi, ri)"
+              >
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-button>
+            </div>
+
+            <div *ngIf="!regra.foto" class="photo-placeholder">
+              <ion-icon name="camera-outline"></ion-icon>
+              <p>Nenhuma foto</p>
+            </div>
           </div>
 
-          <!-- Placeholder quando não há foto -->
-          <div *ngIf="!pneu.foto" class="photo-placeholder">
-            <ion-icon name="camera-outline"></ion-icon>
-            <p>Nenhuma foto</p>
+          <!-- Descrição quando não conforme -->
+          <div *ngIf="regra.valor === 'nao_conforme'" style="margin-top: 10px;">
+            <ion-item color="dark" lines="none" class="description-item">
+              <ion-textarea
+                [(ngModel)]="regra.descricao"
+                (ionChange)="salvarLocalmente()"
+                placeholder="Descreva o problema (ex: desgaste irregular, corte, furação, etc)..."
+                rows="3"
+                color="light"
+              ></ion-textarea>
+            </ion-item>
           </div>
-        </div>
-
-        <!-- Campo de descrição quando não conforme -->
-        <div *ngIf="pneu.valor === 'nao_conforme'" style="margin-top: 15px;">
-          <ion-item color="dark" lines="none" class="description-item">
-            <ion-textarea
-              [(ngModel)]="pneu.descricao"
-              (ionChange)="salvarLocalmente()"
-              placeholder="Descreva o problema do pneu (ex: desgaste irregular, corte, furação, etc)..."
-              rows="3"
-              color="light"
-            ></ion-textarea>
-          </ion-item>
         </div>
       </ion-card-content>
     </ion-card>
@@ -160,8 +147,8 @@
         [disabled]="!validarFormulario() || salvando"
       >
         <ion-spinner *ngIf="salvando" name="crescent" slot="start"></ion-spinner>
-        <ion-icon *ngIf="!salvando" slot="start" name="checkmark-circle"></ion-icon>
-        {{ salvando ? 'Salvando...' : 'Finalizar e Salvar Checklist' }}
+        <ion-icon *ngIf="!salvando" slot="start" name="arrow-forward"></ion-icon>
+        {{ salvando ? 'Salvando...' : 'Próximo' }}
       </ion-button>
     </div>
   </div>
@@ -190,11 +177,11 @@
           </ion-card-title>
         </ion-card-header>
         <ion-card-content>
-          <p>Esta é a última etapa do checklist. Inspecione todos os 5 pneus do veículo (incluindo o estepe).</p>
+          <p>Esta é a última etapa do checklist. Inspecione todos os pneus do veículo (incluindo o estepe).</p>
+          <p>Para cada pneu, preencha todas as regras de inspeção configuradas pelo administrador.</p>
         </ion-card-content>
       </ion-card>
 
-      <!-- O QUE VERIFICAR -->
       <ion-card>
         <ion-card-header>
           <ion-card-title>
@@ -215,61 +202,6 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- CRITÉRIOS BOM/RUIM -->
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title>
-            <ion-icon name="checkmark-done"></ion-icon>
-            Critérios de Avaliação
-          </ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <div style="margin-bottom: 15px;">
-            <p><strong style="color: var(--ion-color-success);">✓ Marque "BOM" quando:</strong></p>
-            <ul>
-              <li>Sulcos com profundidade adequada</li>
-              <li>Sem desgaste irregular</li>
-              <li>Sem cortes ou deformações</li>
-              <li>Calibragem aparentemente normal</li>
-              <li>Sem objetos cravados</li>
-            </ul>
-          </div>
-
-          <div>
-            <p><strong style="color: var(--ion-color-danger);">✗ Marque "RUIM" quando:</strong></p>
-            <ul>
-              <li>Sulcos muito rasos ou inexistentes (careca)</li>
-              <li>Desgaste irregular evidente</li>
-              <li>Cortes, rasgos ou bolhas</li>
-              <li>Objetos cravados (pregos, parafusos)</li>
-              <li>Pneu murcho ou muito cheio</li>
-              <li>Rachaduras na lateral por ressecamento</li>
-            </ul>
-          </div>
-        </ion-card-content>
-      </ion-card>
-
-      <!-- LOCALIZAÇÃO DOS PNEUS -->
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title>
-            <ion-icon name="navigate"></ion-icon>
-            Localização dos Pneus
-          </ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <p><strong>Identifique cada pneu corretamente:</strong></p>
-          <ul>
-            <li><strong>Dianteira Direita:</strong> Lado do motorista, frente</li>
-            <li><strong>Dianteira Esquerda:</strong> Lado do passageiro, frente</li>
-            <li><strong>Traseira Direita:</strong> Lado do motorista, atrás</li>
-            <li><strong>Traseira Esquerda:</strong> Lado do passageiro, atrás</li>
-            <li><strong>Estepe:</strong> Pneu reserva (geralmente no porta-malas)</li>
-          </ul>
-        </ion-card-content>
-      </ion-card>
-
-      <!-- COMO FOTOGRAFAR -->
       <ion-card>
         <ion-card-header>
           <ion-card-title>
@@ -280,17 +212,13 @@
         <ion-card-content>
           <p><strong>Dicas para fotos de qualidade:</strong></p>
           <ul>
-            <li>Tire foto de cada pneu individualmente</li>
             <li>A foto deve mostrar a banda de rodagem (parte que toca o chão)</li>
             <li>Se houver algum problema, fotografe de perto para evidenciar</li>
-            <li>Para pneus ruins, mostre claramente o defeito</li>
             <li>Boa iluminação é essencial</li>
           </ul>
-          <p><strong>Ângulo ideal:</strong> Agache-se ao lado do pneu e fotografe de cima para baixo, mostrando a superfície e a lateral.</p>
         </ion-card-content>
       </ion-card>
 
-      <!-- ESTEPE -->
       <ion-card color="warning">
         <ion-card-content>
           <ion-text color="dark">
@@ -307,7 +235,7 @@
           <ion-text color="dark">
             <p>
               <ion-icon name="save"></ion-icon>
-              <strong> Finalização:</strong> Todos os 5 pneus devem ser avaliados e fotografados. Ao clicar em "Finalizar", o checklist completo será enviado ao servidor.
+              <strong> Finalização:</strong> Todos os pneus devem ser avaliados. Ao clicar em "Finalizar", o checklist completo será enviado ao servidor.
             </p>
           </ion-text>
         </ion-card-content>

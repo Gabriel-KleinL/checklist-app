@@ -40,6 +40,10 @@ const routes: Routes = [
     loadChildren: () => import('./inspecao-inicial/inspecao-inicial.module').then( m => m.InspecaoInicialPageModule)
   },
   {
+    path: 'observacao-adicional',
+    loadChildren: () => import('./observacao-adicional/observacao-adicional.module').then( m => m.ObservacaoAdicionalPageModule)
+  },
+  {
     path: 'test',
     loadChildren: () => import('./test/test.module').then( m => m.TestPageModule)
   }

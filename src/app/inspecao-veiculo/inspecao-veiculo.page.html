@@ -392,6 +392,39 @@
       </ion-card-content>
     </ion-card>
 
+    <!-- SEÇÃO: FOTO DO PAINEL -->
+    <div class="section-header">
+      <ion-icon name="speedometer" color="primary"></ion-icon>
+      <h2>Foto do Painel</h2>
+    </div>
+
+    <ion-card>
+      <ion-card-content>
+        <ion-button
+          expand="block"
+          color="primary"
+          size="default"
+          (click)="tirarFotoPainel()"
+          [fill]="fotoPainel ? 'outline' : 'solid'"
+        >
+          <ion-icon slot="start" name="camera"></ion-icon>
+          {{ fotoPainel ? 'Alterar Foto do Painel' : 'Tirar Foto do Painel' }}
+        </ion-button>
+
+        <div *ngIf="fotoPainel" class="photo-preview">
+          <img [src]="fotoPainel" />
+          <ion-button
+            size="small"
+            color="danger"
+            fill="clear"
+            (click)="removerFotoPainel()"
+          >
+            <ion-icon slot="icon-only" name="trash"></ion-icon>
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
     <!-- Botão Salvar -->
     <div class="save-section" id="tour-salvar">
       <ion-button

@@ -40,6 +40,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
   readonly opcoesEletricos = ['bom', 'ruim'];
   readonly opcoesFerramentas = ['contem', 'nao_contem'];
 
+  fotoPainel: string | undefined;
   exibirAjuda = false;
   carregandoItens = false;
 
@@ -61,6 +62,12 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
 
     // Carrega itens habilitados do banco de dados
     await this.carregarItensHabilitados();
+
+    // Recupera foto do painel se já tirada
+    const fotoPainelSalva = await this.localStorage.getItem('foto_painel');
+    if (fotoPainelSalva) {
+      this.fotoPainel = fotoPainelSalva;
+    }
 
     await this.recuperarDadosSalvos();
     await this.verificarPrimeiroAcesso();
@@ -101,6 +108,7 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
           tipo_resposta: item.tipo_resposta || 'conforme_nao_conforme',
           opcoes_resposta: this.parseOpcoes(item.opcoes_resposta),
           tem_foto: !!item.tem_foto,
+          foto_nao_conforme: item.foto_nao_conforme !== undefined ? !!item.foto_nao_conforme : true,
           obrigatorio: item.obrigatorio !== undefined ? !!item.obrigatorio : true
         });
 
@@ -184,6 +192,28 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     await this.localStorage.salvarInspecaoVeiculo(this.inspecao);
   }
 
+  async tirarFotoPainel() {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 45,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        width: 1200,
+        height: 1200
+      });
+      this.fotoPainel = image.dataUrl;
+      await this.localStorage.setItem('foto_painel', this.fotoPainel || '');
+    } catch (error) {
+      console.log('Foto cancelada ou erro:', error);
+    }
+  }
+
+  async removerFotoPainel() {
+    this.fotoPainel = undefined;
+    await this.localStorage.setItem('foto_painel', '');
+  }
+
   validarFormulario(): boolean {
     const validarItens = (itens: any[]) => itens.every(item => {
       // Itens não obrigatórios podem ser pulados
@@ -211,15 +241,16 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
     if (item.tipo_resposta === 'apenas_foto') return true;
     if (item.tem_foto) return true;
     if (item.tipo_resposta === 'conforme_nao_conforme' || !item.tipo_resposta) {
-      return item.valor === 'nao_conforme';
+      if (item.valor === 'nao_conforme') {
+        return item.foto_nao_conforme !== false;
+      }
     }
     return false;
   }
 
-  // Mostra seção de foto: obrigatória OU item já preenchido
+  // Mostra seção de foto: apenas quando obrigatória (apenas_foto, tem_foto, ou não conforme)
   mostrarFoto(item: any): boolean {
-    if (item.tipo_resposta === 'apenas_foto') return true;
-    return this.precisaFoto(item) || (item.valor !== null && item.valor !== '');
+    return this.precisaFoto(item);
   }
 
   // Métodos legados mantidos para compatibilidade com template existente
@@ -456,9 +487,16 @@ export class InspecaoVeiculoPage implements OnInit, OnDestroy {
 
       this.logger.info(`Salvando ${itensInspecao.length} itens de inspeção`);
 
+      // Monta fotos (painel)
+      const fotos: any[] = [];
+      if (this.fotoPainel) {
+        fotos.push({ tipo: 'PAINEL', foto: this.fotoPainel });
+      }
+
       // Atualiza a inspeção na API
       await this.apiService.atualizarInspecao(inspecaoId, {
-        itens_inspecao: itensInspecao
+        itens_inspecao: itensInspecao,
+        fotos: fotos
       }).toPromise();
 
       this.logger.info('Inspeção atualizada com sucesso');

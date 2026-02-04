@@ -48,7 +48,8 @@ export class ApiService {
       'b_veicular_anomalias.php': 'api/anomalias',
       'b_anomalia_status.php': 'api/anomalias/status',
       'b_veicular_tempotelas.php': 'api/tempo-telas',
-      'b_buscar_placas.php': 'api/buscar-placas'
+      'b_buscar_placas.php': 'api/buscar-placas',
+      'b_config_pneu_posicoes.php': 'api/config/pneu-posicoes'
     };
 
     return map[filename] || filename.replace('.php', '');

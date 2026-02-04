@@ -276,48 +276,9 @@
       </ion-card-content>
     </ion-card>
 
-    <!-- SEÇÃO: FOTO DO PAINEL (só mostra se observacao_painel tem foto habilitada) -->
-    <div *ngIf="campoHabilitado('observacao_painel') && campoTemFoto('observacao_painel')" class="section-header">
-      <ion-icon name="speedometer" color="primary"></ion-icon>
-      <h2>Painel do Veículo</h2>
-    </div>
-
+    <!-- SEÇÃO: OBSERVAÇÕES DO PAINEL -->
     <ion-card *ngIf="campoHabilitado('observacao_painel')">
       <ion-card-content>
-
-        <!-- FOTO DO PAINEL (só mostra se campo tem_foto está habilitado) -->
-        <div *ngIf="campoTemFoto('observacao_painel')" class="photo-section" id="tour-foto-painel">
-          <ion-label color="light" class="field-label">
-            Foto do Painel {{ campoObrigatorio('observacao_painel') ? '*' : '' }}
-          </ion-label>
-
-          <ion-button
-            expand="block"
-            color="primary"
-            size="default"
-            (click)="tirarFotoPainel()"
-            [fill]="inspecaoInicial.fotoPainel ? 'outline' : 'solid'"
-          >
-            <ion-icon slot="start" name="camera"></ion-icon>
-            {{ inspecaoInicial.fotoPainel ? 'Alterar Foto do Painel' : 'Tirar Foto do Painel' }}
-          </ion-button>
-
-          <div *ngIf="inspecaoInicial.fotoPainel" class="photo-preview">
-            <img [src]="inspecaoInicial.fotoPainel" />
-            <ion-button
-              size="small"
-              color="danger"
-              fill="clear"
-              (click)="removerFotoPainel()"
-            >
-              <ion-icon slot="icon-only" name="trash"></ion-icon>
-            </ion-button>
-          </div>
-        </div>
-
-        <div *ngIf="campoTemFoto('observacao_painel')" class="spacer"></div>
-
-        <!-- OBSERVAÇÕES DO PAINEL -->
         <ion-item color="dark" lines="none" id="tour-observacoes">
           <ion-label position="stacked" color="light">
             {{ getCampoLabel('observacao_painel') }} {{ campoObrigatorio('observacao_painel') ? '*' : '(opcional)' }}
@@ -331,7 +292,6 @@
             autoGrow="true"
           ></ion-textarea>
         </ion-item>
-
       </ion-card-content>
     </ion-card>
 

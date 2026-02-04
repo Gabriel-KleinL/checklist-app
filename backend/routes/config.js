@@ -196,7 +196,7 @@ async function setItens(req, res) {
     const acao = req.body.acao || req.body.action;
     
     if (acao === 'adicionar_item' || acao === 'add') {
-      const { categoria, nome_item, habilitado = true, tem_foto = false, obrigatorio = false, tipo_resposta = 'conforme_nao_conforme', opcoes_resposta = null, tipo_veiculo_id = null, tipos_veiculo_associados = [], usuario_id = null, tipo_checklist = 'simplificado' } = req.body;
+      const { categoria, nome_item, habilitado = true, tem_foto = false, foto_nao_conforme = true, obrigatorio = false, tipo_resposta = 'conforme_nao_conforme', opcoes_resposta = null, tipo_veiculo_id = null, tipos_veiculo_associados = [], usuario_id = null, tipo_checklist = 'simplificado' } = req.body;
 
       if (!categoria || !nome_item) {
         return res.status(400).json({
@@ -213,9 +213,9 @@ async function setItens(req, res) {
         const opcoesJson = opcoes_resposta ? JSON.stringify(opcoes_resposta) : null;
         const [result] = await connection.query(
           `INSERT INTO checklist_config_itens
-           (categoria, nome_item, habilitado, tem_foto, obrigatorio, tipo_resposta, opcoes_resposta, tipo_veiculo_id, usuario_id, tipo_checklist)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [categoria, nome_item, habilitado ? 1 : 0, tem_foto ? 1 : 0, obrigatorio ? 1 : 0, tipo_resposta, opcoesJson, tipo_veiculo_id || null, usuario_id || null, tipo_checklist]
+           (categoria, nome_item, habilitado, tem_foto, foto_nao_conforme, obrigatorio, tipo_resposta, opcoes_resposta, tipo_veiculo_id, usuario_id, tipo_checklist)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [categoria, nome_item, habilitado ? 1 : 0, tem_foto ? 1 : 0, foto_nao_conforme ? 1 : 0, obrigatorio ? 1 : 0, tipo_resposta, opcoesJson, tipo_veiculo_id || null, usuario_id || null, tipo_checklist]
         );
 
         const itemId = result.insertId;
@@ -245,7 +245,7 @@ async function setItens(req, res) {
         connection.release();
       }
     } else if (acao === 'atualizar_item' || acao === 'update') {
-      const { id, habilitado, nome_item, tem_foto, obrigatorio, tipo_resposta, opcoes_resposta } = req.body;
+      const { id, habilitado, nome_item, tem_foto, foto_nao_conforme, obrigatorio, tipo_resposta, opcoes_resposta } = req.body;
 
       if (!id) {
         return res.status(400).json({ erro: 'ID do item não informado' });
@@ -267,6 +267,11 @@ async function setItens(req, res) {
       if (tem_foto !== undefined) {
         updates.push('tem_foto = ?');
         params.push(tem_foto ? 1 : 0);
+      }
+
+      if (foto_nao_conforme !== undefined) {
+        updates.push('foto_nao_conforme = ?');
+        params.push(foto_nao_conforme ? 1 : 0);
       }
 
       if (obrigatorio !== undefined) {

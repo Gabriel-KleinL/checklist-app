@@ -4,6 +4,7 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { ChecklistDataService } from '../services/checklist-data.service';
 import { ApiService } from '../services/api.service';
 import { ConfigItensService } from '../services/config-itens.service';
+import { ConfigPneuPosicoesService } from '../services/config-pneu-posicoes.service';
 import { AlertController, ToastController } from '@ionic/angular';
 import { LocalStorageService } from '../services/local-storage';
 import { environment } from '../../environments/environment';
@@ -11,17 +12,23 @@ import { AuthService } from '../services/auth.service';
 import { TempoTelasService } from '../services/tempo-telas.service';
 import { driver } from 'driver.js';
 
-interface Pneu {
+interface RegraInspecao {
   nome: string;
-  posicao: string;
   valor: string | null;
   foto?: string;
-  pressao?: number;
   descricao?: string;
-  tipo_resposta?: string;
+  tipo_resposta: string;
   opcoes_resposta?: string[];
-  tem_foto?: boolean;
-  obrigatorio?: boolean;
+  tem_foto: boolean;
+  foto_nao_conforme: boolean;
+  obrigatorio: boolean;
+}
+
+interface PosicaoPneu {
+  posicao_id: number;
+  posicao_nome: string;
+  pressao?: number;
+  regras: RegraInspecao[];
 }
 
 @Component({
@@ -32,19 +39,16 @@ interface Pneu {
 })
 export class PneusPage implements OnInit, OnDestroy {
 
-  private pneusPadrao: Pneu[] = [
-    { nome: 'Dianteira Direita', posicao: 'dianteira-direita', valor: null },
-    { nome: 'Dianteira Esquerda', posicao: 'dianteira-esquerda', valor: null },
-    { nome: 'Traseira Direita', posicao: 'traseira-direita', valor: null },
-    { nome: 'Traseira Esquerda', posicao: 'traseira-esquerda', valor: null },
-    { nome: 'Estepe', posicao: 'estepe', valor: null }
+  private posicoesPadrao = [
+    { nome: 'Dianteiro Direito', id: 0 },
+    { nome: 'Dianteiro Esquerdo', id: 0 },
+    { nome: 'Traseiro Direito', id: 0 },
+    { nome: 'Traseiro Esquerdo', id: 0 },
+    { nome: 'Estepe', id: 0 }
   ];
 
-  pneus: Pneu[] = [...this.pneusPadrao];
-
-  opcoesPneu = ['bom', 'ruim'];
+  posicoes: PosicaoPneu[] = [];
   salvando = false;
-
   exibirAjuda = false;
 
   constructor(
@@ -52,6 +56,7 @@ export class PneusPage implements OnInit, OnDestroy {
     private checklistData: ChecklistDataService,
     private apiService: ApiService,
     private configItensService: ConfigItensService,
+    private configPneuPosicoesService: ConfigPneuPosicoesService,
     private alertController: AlertController,
     private toastController: ToastController,
     private localStorage: LocalStorageService,
@@ -60,18 +65,16 @@ export class PneusPage implements OnInit, OnDestroy {
   ) { }
 
   async ngOnInit() {
-    // Inicia rastreamento de tempo
     this.tempoTelasService.iniciarTela('pneus');
 
     await this.carregarItensPneusConfig();
     await this.recuperarDadosSalvos();
 
-    // Verifica se o inspecaoId está disponível (tenta recuperar do storage se necessário)
     const inspecaoId = await this.checklistData.getInspecaoId();
     if (inspecaoId) {
-      console.log('[Pneus] ✅ Inspeção ID encontrado:', inspecaoId);
+      console.log('[Pneus] Inspecao ID encontrado:', inspecaoId);
     } else {
-      console.warn('[Pneus] ⚠️ Inspeção ID não encontrado. O usuário precisará reiniciar o processo se tentar salvar.');
+      console.warn('[Pneus] Inspecao ID nao encontrado.');
     }
 
     await this.verificarPrimeiroAcesso();
@@ -82,33 +85,41 @@ export class PneusPage implements OnInit, OnDestroy {
       const tipoVeiculoIdStr = await this.localStorage.getItem('tipo_veiculo_id');
       const tipoVeiculoId = tipoVeiculoIdStr ? parseInt(tipoVeiculoIdStr, 10) : 1;
 
-      const itens = await this.configItensService
-        .buscarPorTipoVeiculo(tipoVeiculoId, 'PNEU', true)
-        .toPromise();
+      // Carrega posicoes e regras em paralelo
+      const [posicoes, regras] = await Promise.all([
+        this.configPneuPosicoesService.buscarPorTipoVeiculo(tipoVeiculoId, true).toPromise(),
+        this.configItensService.buscarPorTipoVeiculo(tipoVeiculoId, 'PNEU', true).toPromise()
+      ]);
 
-      if (itens && itens.length > 0) {
-        this.pneus = itens.map(item => ({
-          nome: item.nome_item,
-          posicao: this.gerarPosicao(item.nome_item),
+      const posicoesCarregadas = posicoes && posicoes.length > 0
+        ? posicoes
+        : this.posicoesPadrao.map(p => ({ id: p.id, nome: p.nome, habilitado: true, ordem: 0 }));
+
+      this.posicoes = posicoesCarregadas.map(pos => ({
+        posicao_id: pos.id,
+        posicao_nome: pos.nome,
+        pressao: undefined,
+        regras: (regras || []).map(regra => ({
+          nome: regra.nome_item,
           valor: null,
-          tipo_resposta: item.tipo_resposta || 'conforme_nao_conforme',
-          opcoes_resposta: this.parseOpcoes(item.opcoes_resposta),
-          tem_foto: !!item.tem_foto,
-          obrigatorio: item.obrigatorio !== undefined ? !!item.obrigatorio : true
-        }));
-        console.log(`[Pneus] Carregados ${itens.length} pneus do banco para tipo ${tipoVeiculoId}`);
-      } else {
-        console.log('[Pneus] Nenhum pneu no banco, usando padrão');
-        this.pneus = [...this.pneusPadrao];
-      }
-    } catch (error) {
-      console.warn('[Pneus] Erro ao carregar config, usando padrão:', error);
-      this.pneus = [...this.pneusPadrao];
-    }
-  }
+          tipo_resposta: regra.tipo_resposta || 'conforme_nao_conforme',
+          opcoes_resposta: this.parseOpcoes(regra.opcoes_resposta),
+          tem_foto: !!regra.tem_foto,
+          foto_nao_conforme: regra.foto_nao_conforme !== undefined ? !!regra.foto_nao_conforme : true,
+          obrigatorio: regra.obrigatorio !== undefined ? !!regra.obrigatorio : true
+        }))
+      }));
 
-  private gerarPosicao(nome: string): string {
-    return nome.toLowerCase().replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      console.log(`[Pneus] ${posicoesCarregadas.length} posicoes, ${(regras || []).length} regras carregadas`);
+    } catch (error) {
+      console.warn('[Pneus] Erro ao carregar config, usando padrao:', error);
+      this.posicoes = this.posicoesPadrao.map(p => ({
+        posicao_id: p.id,
+        posicao_nome: p.nome,
+        pressao: undefined,
+        regras: []
+      }));
+    }
   }
 
   private parseOpcoes(opcoes: any): string[] {
@@ -122,26 +133,26 @@ export class PneusPage implements OnInit, OnDestroy {
     }
   }
 
-  precisaFoto(pneu: Pneu): boolean {
-    if (pneu.tipo_resposta === 'apenas_foto') return true;
-    if (pneu.tem_foto) return true;
-    if (pneu.tipo_resposta === 'conforme_nao_conforme' || !pneu.tipo_resposta) {
-      return pneu.valor === 'nao_conforme';
+  precisaFotoRegra(regra: RegraInspecao): boolean {
+    if (regra.tipo_resposta === 'apenas_foto') return true;
+    if (regra.tem_foto) return true;
+    if (regra.tipo_resposta === 'conforme_nao_conforme' || !regra.tipo_resposta) {
+      if (regra.valor === 'nao_conforme') {
+        return regra.foto_nao_conforme !== false;
+      }
     }
     return false;
   }
 
-  mostrarFoto(pneu: Pneu): boolean {
-    if (pneu.tipo_resposta === 'apenas_foto') return true;
-    return this.precisaFoto(pneu) || (pneu.valor !== null && pneu.valor !== '');
+  mostrarFotoRegra(regra: RegraInspecao): boolean {
+    return this.precisaFotoRegra(regra);
   }
 
-  onValorChange(pneu: Pneu) {
+  onValorChange() {
     this.salvarLocalmente();
   }
 
   ngOnDestroy() {
-    // Finaliza rastreamento de tempo ao sair da tela
     const usuarioId = this.authService.currentUserValue?.id;
     const observable = this.tempoTelasService.finalizarTela(undefined, usuarioId);
     if (observable) {
@@ -154,24 +165,31 @@ export class PneusPage implements OnInit, OnDestroy {
 
   async recuperarDadosSalvos() {
     const dadosSalvos = await this.localStorage.recuperarPneus();
-    if (dadosSalvos && dadosSalvos.length > 0) {
-      for (const pneu of this.pneus) {
-        const saved = dadosSalvos.find((s: any) => s.nome === pneu.nome);
+    if (dadosSalvos && Array.isArray(dadosSalvos) && dadosSalvos.length > 0) {
+      for (const posicao of this.posicoes) {
+        const saved = dadosSalvos.find((s: any) => s.posicao_nome === posicao.posicao_nome);
         if (saved) {
-          pneu.valor = saved.valor;
-          pneu.foto = saved.foto;
-          pneu.pressao = saved.pressao;
-          pneu.descricao = saved.descricao;
+          posicao.pressao = saved.pressao;
+          if (saved.regras && Array.isArray(saved.regras)) {
+            for (const regra of posicao.regras) {
+              const savedRegra = saved.regras.find((sr: any) => sr.nome === regra.nome);
+              if (savedRegra) {
+                regra.valor = savedRegra.valor;
+                regra.foto = savedRegra.foto;
+                regra.descricao = savedRegra.descricao;
+              }
+            }
+          }
         }
       }
     }
   }
 
   async salvarLocalmente() {
-    await this.localStorage.salvarPneus(this.pneus);
+    await this.localStorage.salvarPneus(this.posicoes);
   }
 
-  async tirarFoto(index: number) {
+  async tirarFotoRegra(posicaoIndex: number, regraIndex: number) {
     try {
       const image = await Camera.getPhoto({
         quality: 45,
@@ -182,52 +200,44 @@ export class PneusPage implements OnInit, OnDestroy {
         height: 800
       });
 
-      this.pneus[index].foto = image.dataUrl;
+      this.posicoes[posicaoIndex].regras[regraIndex].foto = image.dataUrl;
       await this.salvarLocalmente();
     } catch (error) {
       console.log('Foto cancelada ou erro:', error);
     }
   }
 
-
-
-  async removerFoto(index: number) {
-    this.pneus[index].foto = undefined;
+  async removerFotoRegra(posicaoIndex: number, regraIndex: number) {
+    this.posicoes[posicaoIndex].regras[regraIndex].foto = undefined;
     await this.salvarLocalmente();
   }
 
-
-
-  async atualizarPressao(index: number, event: any) {
+  async atualizarPressao(posicaoIndex: number, event: any) {
     const valor = event.target.value;
-    this.pneus[index].pressao = valor ? parseFloat(valor) : undefined;
+    this.posicoes[posicaoIndex].pressao = valor ? parseFloat(valor) : undefined;
     await this.salvarLocalmente();
   }
 
   validarFormulario(): boolean {
-    return this.pneus.every(pneu => {
-      // Se não é obrigatório e não tem valor, aceita
-      if (pneu.obrigatorio === false && (pneu.valor === null || pneu.valor === '') && pneu.tipo_resposta !== 'apenas_foto') {
-        return true;
-      }
-      // Apenas foto: só precisa da foto
-      if (pneu.tipo_resposta === 'apenas_foto') {
-        if (pneu.obrigatorio === false) return true;
-        return !!pneu.foto;
-      }
-      // Valor deve estar preenchido
-      const valorPreenchido = pneu.valor !== null && pneu.valor !== '';
-      // Se precisa de foto (tem_foto ou nao_conforme), foto deve existir
-      const fotoFaltando = this.precisaFoto(pneu) && !pneu.foto;
-      // Pressão é OPCIONAL - não valida pressão
-
-      return valorPreenchido && !fotoFaltando;
-    });
+    return this.posicoes.every(posicao =>
+      posicao.regras.every(regra => {
+        if (regra.obrigatorio === false && (regra.valor === null || regra.valor === '') && regra.tipo_resposta !== 'apenas_foto') {
+          return true;
+        }
+        if (regra.tipo_resposta === 'apenas_foto') {
+          if (regra.obrigatorio === false) return true;
+          return !!regra.foto;
+        }
+        const valorPreenchido = regra.valor !== null && regra.valor !== '';
+        const fotoFaltando = this.precisaFotoRegra(regra) && !regra.foto;
+        return valorPreenchido && !fotoFaltando;
+      })
+    );
   }
 
   async finalizarChecklist() {
     if (!this.validarFormulario()) {
-      alert('Por favor, preencha a condição para cada pneu. Tire também a foto do pneu se estiver marcado como "ruim". A pressão é opcional.');
+      alert('Por favor, preencha todas as regras obrigatorias para cada pneu. Tire a foto quando necessario. A pressao e opcional.');
       return;
     }
 
@@ -235,84 +245,74 @@ export class PneusPage implements OnInit, OnDestroy {
       this.salvando = true;
 
       const usuarioId = this.authService.currentUserValue?.id;
-      // Tenta recuperar o inspecaoId (pode estar no storage se foi perdido da memória)
-      console.log('[Pneus] 🔍 Buscando inspecaoId para salvar pneus...');
+      console.log('[Pneus] Buscando inspecaoId para salvar pneus...');
       const inspecaoId = await this.checklistData.getInspecaoId();
       console.log('[Pneus] InspecaoId recebido:', inspecaoId, 'Tipo:', typeof inspecaoId);
 
       if (!inspecaoId) {
-        console.error('[Pneus] ❌ ERRO: ID da inspeção não encontrado!');
-        console.error('[Pneus] UsuarioId:', usuarioId);
+        console.error('[Pneus] ERRO: ID da inspecao nao encontrado!');
         const alert = await this.alertController.create({
           header: 'Erro',
-          message: 'ID da inspeção não encontrado. Por favor, reinicie o processo do início.',
+          message: 'ID da inspecao nao encontrado. Por favor, reinicie o processo do inicio.',
           buttons: ['OK']
         });
         await alert.present();
         this.salvando = false;
         return;
       }
-      
-      console.log('[Pneus] ✅ Prosseguindo com inspecaoId:', inspecaoId);
 
-      // Salva os dados dos pneus no serviço compartilhado
-      this.checklistData.setPneus(this.pneus);
-      console.log('Dados dos pneus salvos');
+      console.log('[Pneus] Prosseguindo com inspecaoId:', inspecaoId);
 
-      // Monta array de pneus para enviar à API
+      // Salva dados no servico compartilhado
+      this.checklistData.setPneus(this.posicoes);
+
+      // Monta array de itens de pneus para a API
       const itensPneus: any[] = [];
-      this.pneus.forEach(pneu => {
-        if (pneu.valor) {
+      this.posicoes.forEach(posicao => {
+        // Linha de pressao (por posicao)
+        if (posicao.pressao) {
           itensPneus.push({
-            item: pneu.nome,
-            status: pneu.valor,
-            foto: pneu.foto || null,
-            pressao: pneu.pressao || null,
-            descricao: pneu.descricao || null
+            item: posicao.posicao_nome,
+            sub_item: null,
+            status: 'registrado',
+            foto: null,
+            pressao: posicao.pressao,
+            descricao: null
           });
         }
+        // Uma linha por regra por posicao
+        posicao.regras.forEach(regra => {
+          if (regra.valor || regra.foto) {
+            itensPneus.push({
+              item: posicao.posicao_nome,
+              sub_item: regra.nome,
+              status: regra.valor,
+              foto: regra.foto || null,
+              pressao: null,
+              descricao: regra.descricao || null
+            });
+          }
+        });
       });
 
-      // Atualiza a inspeção na API com os pneus
-      console.log('[Inspeção] Atualizando inspeção com pneus...');
+      console.log('[Inspecao] Atualizando inspecao com pneus...');
       await this.apiService.atualizarInspecao(inspecaoId, {
         itens_pneus: itensPneus
       }).toPromise();
 
-      console.log('[Inspeção] Pneus atualizados com sucesso');
+      console.log('[Inspecao] Pneus atualizados com sucesso');
 
-      // Finaliza e salva o tempo de tela com o inspecao_id
       const observable = this.tempoTelasService.finalizarTela(inspecaoId, usuarioId);
       if (observable) {
         try {
           await observable.toPromise();
-          console.log('[Tempo] Tempo da tela pneus salvo com sucesso com inspecao_id:', inspecaoId);
+          console.log('[Tempo] Tempo da tela pneus salvo com inspecao_id:', inspecaoId);
         } catch (error) {
           console.error('[Tempo] Erro ao salvar tempo:', error);
         }
       }
 
-      // Limpa os dados salvos localmente após sucesso
-      await this.localStorage.limparTodosDados();
-      console.log('Dados locais limpos após salvamento bem-sucedido');
-
-      // Mostra mensagem de sucesso
-      const successAlert = await this.alertController.create({
-        header: 'Sucesso!',
-        message: 'Checklist salvo no banco de dados com sucesso!',
-        buttons: [
-          {
-            text: 'OK',
-            handler: async () => {
-              // Limpa os dados e volta para home
-              await this.checklistData.limparChecklist();
-              this.router.navigate(['/home']);
-            }
-          }
-        ]
-      });
-
-      await successAlert.present();
+      this.router.navigate(['/observacao-adicional']);
 
     } catch (error) {
       console.error('Erro ao salvar checklist:', error);
@@ -320,43 +320,6 @@ export class PneusPage implements OnInit, OnDestroy {
     } finally {
       this.salvando = false;
     }
-  }
-
-  private async salvarNaApi(checklistCompleto: any): Promise<any> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        console.log('=== INICIANDO SALVAMENTO NA API ===');
-        console.log('URL da API:', environment.apiUrl);
-        console.log('Timestamp:', new Date().toISOString());
-
-        const observable = await this.apiService.salvarChecklistSimples(checklistCompleto);
-        observable.subscribe({
-          next: (response) => {
-            console.log('=== SUCESSO AO SALVAR NA API ===');
-            console.log('Resposta:', response);
-            resolve(response);
-          },
-          error: (error) => {
-            console.error('=== ERRO AO SALVAR NA API ===');
-            console.error('Erro completo:', error);
-            console.error('Status:', error.status);
-            console.error('Status Text:', error.statusText);
-            console.error('URL:', error.url);
-            console.error('Message:', error.message);
-
-            if (error.error) {
-              console.error('Erro da API:', error.error);
-            }
-
-            reject(error);
-          }
-        });
-      } catch (error) {
-        console.error('=== ERRO AO CRIAR OBSERVABLE ===');
-        console.error('Erro:', error);
-        reject(error);
-      }
-    });
   }
 
   voltar() {
@@ -372,14 +335,13 @@ export class PneusPage implements OnInit, OnDestroy {
   }
 
   async mostrarErro(error: any) {
-    // Tratamento específico para erro de duplicata (409)
     if (error.status === 409 && error.error) {
-      const mensagem = error.error.mensagem || 'Esta placa já possui um registro recente. Aguarde antes de registrar novamente.';
+      const mensagem = error.error.mensagem || 'Esta placa ja possui um registro recente. Aguarde antes de registrar novamente.';
       const ultimoRegistro = error.error.ultimo_registro;
 
       let mensagemCompleta = mensagem;
       if (ultimoRegistro) {
-        mensagemCompleta += `\n\nÚltimo registro: ${new Date(ultimoRegistro).toLocaleString('pt-BR')}`;
+        mensagemCompleta += `\n\nUltimo registro: ${new Date(ultimoRegistro).toLocaleString('pt-BR')}`;
       }
 
       const alert = await this.alertController.create({
@@ -392,41 +354,32 @@ export class PneusPage implements OnInit, OnDestroy {
       return;
     }
 
-    // Extrai informações detalhadas do erro (para outros erros)
     let mensagemErro = 'Erro desconhecido';
     let detalhesCompletos = '';
 
     if (error?.error) {
-      // Erro da API
       mensagemErro = error.error.erro || error.error.message || 'Erro na API';
-
       if (error.error.detalhes) {
         detalhesCompletos += `Detalhes: ${error.error.detalhes}\n`;
       }
-
       if (error.status) {
         detalhesCompletos += `Status HTTP: ${error.status}\n`;
       }
-
       if (error.statusText) {
         detalhesCompletos += `Status Text: ${error.statusText}\n`;
       }
-
       if (error.url) {
         detalhesCompletos += `URL: ${error.url}\n`;
       }
     } else if (error?.message) {
-      // Erro JavaScript genérico
       mensagemErro = error.message;
       detalhesCompletos += `Tipo: ${error.name || 'Error'}\n`;
-
       if (error.stack) {
         detalhesCompletos += `Stack:\n${error.stack}\n`;
       }
     } else if (typeof error === 'string') {
       mensagemErro = error;
     } else {
-      // Tenta serializar o erro como JSON
       try {
         detalhesCompletos = JSON.stringify(error, null, 2);
       } catch {
@@ -442,9 +395,8 @@ export class PneusPage implements OnInit, OnDestroy {
         <div style="text-align: left; font-size: 12px;">
           <strong>Mensagem:</strong><br>
           <p style="word-break: break-word;">${mensagemErro}</p>
-
           ${detalhesCompletos ? `
-            <strong>Detalhes Técnicos:</strong><br>
+            <strong>Detalhes Tecnicos:</strong><br>
             <pre style="font-size: 10px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;">${detalhesCompletos}</pre>
           ` : ''}
         </div>
@@ -454,7 +406,7 @@ export class PneusPage implements OnInit, OnDestroy {
           text: 'Copiar Erro',
           handler: () => {
             this.copiarParaClipboard(textoCompleto);
-            return false; // Não fecha o alerta
+            return false;
           }
         },
         {
@@ -469,12 +421,10 @@ export class PneusPage implements OnInit, OnDestroy {
 
   async copiarParaClipboard(texto: string) {
     try {
-      // Tenta usar a API moderna do Clipboard
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(texto);
-        this.mostrarToast('Erro copiado para a área de transferência!');
+        this.mostrarToast('Erro copiado para a area de transferencia!');
       } else {
-        // Fallback para dispositivos que não suportam
         const textarea = document.createElement('textarea');
         textarea.value = texto;
         textarea.style.position = 'fixed';
@@ -483,11 +433,11 @@ export class PneusPage implements OnInit, OnDestroy {
         textarea.select();
         document.execCommand('copy');
         document.body.removeChild(textarea);
-        this.mostrarToast('Erro copiado para a área de transferência!');
+        this.mostrarToast('Erro copiado para a area de transferencia!');
       }
     } catch (err) {
       console.error('Erro ao copiar:', err);
-      this.mostrarToast('Não foi possível copiar o erro');
+      this.mostrarToast('Nao foi possivel copiar o erro');
     }
   }
 
@@ -501,100 +451,49 @@ export class PneusPage implements OnInit, OnDestroy {
     await toast.present();
   }
 
-  getCorStatus(valor: string): string {
-    switch (valor) {
-      case 'bom':
-        return 'success';
-      case 'ruim':
-        return 'danger';
-      default:
-        return 'medium';
-    }
-  }
-
   async verificarPrimeiroAcesso() {
-    // Não mostra tutorial nesta tela, apenas na primeira
     return;
   }
 
   iniciarTour() {
+    const steps: any[] = [];
+    this.posicoes.forEach((posicao, i) => {
+      steps.push({
+        element: `#tour-pneu-${i}`,
+        popover: {
+          title: `${i + 1}. ${posicao.posicao_nome}`,
+          description: `Preencha todas as regras de inspecao para o pneu ${posicao.posicao_nome}. A pressao e opcional.`,
+          side: 'bottom',
+          align: 'start'
+        }
+      });
+    });
+    steps.push({
+      element: '#tour-finalizar',
+      popover: {
+        title: `${this.posicoes.length + 1}. Finalizar Checklist`,
+        description: 'Apos avaliar todos os pneus, clique em "Finalizar e Salvar Checklist" para enviar.',
+        side: 'top',
+        align: 'center'
+      }
+    });
+    steps.push({
+      popover: {
+        title: 'Tutorial Concluido!',
+        description: 'Agora inspecione todos os pneus e finalize o checklist!',
+      }
+    });
+
     const driverObj = driver({
       showProgress: true,
       showButtons: ['next'],
       allowClose: false,
-      steps: [
-        {
-          element: '#tour-pneu-0',
-          popover: {
-            title: '1. Pneu Dianteiro Direito',
-            description: 'Avalie a condição do pneu dianteiro direito. Verifique o estado da borracha, profundidade dos sulcos e pressão. Tire uma foto obrigatória.',
-            side: 'bottom',
-            align: 'start'
-          }
-        },
-        {
-          element: '#tour-pneu-1',
-          popover: {
-            title: '2. Pneu Dianteiro Esquerdo',
-            description: 'Avalie a condição do pneu dianteiro esquerdo. Verifique o estado da borracha, profundidade dos sulcos e pressão. Tire uma foto obrigatória.',
-            side: 'bottom',
-            align: 'start'
-          }
-        },
-        {
-          element: '#tour-pneu-2',
-          popover: {
-            title: '3. Pneu Traseiro Direito',
-            description: 'Avalie a condição do pneu traseiro direito. Verifique o estado da borracha, profundidade dos sulcos e pressão. Tire uma foto obrigatória.',
-            side: 'bottom',
-            align: 'start'
-          }
-        },
-        {
-          element: '#tour-pneu-3',
-          popover: {
-            title: '4. Pneu Traseiro Esquerdo',
-            description: 'Avalie a condição do pneu traseiro esquerdo. Verifique o estado da borracha, profundidade dos sulcos e pressão. Tire uma foto obrigatória.',
-            side: 'bottom',
-            align: 'start'
-          }
-        },
-        {
-          element: '#tour-pneu-4',
-          popover: {
-            title: '5. Pneu Estepe',
-            description: 'Avalie a condição do pneu estepe. Verifique se está em bom estado e com pressão adequada. Tire uma foto obrigatória.',
-            side: 'bottom',
-            align: 'start'
-          }
-        },
-        {
-          element: '#tour-finalizar',
-          popover: {
-            title: '6. Finalizar Checklist',
-            description: 'Após avaliar todos os 5 pneus e tirar as fotos, clique em "Finalizar e Salvar Checklist" para enviar todas as informações ao servidor.',
-            side: 'top',
-            align: 'center'
-          }
-        },
-        {
-          popover: {
-            title: 'Tutorial Concluído!',
-            description: 'Agora inspecione todos os pneus e finalize o checklist completo do veículo!',
-          }
-        }
-      ],
+      steps,
       onDestroyStarted: async () => {
-        await this.marcarTutorialComoConcluido();
         driverObj.destroy();
       },
     });
 
     driverObj.drive();
-  }
-
-  async marcarTutorialComoConcluido() {
-    // Não precisa marcar aqui, pois o tutorial só aparece na primeira tela
-    return;
   }
 }

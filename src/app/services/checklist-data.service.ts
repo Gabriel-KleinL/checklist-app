@@ -72,17 +72,22 @@ export interface FotoVeiculoData {
   fotoOriginal?: string;
 }
 
-export interface PneuData {
+export interface RegraInspecaoPneuData {
   nome: string;
-  posicao: string;
   valor: string | null;
   foto?: string;
-  pressao?: number;
   descricao?: string;
-  tipo_resposta?: string;
+  tipo_resposta: string;
   opcoes_resposta?: string[];
-  tem_foto?: boolean;
-  obrigatorio?: boolean;
+  tem_foto: boolean;
+  obrigatorio: boolean;
+}
+
+export interface PneuData {
+  posicao_nome: string;
+  posicao_id: number;
+  pressao?: number;
+  regras: RegraInspecaoPneuData[];
 }
 
 export interface ChecklistCompleto {
@@ -90,6 +95,7 @@ export interface ChecklistCompleto {
   inspecaoVeiculo?: InspecaoVeiculoData;
   fotosVeiculo?: FotoVeiculoData[];
   pneus?: PneuData[];
+  observacaoAdicional?: string;
   dataRealizacao?: Date;
   usuario_id?: number;
   inspecao_id?: number;

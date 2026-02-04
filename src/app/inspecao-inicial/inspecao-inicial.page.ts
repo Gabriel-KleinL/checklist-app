@@ -8,6 +8,7 @@ import { AuthService } from '../services/auth.service';
 import { TempoTelasService } from '../services/tempo-telas.service';
 import { ApiService } from '../services/api.service';
 import { ConfigCamposInspecaoService, CampoInspecao } from '../services/config-campos-inspecao.service';
+import { LocaisService } from '../services/locais.service';
 import { driver } from 'driver.js';
 
 @Component({
@@ -33,16 +34,8 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
   camposConfigurados: CampoInspecao[] = [];
   carregandoCampos = true;
 
-  // Opções para campos do tipo select (carregadas dinamicamente ou padrão)
-  opcoesLocais = [
-    'Metropolitana - Serra',
-    'Nova Venécia',
-    'Guarapari',
-    'Santa Tereza',
-    'Rio de Janeiro',
-    'Castelo',
-    'Barra de São Francisco'
-  ];
+  // Opções para campos do tipo select (carregadas do banco)
+  opcoesLocais: string[] = [];
 
   opcoesCombustivel = [
     { valor: '0%', label: 'Vazio' },
@@ -73,6 +66,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
     private tempoTelasService: TempoTelasService,
     private apiService: ApiService,
     private configCamposService: ConfigCamposInspecaoService,
+    private locaisService: LocaisService,
     private loadingController: LoadingController,
     private alertController: AlertController
   ) { }
@@ -81,11 +75,23 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
     // Inicia rastreamento de tempo
     this.tempoTelasService.iniciarTela('inspecao-inicial');
 
-    // Carrega campos configuráveis do backend
-    await this.carregarCamposConfigurados();
+    // Carrega campos configuráveis e locais do backend
+    await Promise.all([
+      this.carregarCamposConfigurados(),
+      this.carregarLocais()
+    ]);
 
     await this.recuperarDadosSalvos();
     await this.verificarPrimeiroAcesso();
+  }
+
+  private async carregarLocais() {
+    try {
+      this.opcoesLocais = await this.locaisService.buscarNomes(true).toPromise() || [];
+    } catch (error) {
+      console.warn('[InspecaoInicial] Erro ao carregar locais, usando vazio:', error);
+      this.opcoesLocais = [];
+    }
   }
 
   async carregarCamposConfigurados() {
@@ -290,8 +296,7 @@ export class InspecaoInicialPage implements OnInit, OnDestroy {
         this.inspecaoInicial.placa &&
         this.inspecaoInicial.local &&
         this.inspecaoInicial.kmInicial !== null &&
-        this.inspecaoInicial.nivelCombustivel &&
-        this.inspecaoInicial.fotoPainel
+        this.inspecaoInicial.nivelCombustivel
       );
     }
 

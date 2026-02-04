@@ -24,6 +24,7 @@ export interface ChecklistSimples {
   usuario_nome?: string;
   usuario_id?: number | null;
   observacao_painel?: string;
+  observacao_adicional?: string;
   // Campos da API
   itens_inspecao?: any[];
   itens_pneus?: any[];
@@ -120,6 +121,25 @@ export interface InspecaoVeiculo {
 // PNEUS
 // ============================================
 
+export interface RegraInspecaoPneu {
+  nome: string;
+  valor: string | null;
+  foto?: string;
+  descricao?: string;
+  tipo_resposta: string;
+  opcoes_resposta?: string[];
+  tem_foto: boolean;
+  obrigatorio: boolean;
+}
+
+export interface PosicaoPneuInspecao {
+  posicao_id: number;
+  posicao_nome: string;
+  pressao?: number;
+  regras: RegraInspecaoPneu[];
+}
+
+/** @deprecated Use PosicaoPneuInspecao */
 export interface PneuInspecao {
   id?: number;
   inspecao_id?: number;
@@ -225,7 +245,7 @@ export interface VeiculoComAnomalias {
 // TEMPO DE TELAS
 // ============================================
 
-export type NomeTela = 'inspecao-inicial' | 'inspecao-veiculo' | 'fotos-veiculo' | 'pneus';
+export type NomeTela = 'inspecao-inicial' | 'inspecao-veiculo' | 'fotos-veiculo' | 'pneus' | 'observacao-adicional';
 
 export interface TempoTela {
   id?: number;

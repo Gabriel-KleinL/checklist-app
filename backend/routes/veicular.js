@@ -37,9 +37,18 @@ router.post('/set', async (req, res) => {
     }
     const tipoVeiculoId = dados.tipo_veiculo_id || 1;
 
+    const dadosInspecao = JSON.stringify({
+      local: local,
+      placa: dados.placa || '',
+      km_inicial: dados.km_inicial || 0,
+      nivel_combustivel: nivelCombustivelConvertido,
+      observacao_painel: dados.observacao_painel || '',
+      status_geral: 'PENDENTE'
+    });
+
     const [resultado] = await connection.query(
-      `INSERT INTO ${db.table('inspecao_veiculo')} (placa, local, data_realizacao, km_inicial, nivel_combustivel, observacao_painel, usuario_id, status_geral, tipo_veiculo_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDENTE', ?)`,
-      [dados.placa || '', local, dataRealizacao, dados.km_inicial || 0, nivelCombustivelConvertido, dados.observacao_painel || '', usuarioId, tipoVeiculoId]
+      `INSERT INTO ${db.table('inspecao_veiculo')} (dados_inspecao, data_realizacao, usuario_id, tipo_veiculo_id) VALUES (?, ?, ?, ?)`,
+      [dadosInspecao, dataRealizacao, usuarioId, tipoVeiculoId]
     );
 
     const inspecaoId = resultado.insertId;
@@ -80,13 +89,14 @@ router.post('/set', async (req, res) => {
         if (pneu.status) {
           let fotoPath = pneu.foto || null;
           let fotoCanetaPath = pneu.foto_caneta || null;
+          const subItemSuffix = pneu.sub_item ? `_${pneu.sub_item.replace(/\s/g, '_')}` : '';
           if (fotoPath && FotoUtils.isBase64(fotoPath)) {
-            fotoPath = FotoUtils.save(fotoPath, inspecaoId, `pneu_${pneu.item.replace(/\s/g, '_')}`);
+            fotoPath = FotoUtils.save(fotoPath, inspecaoId, `pneu_${pneu.item.replace(/\s/g, '_')}${subItemSuffix}`);
           }
           if (fotoCanetaPath && FotoUtils.isBase64(fotoCanetaPath)) {
-            fotoCanetaPath = FotoUtils.save(fotoCanetaPath, inspecaoId, `pneu_caneta_${pneu.item.replace(/\s/g, '_')}`);
+            fotoCanetaPath = FotoUtils.save(fotoCanetaPath, inspecaoId, `pneu_caneta_${pneu.item.replace(/\s/g, '_')}${subItemSuffix}`);
           }
-          await connection.query(`INSERT INTO ${db.table('inspecao_item')} (inspecao_id, categoria, item, status, foto, pressao, foto_caneta, descricao) VALUES (?, 'PNEU', ?, ?, ?, ?, ?, ?)`, [inspecaoId, pneu.item, pneu.status, fotoPath, pneu.pressao || null, fotoCanetaPath, pneu.descricao || null]);
+          await connection.query(`INSERT INTO ${db.table('inspecao_item')} (inspecao_id, categoria, item, sub_item, status, foto, pressao, foto_caneta, descricao) VALUES (?, 'PNEU', ?, ?, ?, ?, ?, ?, ?)`, [inspecaoId, pneu.item, pneu.sub_item || null, pneu.status, fotoPath, pneu.pressao || null, fotoCanetaPath, pneu.descricao || null]);
         }
       }
     }
@@ -172,18 +182,29 @@ router.post('/update', async (req, res) => {
         if (pneu.status) {
           let fotoPath = pneu.foto || null;
           let fotoCanetaPath = pneu.foto_caneta || null;
+          const subItemSuffix = pneu.sub_item ? `_${pneu.sub_item.replace(/\s/g, '_')}` : '';
           if (fotoPath && FotoUtils.isBase64(fotoPath)) {
-            fotoPath = FotoUtils.save(fotoPath, inspecaoId, `pneu_${pneu.item.replace(/\s/g, '_')}`);
+            fotoPath = FotoUtils.save(fotoPath, inspecaoId, `pneu_${pneu.item.replace(/\s/g, '_')}${subItemSuffix}`);
           }
           if (fotoCanetaPath && FotoUtils.isBase64(fotoCanetaPath)) {
-            fotoCanetaPath = FotoUtils.save(fotoCanetaPath, inspecaoId, `pneu_caneta_${pneu.item.replace(/\s/g, '_')}`);
+            fotoCanetaPath = FotoUtils.save(fotoCanetaPath, inspecaoId, `pneu_caneta_${pneu.item.replace(/\s/g, '_')}${subItemSuffix}`);
           }
           await connection.query(
-            `INSERT INTO ${db.table('inspecao_item')} (inspecao_id, categoria, item, status, foto, pressao, foto_caneta, descricao) VALUES (?, 'PNEU', ?, ?, ?, ?, ?, ?)`,
-            [inspecaoId, pneu.item, pneu.status, fotoPath, pneu.pressao || null, fotoCanetaPath, pneu.descricao || null]
+            `INSERT INTO ${db.table('inspecao_item')} (inspecao_id, categoria, item, sub_item, status, foto, pressao, foto_caneta, descricao) VALUES (?, 'PNEU', ?, ?, ?, ?, ?, ?, ?)`,
+            [inspecaoId, pneu.item, pneu.sub_item || null, pneu.status, fotoPath, pneu.pressao || null, fotoCanetaPath, pneu.descricao || null]
           );
         }
       }
+    }
+
+    // Observação adicional (salva no JSON dados_inspecao)
+    if (dados.observacao_adicional !== undefined) {
+      await connection.query(
+        `UPDATE ${db.table('inspecao_veiculo')}
+         SET dados_inspecao = JSON_SET(COALESCE(dados_inspecao, '{}'), '$.observacao_adicional', ?)
+         WHERE id = ?`,
+        [dados.observacao_adicional, inspecaoId]
+      );
     }
 
     await connection.commit();
@@ -348,10 +369,44 @@ router.get('/get', async (req, res) => {
         });
         
         connection.release();
-        
+
+        // Agrupa itens PNEU por posição (item) com sub-itens (sub_item)
+        if (itensPorCategoria['PNEU']) {
+          const pneusPorPosicao = {};
+          itensPorCategoria['PNEU'].forEach(item => {
+            const posicao = item.item;
+            if (!pneusPorPosicao[posicao]) {
+              pneusPorPosicao[posicao] = { posicao, pressao: null, regras: [] };
+            }
+            if (item.sub_item) {
+              pneusPorPosicao[posicao].regras.push(item);
+            } else {
+              // Dados legados (sem sub_item) ou linha de pressão
+              if (item.pressao) {
+                pneusPorPosicao[posicao].pressao = item.pressao;
+              }
+              if (item.status) {
+                pneusPorPosicao[posicao].regras.push(item);
+              }
+            }
+          });
+          itensPorCategoria['PNEU_AGRUPADO'] = Object.values(pneusPorPosicao);
+        }
+
+        // Extrai campos do JSON dados_inspecao
+        const dadosInspecao = typeof inspecaoData.dados_inspecao === 'string'
+          ? JSON.parse(inspecaoData.dados_inspecao)
+          : (inspecaoData.dados_inspecao || {});
+
         // Monta resposta completa
         const respostaCompleta = {
           ...inspecaoData,
+          local: dadosInspecao.local || null,
+          km_inicial: dadosInspecao.km_inicial || null,
+          nivel_combustivel: dadosInspecao.nivel_combustivel || null,
+          status_geral: dadosInspecao.status_geral || null,
+          observacao_painel: dadosInspecao.observacao_painel || null,
+          observacao_adicional: dadosInspecao.observacao_adicional || null,
           usuario: inspecaoData.usuario_nome ? {
             id: inspecaoData.usuario_id,
             nome: inspecaoData.usuario_nome

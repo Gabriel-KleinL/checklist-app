@@ -11,6 +11,7 @@ export class LocalStorageService {
   private readonly INSPECAO_VEICULO_KEY = 'checklist_inspecao_veiculo';
   private readonly FOTOS_VEICULO_KEY = 'checklist_fotos_veiculo';
   private readonly PNEUS_KEY = 'checklist_pneus';
+  private readonly OBSERVACAO_ADICIONAL_KEY = 'checklist_observacao_adicional';
 
   constructor() { }
 
@@ -133,6 +134,7 @@ export class LocalStorageService {
       await Preferences.remove({ key: this.INSPECAO_VEICULO_KEY });
       await Preferences.remove({ key: this.FOTOS_VEICULO_KEY });
       await Preferences.remove({ key: this.PNEUS_KEY });
+      await Preferences.remove({ key: this.OBSERVACAO_ADICIONAL_KEY });
       console.log('Todos os dados locais foram limpos');
     } catch (error) {
       console.error('Erro ao limpar dados locais:', error);

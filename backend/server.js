@@ -16,6 +16,8 @@ const anomaliasRoutes = require('./routes/anomalias');
 const tempoTelasRoutes = require('./routes/tempo-telas');
 const buscarPlacasRoutes = require('./routes/buscar-placas');
 const configCamposInspecaoRoutes = require('./routes/config-campos-inspecao');
+const configPneuPosicoesRoutes = require('./routes/config-pneu-posicoes');
+const locaisRoutes = require('./routes/locais');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -37,9 +39,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 // Servir arquivos estáticos (página de teste)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Servir uploads (fotos) estaticamente
-const uploadsDir = process.env.UPLOAD_DIR || path.join(__dirname, '../api/uploads');
-app.use('/uploads', express.static(uploadsDir));
+// Fotos são armazenadas como base64 no banco de dados
 
 // Log de requisições detalhado
 app.use((req, res, next) => {
@@ -82,6 +82,14 @@ app.post('/api/checklist/completo', (req, res, next) => checklistRoutes.setCompl
 app.get('/api/config/itens', (req, res, next) => configRoutes.getItens(req, res, next));
 app.post('/api/config/itens', (req, res, next) => configRoutes.setItens(req, res, next));
 app.get('/api/config/itens-completo', (req, res, next) => configRoutes.getItensCompleto(req, res, next));
+
+// Config Pneu Posições
+app.get('/api/config/pneu-posicoes', (req, res, next) => configPneuPosicoesRoutes.get(req, res, next));
+app.post('/api/config/pneu-posicoes', (req, res, next) => configPneuPosicoesRoutes.set(req, res, next));
+
+// Locais
+app.get('/api/locais', (req, res, next) => locaisRoutes.get(req, res, next));
+app.post('/api/locais', (req, res, next) => locaisRoutes.set(req, res, next));
 
 // Anomalias
 app.get('/api/anomalias', (req, res, next) => anomaliasRoutes.get(req, res, next));
@@ -151,6 +159,10 @@ app.post('/b_checklist_completo_set.php', checklistRoutes.setCompleto);
 app.get('/b_config_itens.php', configRoutes.getItens);
 app.post('/b_config_itens.php', configRoutes.setItens);
 app.get('/b_checklist_completo_config_itens.php', configRoutes.getItensCompleto);
+
+// Config Pneu Posições endpoints (compatibilidade PHP)
+app.get('/b_config_pneu_posicoes.php', configPneuPosicoesRoutes.get);
+app.post('/b_config_pneu_posicoes.php', configPneuPosicoesRoutes.set);
 
 // Anomalias endpoints
 app.get('/b_veicular_anomalias.php', anomaliasRoutes.get);

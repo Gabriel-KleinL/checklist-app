@@ -1,0 +1,56 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="dark">
+    <ion-buttons slot="start">
+      <ion-button (click)="voltar()">
+        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Observação Adicional</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" color="dark">
+  <ion-header collapse="condense">
+    <ion-toolbar color="dark">
+      <ion-title size="large">Observação Adicional</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="form-container">
+    <ion-card class="obs-card">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="document-text-outline" color="tertiary"></ion-icon>
+          Observações
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="info-text">
+          Utilize este espaço para registrar qualquer observação que esteja fora do checklist padrão. Este campo é opcional.
+        </p>
+        <ion-textarea
+          [(ngModel)]="observacao"
+          (ionChange)="salvarLocalmente()"
+          placeholder="Escreva aqui qualquer observação adicional sobre o veículo..."
+          rows="8"
+          color="light"
+          class="obs-textarea"
+        ></ion-textarea>
+      </ion-card-content>
+    </ion-card>
+
+    <div class="save-section">
+      <ion-button
+        expand="block"
+        size="large"
+        color="primary"
+        (click)="finalizarChecklist()"
+        [disabled]="salvando"
+      >
+        <ion-spinner *ngIf="salvando" name="crescent" slot="start"></ion-spinner>
+        <ion-icon *ngIf="!salvando" slot="start" name="checkmark-circle"></ion-icon>
+        {{ salvando ? 'Salvando...' : 'Finalizar e Salvar Checklist' }}
+      </ion-button>
+    </div>
+  </div>
+</ion-content>
